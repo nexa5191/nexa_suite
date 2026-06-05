@@ -108,6 +108,20 @@
   }
 }
 
+@layer base {
+  /* Remove the native increase/decrease spinner buttons on number inputs.
+     Users key in amounts directly. */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+}
+
 @layer utilities {
   .tabular {
     font-variant-numeric: tabular-nums;

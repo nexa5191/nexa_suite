@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { ExcelExport } from "@/components/excel/excel-export";
 import { usePrefs } from "@/components/prefs/prefs-provider";
 import { cn, formatCompactInr } from "@/lib/planning/util";
+import { noNumberNudge } from "@/lib/utils";
 import { ENTITIES, entityById } from "@/lib/accounting/org";
 import { fyLabel } from "@/lib/accounting/periods";
 import {
@@ -208,6 +209,7 @@ function GrowthInput({ label, value, onChange }: { label: string; value: number;
       <span className="flex items-center">
         <input
           type="number"
+          onKeyDown={noNumberNudge}
           value={Math.round(value * 1000) / 10}
           onChange={(e) => onChange((Number(e.target.value) || 0) / 100)}
           step={0.5}
@@ -257,6 +259,7 @@ function PlanGrid({ model, setCell }: { model: BudgetModel; setCell: (code: stri
                       <td key={i} className="px-1 py-1">
                         <input
                           type="number"
+                          onKeyDown={noNumberNudge}
                           value={v}
                           onChange={(e) => setCell(l.code, i, Math.round(Number(e.target.value) || 0))}
                           className={cn(

@@ -27,6 +27,7 @@ import { Money } from "@/components/ui/money";
 import { Button } from "@/components/ui/button";
 import { ExcelExport } from "@/components/excel/excel-export";
 import { cn, formatCompactInr } from "@/lib/planning/util";
+import { noNumberNudge } from "@/lib/utils";
 import { fyLabel, periodPresets } from "@/lib/accounting/periods";
 import { printDocument } from "@/lib/export";
 import {
@@ -246,6 +247,7 @@ export function BusinessPlanClient() {
                 <span className="text-2xl font-bold">₹</span>
                 <input
                   type="number"
+                  onKeyDown={noNumberNudge}
                   value={inputs.fundingAskCr}
                   onChange={(e) => update({ fundingAskCr: Number(e.target.value) || 0 })}
                   className="w-24 bg-transparent text-2xl font-bold outline-none focus:bg-accent/40 rounded px-1"
@@ -270,6 +272,7 @@ export function BusinessPlanClient() {
                 </div>
                 <input
                   type="number"
+                  onKeyDown={noNumberNudge}
                   value={Math.round(u.pct * 100)}
                   onChange={(e) => {
                     const next = [...inputs.useOfFunds];
@@ -395,6 +398,7 @@ function Assumption({
       <span className="flex items-center">
         <input
           type="number"
+          onKeyDown={noNumberNudge}
           value={Math.round(value * 10) / 10}
           step={step}
           onChange={(e) => onChange(Number(e.target.value) || 0)}
@@ -427,6 +431,7 @@ function MarketTile({
         <span className="text-sm">₹</span>
         <input
           type="number"
+          onKeyDown={noNumberNudge}
           value={valueCr}
           onChange={(e) => onChange(Number(e.target.value) || 0)}
           className="w-24 bg-transparent text-lg font-bold outline-none"
