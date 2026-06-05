@@ -1,0 +1,1462 @@
+// NEXA — multi-entity accounting + HR/ops platform
+// Prisma schema generated from the application's mock data layer (lib/**).
+// Conventions:
+//   - Every model uses an integer surrogate primary key: id Int @id @default(autoincrement())
+//   - Original string identifiers from the mock data are preserved as unique natural keys
+//     (slug / code / number / tag) so seed data can be round-tripped.
+//   - Monetary amounts use Decimal(14,2); rates / ratios / quantities use Float.
+//   - Pure compute/report view-models (P&L, BRS, consolidation, schedules, etc.) are NOT
+//     modelled — only stored/seed record shapes.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+// --- Accounting ---
+enum AccountType {
+  asset
+  liability
+  equity
+  income
+  expense
+}
+
+enum AccountNormal {
+  debit
+  credit
+}
+
+enum CashFlowSection {
+  operating
+  investing
+  financing
+  none
+}
+
+enum Basis {
+  accrual
+  cash
+}
+
+enum EventKind {
+  sale
+  purchase
+  payment_in
+  payment_out
+  transfer
+}
+
+// --- HR ---
+enum EmploymentType {
+  full_time @map("full-time")
+  part_time @map("part-time")
+  contract
+}
+
+enum EmployeeStatus {
+  active
+  on_leave @map("on-leave")
+  exited
+}
+
+enum DayUnit {
+  full
+  half
+}
+
+enum LeaveTone {
+  primary
+  success
+  warning
+  danger
+}
+
+enum LeaveRequestStatus {
+  pending
+  approved
+  rejected
+}
+
+enum RunStatus {
+  paid
+  processing
+  draft
+}
+
+enum EmployeeJourneyType {
+  joined
+  promotion
+  transfer
+  award
+  exit
+}
+
+enum DocCategory {
+  Onboarding
+  Payroll
+  Tax
+  Personal
+  Exit
+}
+
+enum EmpDocKind {
+  pdf
+  doc
+  image
+}
+
+enum ApprovalKind {
+  leave
+  financial
+  document
+}
+
+enum ApprovalStatus {
+  pending
+  approved
+  rejected
+}
+
+// --- Recruitment ---
+enum OpeningStatus {
+  open
+  on_hold @map("on-hold")
+  closed
+}
+
+enum OpeningType {
+  full_time @map("full-time")
+  contract
+  intern
+}
+
+enum CandidateSource {
+  referral
+  linkedin
+  portal
+  agency
+  walk_in  @map("walk-in")
+}
+
+enum CandidateStage {
+  new
+  screening
+  shortlisted
+  interview
+  offer
+  hired
+  archived
+}
+
+// --- Tasks ---
+enum TaskStatus {
+  todo
+  in_progress @map("in-progress")
+  blocked
+  done
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+// --- Calendar ---
+enum CalendarKind {
+  personal
+  team
+  holiday
+  leave
+}
+
+enum CalProvider {
+  google
+  microsoft
+  internal
+}
+
+enum CalAttachmentKind {
+  pdf
+  doc
+  sheet
+  slide
+  link
+}
+
+// --- Vendors ---
+enum VendorCategory {
+  RawMaterials @map("Raw Materials")
+  Packaging
+  Logistics
+  ITSoftware   @map("IT & Software")
+  Marketing
+  Services
+}
+
+enum POStatus {
+  issued
+  invoiced
+  paid
+}
+
+enum PayMode {
+  bank
+  upi
+  cheque
+}
+
+// --- CRM ---
+enum PipelineStage {
+  lead
+  qualified
+  proposal
+  negotiation
+  won
+  lost
+}
+
+enum Industry {
+  RetailChain   @map("Retail Chain")
+  Distribution
+  HoReCa
+  Ecommerce     @map("E-commerce")
+  Export
+  Institutional
+  QuickCommerce @map("Quick Commerce")
+}
+
+enum CrmEventType {
+  stage
+  note
+  call
+  meeting
+  email
+  deal
+  invoice
+}
+
+enum CrmTagVariant {
+  default
+  primary
+  success
+  warning
+  danger
+}
+
+// --- Invoicing ---
+enum InvoiceStatus {
+  draft
+  sent
+  partial
+  paid
+  overdue
+}
+
+enum DiscountType {
+  none
+  percent
+  amount
+}
+
+// --- Inventory ---
+enum ItemCategory {
+  raw
+  packing
+  semi_finished @map("semi-finished")
+  finished
+}
+
+enum Uom {
+  kg
+  L
+  pcs
+}
+
+enum MovementType {
+  opening
+  receipt
+  production
+  consumption
+  transfer_in  @map("transfer-in")
+  transfer_out @map("transfer-out")
+  sale
+  adjustment
+}
+
+// --- Tax ---
+enum TaxKind {
+  HSN
+  SAC
+}
+
+enum TaxNature {
+  intra
+  inter
+  export
+}
+
+enum SupplyType {
+  B2B
+  B2C
+}
+
+enum ReturnKey {
+  gstr1
+  gstr3b
+}
+
+enum FilingStatus {
+  open
+  in_review
+  filed
+}
+
+enum ReviewAction {
+  submitted
+  approved
+  returned
+  reopened
+}
+
+// --- Fixed assets ---
+enum DepMethod {
+  SLM
+  WDV
+}
+
+enum AssetCategory {
+  PlantMachinery    @map("Plant & Machinery")
+  FurnitureFixtures @map("Furniture & Fixtures")
+  ComputersIT       @map("Computers & IT")
+  Vehicles
+  OfficeEquipment   @map("Office Equipment")
+  Buildings
+}
+
+// --- Intercompany ---
+enum IcType {
+  loan
+  sale
+  service_fee      @map("service-fee")
+  royalty
+  expense_recharge @map("expense-recharge")
+}
+
+enum IcStatus {
+  open
+  settled
+}
+
+enum IcPnlBucket {
+  sales
+  services
+  none
+}
+
+enum IcBsBucket {
+  trade
+  loan
+  none
+}
+
+// --- Planning ---
+enum ForecastMethod {
+  budget
+  runrate
+}
+
+// ============================================================================
+// ACCOUNTING & ORG
+// ============================================================================
+
+model Currency {
+  id     Int    @id @default(autoincrement())
+  code   String @unique // INR, USD, EUR, GBP, AED, SGD
+  symbol String
+  name   String
+  rate   Float // units per 1 INR (base)
+  locale String
+
+  entities       Entity[]
+  businessEvents BusinessEvent[]
+  postings       Posting[]
+}
+
+model Account {
+  // chart-of-accounts row
+  id          Int             @id @default(autoincrement())
+  code        String          @unique // natural key, e.g. "1100"
+  name        String
+  type        AccountType
+  subtype     String
+  normal      AccountNormal
+  cashFlow    CashFlowSection
+  description String?
+  isCash      Boolean         @default(false)
+
+  postings            Posting[]
+  eventsIncomeExpense BusinessEvent[]     @relation("EventIncomeExpenseAccount")
+  eventsContra        BusinessEvent[]     @relation("EventContraAccount")
+  eventsCash          BusinessEvent[]     @relation("EventCashAccount")
+  eventsDebit         BusinessEvent[]     @relation("EventDebitAccount")
+  eventsCredit        BusinessEvent[]     @relation("EventCreditAccount")
+  bankAccounts        BankAccount[]
+  assetCategoryMetas  AssetCategoryMeta[]
+  budgetCells         BudgetCell[]
+}
+
+model Entity {
+  id        Int     @id @default(autoincrement())
+  slug      String  @unique // ent-nexa-in, ent-nexa-trade, ent-nexa-global
+  name      String
+  legalName String
+  country   String
+  gstin     String?
+
+  currencyId Int
+  currency   Currency @relation(fields: [currencyId], references: [id])
+
+  // per-entity invoicing config (lib/invoicing.ts static maps)
+  invoicePrefix String? // NXF / NXT / NXG
+  stateCode     String?
+  bankDetails   String?
+  address       String?
+
+  locations          Location[]
+  businessEvents     BusinessEvent[]
+  postings           Posting[]
+  employees          Employee[]
+  documentApprovals  DocumentApproval[]
+  crmAccounts        CrmAccount[]
+  invoices           Invoice[]
+  bankAccounts       BankAccount[]
+  purchaseOrders     PurchaseOrder[]
+  fixedAssets        FixedAsset[]
+  icTransactionsFrom IcTransaction[]    @relation("IcFromEntity")
+  icTransactionsTo   IcTransaction[]    @relation("IcToEntity")
+  budgetCells        BudgetCell[]
+  taxOutwardLines    TaxOutwardLine[]
+  taxInwardLines     TaxInwardLine[]
+}
+
+model Location {
+  id        Int    @id @default(autoincrement())
+  slug      String @unique // loc-blr, loc-mys, loc-mum, loc-del, loc-sg
+  name      String
+  city      String
+  state     String
+  stateCode String
+
+  entityId Int
+  entity   Entity @relation(fields: [entityId], references: [id])
+
+  businessEvents    BusinessEvent[]
+  postings          Posting[]
+  employees         Employee[]
+  documentApprovals DocumentApproval[]
+  openings          Opening[]
+  purchaseOrders    PurchaseOrder[]
+  primaryItems      Item[]
+  movements         Movement[]
+  fixedAssets       FixedAsset[]
+  taxOutwardLines   TaxOutwardLine[]
+  taxInwardLines    TaxInwardLine[]
+  holidayLinks      HolidayLocation[]
+}
+
+model BusinessEvent {
+  id          Int       @id @default(autoincrement())
+  slug        String    @unique // evt-1
+  category    String
+  memo        String
+  amount      Decimal   @db.Decimal(14, 2) // base INR
+  accrualDate DateTime
+  cashDate    DateTime?
+  kind        EventKind
+
+  entityId   Int
+  entity     Entity   @relation(fields: [entityId], references: [id])
+  locationId Int
+  location   Location @relation(fields: [locationId], references: [id])
+  currencyId Int
+  currency   Currency @relation(fields: [currencyId], references: [id])
+
+  // journal legs (Account.code in the source; empty-string sentinels -> nullable here)
+  incomeExpenseAccountId Int?
+  incomeExpenseAccount   Account? @relation("EventIncomeExpenseAccount", fields: [incomeExpenseAccountId], references: [id])
+  contraAccountId        Int?
+  contraAccount          Account? @relation("EventContraAccount", fields: [contraAccountId], references: [id])
+  cashAccountId          Int?
+  cashAccount            Account? @relation("EventCashAccount", fields: [cashAccountId], references: [id])
+  debitAccountId         Int?
+  debitAccount           Account? @relation("EventDebitAccount", fields: [debitAccountId], references: [id])
+  creditAccountId        Int?
+  creditAccount          Account? @relation("EventCreditAccount", fields: [creditAccountId], references: [id])
+
+  postings   Posting[]
+  taxOutward TaxOutwardLine? @relation("EventOutward")
+  taxInward  TaxInwardLine?  @relation("EventInward")
+}
+
+// Derived double-entry ledger line (materialised from BusinessEvent in lib/accounting/ledger.ts).
+model Posting {
+  id       Int      @id @default(autoincrement())
+  date     DateTime
+  debit    Decimal  @db.Decimal(14, 2)
+  credit   Decimal  @db.Decimal(14, 2)
+  state    String
+  basis    Basis
+  memo     String
+  category String
+
+  eventId    Int
+  event      BusinessEvent @relation(fields: [eventId], references: [id])
+  accountId  Int
+  account    Account       @relation(fields: [accountId], references: [id])
+  entityId   Int
+  entity     Entity        @relation(fields: [entityId], references: [id])
+  locationId Int
+  location   Location      @relation(fields: [locationId], references: [id])
+  currencyId Int
+  currency   Currency      @relation(fields: [currencyId], references: [id])
+}
+
+// ============================================================================
+// HR
+// ============================================================================
+
+model Department {
+  id   Int    @id @default(autoincrement())
+  slug String @unique // dep-ops, dep-fin, ...
+  name String
+
+  employees Employee[]
+  openings  Opening[]
+}
+
+model Employee {
+  id             Int            @id @default(autoincrement())
+  code           String         @unique // EMP-001
+  slug           String         @unique // emp-001
+  name           String
+  email          String
+  personalEmail  String
+  designation    String
+  joinDate       DateTime
+  employmentType EmploymentType
+  status         EmployeeStatus
+  exitDate       DateTime?
+  annualCtcLakh  Float? // basis for derived salary structure / payslips
+
+  departmentId Int
+  department   Department @relation(fields: [departmentId], references: [id])
+  entityId     Int
+  entity       Entity     @relation(fields: [entityId], references: [id])
+  locationId   Int
+  location     Location   @relation(fields: [locationId], references: [id])
+  managerId    Int?
+  manager      Employee?  @relation("EmployeeManager", fields: [managerId], references: [id])
+
+  reports               Employee[]             @relation("EmployeeManager")
+  leaveRequests         LeaveRequest[]         @relation("LeaveRequestEmployee")
+  leaveApprovals        LeaveRequest[]         @relation("LeaveRequestApprover")
+  payrollRunsProcessed  PayrollRun[]
+  payslips              Payslip[]
+  journeyEvents         EmployeeJourneyEvent[]
+  empDocs               EmpDoc[]
+  openingsHiring        Opening[]
+  tasksAssigned         FirmTask[]             @relation("TaskAssignee")
+  tasksCreated          FirmTask[]             @relation("TaskCreator")
+  purchaseOrders        PurchaseOrder[] // as SPOC
+  crmAccounts           CrmAccount[] // as owner
+  crmJourneyEvents      CrmJourneyEvent[] // as author
+  invoices              Invoice[] // as signatory
+  movements             Movement[] // as actor
+  filingsPrepared       FilingState[]          @relation("FilingPreparedBy")
+  filingsReviewed       FilingState[]          @relation("FilingReviewedBy")
+  reviewEvents          ReviewEvent[]
+  docApprovalsRequested DocumentApproval[]     @relation("DocApprovalRequestedBy")
+  docApprovalsApprove   DocumentApproval[]     @relation("DocApprovalApprover")
+  eventAttendances      EventAttendee[]
+}
+
+model LeaveType {
+  id           Int       @id @default(autoincrement())
+  slug         String    @unique // lt-cl
+  name         String
+  code         String    @unique // CL
+  tone         LeaveTone
+  allowHalfDay Boolean
+  annualDays   Float // 0 = unlimited / unpaid
+  paid         Boolean
+  carryForward Boolean
+
+  leaveRequests LeaveRequest[]
+}
+
+model LeaveRequest {
+  id        Int                @id @default(autoincrement())
+  slug      String             @unique // req-001
+  from      DateTime
+  to        DateTime
+  unit      DayUnit
+  days      Float
+  reason    String
+  status    LeaveRequestStatus
+  appliedOn DateTime
+
+  employeeId  Int
+  employee    Employee  @relation("LeaveRequestEmployee", fields: [employeeId], references: [id])
+  leaveTypeId Int
+  leaveType   LeaveType @relation(fields: [leaveTypeId], references: [id])
+  approverId  Int?
+  approver    Employee? @relation("LeaveRequestApprover", fields: [approverId], references: [id])
+}
+
+model PayrollRun {
+  id      Int       @id @default(autoincrement())
+  month   String    @unique // YYYY-MM
+  label   String
+  status  RunStatus
+  runDate DateTime?
+
+  processedById Int
+  processedBy   Employee @relation(fields: [processedById], references: [id])
+
+  payslips Payslip[]
+}
+
+// One employee payslip within a payroll run (embeds the flattened salary structure).
+model Payslip {
+  id     Int       @id @default(autoincrement())
+  label  String
+  status RunStatus
+
+  payrollRunId Int
+  payrollRun   PayrollRun @relation(fields: [payrollRunId], references: [id])
+  employeeId   Int
+  employee     Employee   @relation(fields: [employeeId], references: [id])
+
+  // salary structure breakdown (earnings: basic/hra/special; deductions: pf/pt/tds)
+  annualCtc  Decimal @db.Decimal(14, 2)
+  gross      Decimal @db.Decimal(14, 2)
+  basic      Decimal @db.Decimal(14, 2)
+  hra        Decimal @db.Decimal(14, 2)
+  special    Decimal @db.Decimal(14, 2)
+  pf         Decimal @db.Decimal(14, 2)
+  pt         Decimal @db.Decimal(14, 2)
+  tds        Decimal @db.Decimal(14, 2)
+  deductions Decimal @db.Decimal(14, 2)
+  net        Decimal @db.Decimal(14, 2)
+
+  @@unique([payrollRunId, employeeId])
+}
+
+model Holiday {
+  id       Int      @id @default(autoincrement())
+  slug     String   @unique // hol-1
+  name     String
+  date     DateTime
+  national Boolean
+  optional Boolean  @default(false)
+
+  locationLinks HolidayLocation[]
+}
+
+// Join: Holiday <-> Location (many-to-many; all locations when national).
+model HolidayLocation {
+  id Int @id @default(autoincrement())
+
+  holidayId  Int
+  holiday    Holiday  @relation(fields: [holidayId], references: [id])
+  locationId Int
+  location   Location @relation(fields: [locationId], references: [id])
+
+  @@unique([holidayId, locationId])
+}
+
+model EmployeeJourneyEvent {
+  id     Int                 @id @default(autoincrement())
+  date   DateTime
+  title  String
+  detail String
+  type   EmployeeJourneyType
+
+  employeeId Int
+  employee   Employee @relation(fields: [employeeId], references: [id])
+}
+
+model EmpDoc {
+  id       Int         @id @default(autoincrement())
+  name     String
+  kind     EmpDocKind
+  date     DateTime
+  category DocCategory
+
+  employeeId Int
+  employee   Employee @relation(fields: [employeeId], references: [id])
+}
+
+// Document-review approval seed (PENDING_DOCS) feeding the unified approval queue.
+model DocumentApproval {
+  id   Int      @id @default(autoincrement())
+  slug String   @unique // doc-1
+  name String
+  on   DateTime
+  note String
+
+  requestedById Int
+  requestedBy   Employee @relation("DocApprovalRequestedBy", fields: [requestedById], references: [id])
+  approverId    Int
+  approver      Employee @relation("DocApprovalApprover", fields: [approverId], references: [id])
+  entityId      Int
+  entity        Entity   @relation(fields: [entityId], references: [id])
+  locationId    Int
+  location      Location @relation(fields: [locationId], references: [id])
+}
+
+// ============================================================================
+// RECRUITMENT
+// ============================================================================
+
+model Opening {
+  id        Int           @id @default(autoincrement())
+  slug      String        @unique // op-1
+  title     String
+  type      OpeningType
+  status    OpeningStatus
+  positions Int
+  postedOn  DateTime
+
+  departmentId    Int
+  department      Department @relation(fields: [departmentId], references: [id])
+  locationId      Int
+  location        Location   @relation(fields: [locationId], references: [id])
+  hiringManagerId Int
+  hiringManager   Employee   @relation(fields: [hiringManagerId], references: [id])
+
+  candidates Candidate[]
+}
+
+model Candidate {
+  id               Int             @id @default(autoincrement())
+  slug             String          @unique // cand-001
+  name             String
+  email            String
+  phone            String
+  desiredRole      String
+  currentCompany   String
+  location         String // free-text city, not an org Location
+  skills           String[]
+  experienceYears  Float
+  noticePeriodDays Int
+  expectedCtcLakh  Float
+  source           CandidateSource
+  stage            CandidateStage
+  rating           Int
+  appliedOn        DateTime
+  resumeFile       String
+
+  openingId Int?
+  opening   Opening? @relation(fields: [openingId], references: [id])
+}
+
+// ============================================================================
+// TASKS
+// ============================================================================
+
+model FirmTask {
+  id          Int          @id @default(autoincrement())
+  slug        String       @unique // task-001
+  title       String
+  description String
+  status      TaskStatus
+  priority    TaskPriority
+  dueDate     DateTime
+  project     String
+  createdOn   DateTime
+
+  assigneeId  Int
+  assignee    Employee @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdById Int
+  createdBy   Employee @relation("TaskCreator", fields: [createdById], references: [id])
+}
+
+// ============================================================================
+// CALENDAR
+// ============================================================================
+
+model Calendar {
+  id        Int          @id @default(autoincrement())
+  slug      String       @unique // cal-me, cal-finance
+  name      String
+  color     String
+  kind      CalendarKind
+  provider  CalProvider
+  connected Boolean
+
+  events CalEvent[]
+}
+
+model CalEvent {
+  id          Int     @id @default(autoincrement())
+  slug        String  @unique // ev-me-1
+  title       String
+  start       String // "YYYY-MM-DDTHH:mm" or "YYYY-MM-DD"
+  end         String
+  allDay      Boolean
+  location    String?
+  description String?
+
+  calendarId Int
+  calendar   Calendar @relation(fields: [calendarId], references: [id])
+
+  attendees   EventAttendee[]
+  attachments CalAttachment[]
+}
+
+model CalAttachment {
+  id   Int               @id @default(autoincrement())
+  name String
+  kind CalAttachmentKind
+
+  calEventId Int
+  calEvent   CalEvent @relation(fields: [calEventId], references: [id])
+}
+
+// Join: CalEvent <-> Employee (attendees).
+model EventAttendee {
+  id Int @id @default(autoincrement())
+
+  calEventId Int
+  calEvent   CalEvent @relation(fields: [calEventId], references: [id])
+  employeeId Int
+  employee   Employee @relation(fields: [employeeId], references: [id])
+
+  @@unique([calEventId, employeeId])
+}
+
+// ============================================================================
+// VENDORS & PROCUREMENT
+// ============================================================================
+
+model Vendor {
+  id       Int            @id @default(autoincrement())
+  slug     String         @unique // ven-1
+  name     String
+  category VendorCategory
+  contact  String
+  email    String
+  phone    String
+  city     String
+  gstin    String
+  rating   Int
+  msme     Boolean
+  active   Boolean
+
+  purchaseOrders PurchaseOrder[]
+  taxInwardLines TaxInwardLine[]
+}
+
+model PurchaseOrder {
+  id      Int       @id @default(autoincrement())
+  number  String    @unique // PO-2001
+  title   String
+  date    DateTime
+  total   Decimal   @db.Decimal(14, 2)
+  status  POStatus
+  payMode PayMode?
+  paidOn  DateTime?
+
+  vendorId   Int
+  vendor     Vendor   @relation(fields: [vendorId], references: [id])
+  spocId     Int
+  spoc       Employee @relation(fields: [spocId], references: [id])
+  entityId   Int
+  entity     Entity   @relation(fields: [entityId], references: [id])
+  locationId Int
+  location   Location @relation(fields: [locationId], references: [id])
+
+  lines   POLine[]
+  invoice POInvoice?
+}
+
+model POLine {
+  id        Int     @id @default(autoincrement())
+  item      String
+  qty       Float
+  unitPrice Decimal @db.Decimal(14, 2)
+
+  purchaseOrderId Int
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+}
+
+// Vendor bill against a PO (1:1). Approval is keyed apr-invoice-<poId> in the approvals engine.
+model POInvoice {
+  id     Int      @id @default(autoincrement())
+  number String // vendor invoice number, e.g. STF/26-27/0192
+  date   DateTime
+  amount Decimal  @db.Decimal(14, 2)
+
+  purchaseOrderId Int           @unique
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+}
+
+// ============================================================================
+// CRM
+// ============================================================================
+
+model CrmAccount {
+  id        Int           @id @default(autoincrement())
+  slug      String        @unique // acc-001
+  name      String
+  legalName String
+  industry  Industry
+  gstin     String
+  address   String
+  city      String
+  state     String
+  stateCode String
+  email     String
+  phone     String
+  website   String
+  stage     PipelineStage
+  dealValue Decimal       @db.Decimal(14, 2)
+  since     DateTime
+
+  ownerId  Int
+  owner    Employee @relation(fields: [ownerId], references: [id])
+  entityId Int
+  entity   Entity   @relation(fields: [entityId], references: [id])
+
+  contacts      CrmContact[]
+  journeyEvents CrmJourneyEvent[]
+  invoices      Invoice[]
+}
+
+model CrmContact {
+  id      Int     @id @default(autoincrement())
+  slug    String  @unique // con-001
+  name    String
+  title   String
+  email   String
+  phone   String
+  primary Boolean
+
+  accountId Int
+  account   CrmAccount @relation(fields: [accountId], references: [id])
+}
+
+model CrmJourneyEvent {
+  id     Int          @id @default(autoincrement())
+  slug   String       @unique // evt-001 (crm)
+  date   DateTime
+  type   CrmEventType
+  title  String
+  detail String
+  seed   Boolean      @default(false)
+
+  accountId Int
+  account   CrmAccount @relation(fields: [accountId], references: [id])
+  authorId  Int
+  author    Employee   @relation(fields: [authorId], references: [id])
+
+  tags CrmEventTag[]
+}
+
+model CrmTag {
+  id      Int           @id @default(autoincrement())
+  slug    String        @unique // hot, champion, ...
+  label   String
+  variant CrmTagVariant
+
+  eventTags CrmEventTag[]
+}
+
+// Join: CrmJourneyEvent <-> CrmTag.
+model CrmEventTag {
+  id Int @id @default(autoincrement())
+
+  eventId Int
+  event   CrmJourneyEvent @relation(fields: [eventId], references: [id])
+  tagId   Int
+  tag     CrmTag          @relation(fields: [tagId], references: [id])
+
+  @@unique([eventId, tagId])
+}
+
+// ============================================================================
+// INVOICING (sales / AR)
+// ============================================================================
+
+model Invoice {
+  id            Int           @id @default(autoincrement())
+  number        String        @unique // NXF/26-27/0101
+  date          DateTime
+  dueDate       DateTime
+  status        InvoiceStatus
+  discountType  DiscountType
+  discountValue Float
+  notes         String
+
+  accountId   Int
+  account     CrmAccount @relation(fields: [accountId], references: [id])
+  entityId    Int
+  entity      Entity     @relation(fields: [entityId], references: [id])
+  signatoryId Int
+  signatory   Employee   @relation(fields: [signatoryId], references: [id])
+
+  // optional bill-to override (overrides this invoice only, not the CRM record)
+  billToName    String?
+  billToAddress String?
+  billToGstin   String?
+
+  lines InvoiceLine[]
+}
+
+model InvoiceLine {
+  id      Int     @id @default(autoincrement())
+  desc    String
+  hsn     String
+  qty     Float
+  rate    Decimal @db.Decimal(14, 2)
+  gstRate Float
+
+  invoiceId Int
+  invoice   Invoice @relation(fields: [invoiceId], references: [id])
+  itemId    Int? // finished-good SKU for stock dispatch
+  item      Item?   @relation(fields: [itemId], references: [id])
+}
+
+// ============================================================================
+// BANKING
+// ============================================================================
+
+model BankAccount {
+  id       Int     @id @default(autoincrement())
+  slug     String  @unique // bank-foods-hdfc
+  bankName String
+  number   String
+  ifsc     String
+  currency String // INR / SGD
+  opening  Decimal @db.Decimal(14, 2)
+
+  entityId  Int
+  entity    Entity  @relation(fields: [entityId], references: [id])
+  accountId Int
+  account   Account @relation(fields: [accountId], references: [id]) // COA cash/bank account
+
+  matches     BankReconMatch[]
+  bookedLines BankBookedLine[]
+}
+
+// Persisted reconciliation match: statement line <-> book (ledger) line.
+// Book/statement lines are generated deterministically, so refs are stored as strings.
+model BankReconMatch {
+  id      Int    @id @default(autoincrement())
+  stmtRef String
+  bookRef String
+
+  bankAccountId Int
+  bankAccount   BankAccount @relation(fields: [bankAccountId], references: [id])
+
+  @@unique([bankAccountId, stmtRef])
+}
+
+// Bank-only statement line that has been "booked" into the ledger.
+model BankBookedLine {
+  id      Int    @id @default(autoincrement())
+  stmtRef String
+
+  bankAccountId Int
+  bankAccount   BankAccount @relation(fields: [bankAccountId], references: [id])
+
+  @@unique([bankAccountId, stmtRef])
+}
+
+// ============================================================================
+// INVENTORY
+// ============================================================================
+
+model Item {
+  id            Int          @id @default(autoincrement())
+  slug          String       @unique // rm-wheat
+  code          String       @unique // RM-WHT
+  name          String
+  category      ItemCategory
+  uom           Uom
+  rate          Decimal      @db.Decimal(14, 2) // standard valuation rate
+  hsn           String
+  reorderLevel  Float
+  shelfLifeDays Int?
+
+  primaryLocationId Int
+  primaryLocation   Location @relation(fields: [primaryLocationId], references: [id])
+
+  movements      Movement[]
+  invoiceLines   InvoiceLine[]
+  bomAsOutput    BomComponent[] @relation("BomOutput")
+  bomAsComponent BomComponent[] @relation("BomComponent")
+}
+
+// Bill of materials line: outputItem consumes qtyPerUnit of componentItem.
+model BomComponent {
+  id         Int   @id @default(autoincrement())
+  qtyPerUnit Float
+
+  outputItemId    Int
+  outputItem      Item @relation("BomOutput", fields: [outputItemId], references: [id])
+  componentItemId Int
+  componentItem   Item @relation("BomComponent", fields: [componentItemId], references: [id])
+
+  @@unique([outputItemId, componentItemId])
+}
+
+// Single signed stock-movement ledger (source of truth for stock on hand).
+model Movement {
+  id     Int          @id @default(autoincrement())
+  slug   String       @unique // mv-open-001
+  date   DateTime
+  type   MovementType
+  qty    Float // signed actual qty (+ in, - out)
+  stdQty Float? // signed standard (BOM-allowed) qty
+  ref    String? // source doc: PO / production run / invoice / transfer / adjustment
+  note   String?
+
+  itemId     Int
+  item       Item      @relation(fields: [itemId], references: [id])
+  locationId Int
+  location   Location  @relation(fields: [locationId], references: [id])
+  byId       Int?
+  by         Employee? @relation(fields: [byId], references: [id])
+}
+
+// ============================================================================
+// TAX & COMPLIANCE
+// ============================================================================
+
+// TDS section master (194C, 194J, ...).
+model TdsSection {
+  id    Int    @id @default(autoincrement())
+  code  String @unique
+  label String
+  rate  Float
+
+  inwardLines TaxInwardLine[]
+}
+
+// HSN/SAC goods & services classification master.
+model GoodsClass {
+  id   Int     @id @default(autoincrement())
+  code String  @unique // HSN or SAC code
+  kind TaxKind
+  rate Float
+  desc String
+}
+
+// Outward (sales / output GST) tax line — one per "sale" business event.
+model TaxOutwardLine {
+  id            Int        @id @default(autoincrement())
+  date          DateTime
+  period        String // YYYY-MM
+  fy            String
+  supplierState String
+  supplierGstin String
+  customerName  String
+  customerGstin String // "" -> B2C
+  placeOfSupply String
+  supplyType    SupplyType
+  nature        TaxNature
+  desc          String
+  hsn           String
+  kind          TaxKind
+  rate          Float
+  taxable       Decimal    @db.Decimal(14, 2)
+  cgst          Decimal    @db.Decimal(14, 2)
+  sgst          Decimal    @db.Decimal(14, 2)
+  igst          Decimal    @db.Decimal(14, 2)
+  tax           Decimal    @db.Decimal(14, 2)
+  gross         Decimal    @db.Decimal(14, 2)
+  tdsReceivable Decimal    @db.Decimal(14, 2)
+
+  sourceEventId Int           @unique
+  sourceEvent   BusinessEvent @relation("EventOutward", fields: [sourceEventId], references: [id])
+  entityId      Int
+  entity        Entity        @relation(fields: [entityId], references: [id])
+  locationId    Int
+  location      Location      @relation(fields: [locationId], references: [id])
+}
+
+// Inward (purchase / input GST + TDS) tax line — one per qualifying "purchase" business event.
+model TaxInwardLine {
+  id            Int       @id @default(autoincrement())
+  date          DateTime
+  period        String
+  fy            String
+  vendorName    String
+  vendorGstin   String
+  vendorPan     String
+  supplierState String
+  msme          Boolean
+  nature        TaxNature
+  desc          String
+  hsn           String
+  kind          TaxKind
+  rate          Float
+  taxable       Decimal   @db.Decimal(14, 2)
+  cgst          Decimal   @db.Decimal(14, 2)
+  sgst          Decimal   @db.Decimal(14, 2)
+  igst          Decimal   @db.Decimal(14, 2)
+  tax           Decimal   @db.Decimal(14, 2)
+  gross         Decimal   @db.Decimal(14, 2)
+  itcEligible   Boolean
+  rcm           Boolean
+  tdsRate       Float
+  tds           Decimal   @db.Decimal(14, 2)
+  netPayable    Decimal   @db.Decimal(14, 2)
+
+  sourceEventId Int           @unique
+  sourceEvent   BusinessEvent @relation("EventInward", fields: [sourceEventId], references: [id])
+  entityId      Int
+  entity        Entity        @relation(fields: [entityId], references: [id])
+  locationId    Int
+  location      Location      @relation(fields: [locationId], references: [id])
+  vendorId      Int
+  vendor        Vendor        @relation(fields: [vendorId], references: [id])
+  tdsSectionId  Int?
+  tdsSection    TdsSection?   @relation(fields: [tdsSectionId], references: [id])
+}
+
+// Maker-checker filing state per (returnKey, period).
+model FilingState {
+  id        Int          @id @default(autoincrement())
+  returnKey ReturnKey
+  period    String // YYYY-MM
+  status    FilingStatus
+  arn       String?
+  filedOn   DateTime?
+
+  preparedById Int?
+  preparedBy   Employee? @relation("FilingPreparedBy", fields: [preparedById], references: [id])
+  reviewedById Int?
+  reviewedBy   Employee? @relation("FilingReviewedBy", fields: [reviewedById], references: [id])
+
+  trail ReviewEvent[]
+
+  @@unique([returnKey, period])
+}
+
+model ReviewEvent {
+  id     Int          @id @default(autoincrement())
+  ts     DateTime
+  action ReviewAction
+  note   String?
+  ref    String?
+
+  filingStateId Int
+  filingState   FilingState @relation(fields: [filingStateId], references: [id])
+  byId          Int
+  by            Employee    @relation(fields: [byId], references: [id])
+}
+
+// Per-document ITC claim/hold flag (keyed by source inward doc id).
+model TaxItcFlag {
+  id      Int     @id @default(autoincrement())
+  docId   String  @unique
+  claimed Boolean
+  held    Boolean
+}
+
+// Per-document TDS-payable deposit state.
+model TdsPayable {
+  id        Int     @id @default(autoincrement())
+  docId     String  @unique
+  deposited Boolean
+  challan   String?
+}
+
+// Per-document TDS-receivable certificate state.
+model TdsReceivable {
+  id        Int     @id @default(autoincrement())
+  docId     String  @unique
+  certified Boolean
+  certNo    String?
+}
+
+// Electronic cash ledger deposit (challan).
+model CashDeposit {
+  id   Int      @id @default(autoincrement())
+  slug String   @unique // cash-seed-1
+  date DateTime
+  ref  String // challan CIN
+  igst Decimal  @db.Decimal(14, 2)
+  cgst Decimal  @db.Decimal(14, 2)
+  sgst Decimal  @db.Decimal(14, 2)
+}
+
+// ============================================================================
+// FIXED ASSETS
+// ============================================================================
+
+model FixedAsset {
+  id              Int           @id @default(autoincrement())
+  tag             String        @unique // FA-0001
+  slug            String        @unique // asset-001
+  name            String
+  category        AssetCategory
+  acquisitionDate DateTime
+  cost            Decimal       @db.Decimal(14, 2)
+  salvage         Decimal       @db.Decimal(14, 2)
+  usefulLifeYears Float
+  method          DepMethod
+  wdvRate         Float?
+  annualBenefit   Decimal       @db.Decimal(14, 2)
+  supplier        String?
+
+  entityId   Int
+  entity     Entity   @relation(fields: [entityId], references: [id])
+  locationId Int
+  location   Location @relation(fields: [locationId], references: [id])
+
+  disposal Disposal?
+}
+
+model Disposal {
+  id       Int      @id @default(autoincrement())
+  date     DateTime
+  proceeds Decimal  @db.Decimal(14, 2)
+
+  assetId Int        @unique
+  asset   FixedAsset @relation(fields: [assetId], references: [id])
+}
+
+// Per-category config: COA account + depreciation defaults.
+model AssetCategoryMeta {
+  id            Int           @id @default(autoincrement())
+  category      AssetCategory @unique
+  defaultLife   Float
+  defaultMethod DepMethod
+
+  accountId Int
+  account   Account @relation(fields: [accountId], references: [id])
+}
+
+// ============================================================================
+// INTERCOMPANY / GROUP
+// ============================================================================
+
+model IcTransaction {
+  id            Int       @id @default(autoincrement())
+  slug          String    @unique // ic-001
+  date          DateTime
+  type          IcType
+  amount        Decimal   @db.Decimal(14, 2) // provider's recorded value
+  counterAmount Decimal?  @db.Decimal(14, 2) // receiver's recorded value
+  memo          String
+  status        IcStatus
+  settledDate   DateTime?
+
+  fromEntityId Int
+  fromEntity   Entity @relation("IcFromEntity", fields: [fromEntityId], references: [id])
+  toEntityId   Int
+  toEntity     Entity @relation("IcToEntity", fields: [toEntityId], references: [id])
+
+  settlement IcSettlement?
+}
+
+// Persisted settled-flag override for an IC transaction.
+model IcSettlement {
+  id      Int     @id @default(autoincrement())
+  settled Boolean
+
+  icTransactionId Int           @unique
+  icTransaction   IcTransaction @relation(fields: [icTransactionId], references: [id])
+}
+
+// Per-IcType config: booking text + elimination buckets.
+model IcTypeMeta {
+  id          Int         @id @default(autoincrement())
+  type        IcType      @unique
+  label       String
+  fromBooking String
+  toBooking   String
+  pnl         IcPnlBucket
+  bs          IcBsBucket
+}
+
+// ============================================================================
+// PLANNING & ANALYSIS
+// ============================================================================
+
+// Global budgeting/forecasting assumptions (singleton).
+model BudgetAssumptions {
+  id             Int            @id @default(autoincrement())
+  revenueGrowth  Float
+  costGrowth     Float
+  forecastMethod ForecastMethod
+}
+
+// One editable budget cell: (entity, FY, account, month) -> value. entity null = all entities.
+model BudgetCell {
+  id       Int     @id @default(autoincrement())
+  fyStart  Int
+  monthIdx Int // 0-11
+  value    Decimal @db.Decimal(14, 2)
+
+  entityId  Int?
+  entity    Entity? @relation(fields: [entityId], references: [id])
+  accountId Int
+  account   Account @relation(fields: [accountId], references: [id])
+
+  @@unique([entityId, fyStart, accountId, monthIdx])
+}
+
+// Living investor business plan narrative + assumptions (singleton).
+model PlanInputs {
+  id              Int    @id @default(autoincrement())
+  companyName     String
+  tagline         String
+  execSummary     String
+  problem         String
+  solution        String
+  targetCustomer  String
+  marketTamCr     Float
+  marketSamCr     Float
+  marketSomCr     Float
+  projectionYears Int
+  revenueCagr     Float
+  targetCostRatio Float
+  fundingAskCr    Float
+
+  useOfFunds UseOfFund[]
+  milestones Milestone[]
+}
+
+model UseOfFund {
+  id    Int    @id @default(autoincrement())
+  label String
+  pct   Float
+
+  planInputsId Int
+  planInputs   PlanInputs @relation(fields: [planInputsId], references: [id])
+}
+
+model Milestone {
+  id    Int    @id @default(autoincrement())
+  when  String
+  label String
+
+  planInputsId Int
+  planInputs   PlanInputs @relation(fields: [planInputsId], references: [id])
+}

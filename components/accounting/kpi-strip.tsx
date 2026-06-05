@@ -1,0 +1,125 @@
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import { ArrowUpRight, RotateCw } from "lucide-react";
+import { Money } from "@/components/ui/money";
+import { cn } from "@/lib/utils";
+
+export interface KpiDetail {
+  label: string;
+  value?: number;
+  hint?: string;
+}
+
+export interface Kpi {
+  label: string;
+  value: number;
+  sub?: string;
+  colored?: boolean;
+  /** Redirect target — turns the card into a drill-through link. */
+  href?: string;
+  /** Breakdown rows — turns the card into a flip card revealing the detail. */
+  detail?: KpiDetail[];
+  /** Heading shown on the flip side. Defaults to "Breakdown". */
+  detailTitle?: string;
+}
+
+export function KpiStrip({ items }: { items: Kpi[] }) {
+  return (
+    <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {items.map((k) => (
+        <KpiCard key={k.label} k={k} />
+      ))}
+    </div>
+  );
+}
+
+function Face({ k }: { k: Kpi }) {
+  return (
+    <>
+      <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+        {k.label}
+        {k.href && <ArrowUpRight className="size-3 opacity-0 transition-opacity group-hover:opacity-70" />}
+        {k.detail && <RotateCw className="size-3 opacity-0 transition-opacity group-hover:opacity-70" />}
+      </p>
+      <p className={cn("mt-1 text-xl font-bold tracking-tight", k.colored && k.value < 0 && "text-danger")}>
+        <Money value={k.value} compact />
+      </p>
+      {k.sub && <p className="mt-0.5 text-xs text-muted-foreground">{k.sub}</p>}
+    </>
+  );
+}
+
+const SHELL = "rounded-lg border bg-card p-4 shadow-sm transition-colors";
+
+function KpiCard({ k }: { k: Kpi }) {
+  // Flip card — reveals a breakdown on the back face.
+  if (k.detail && k.detail.length > 0) {
+    return (
+      <div className="group [perspective:1200px]">
+        <Flip k={k} />
+      </div>
+    );
+  }
+  // Plain redirect card.
+  if (k.href) {
+    return (
+      <Link href={k.href} className={cn(SHELL, "group block hover:border-primary/40 hover:bg-accent/40")}>
+        <Face k={k} />
+      </Link>
+    );
+  }
+  // Static card (unchanged behaviour).
+  return (
+    <div className={SHELL}>
+      <Face k={k} />
+    </div>
+  );
+}
+
+function Flip({ k }: { k: Kpi }) {
+  const [flipped, setFlipped] = React.useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => setFlipped((f) => !f)}
+      className="relative block h-[104px] w-full text-left [transform-style:preserve-3d]"
+      aria-label={`${k.label} — show breakdown`}
+    >
+      <span
+        className={cn(
+          "absolute inset-0 transition-transform duration-500 [transform-style:preserve-3d]",
+          flipped && "[transform:rotateY(180deg)]",
+        )}
+      >
+        <span className={cn(SHELL, "absolute inset-0 block [backface-visibility:hidden] hover:border-primary/40")}>
+          <Face k={k} />
+        </span>
+        <span
+          className={cn(
+            SHELL,
+            "absolute inset-0 block overflow-hidden [backface-visibility:hidden] [transform:rotateY(180deg)]",
+          )}
+        >
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            {k.detailTitle ?? "Breakdown"}
+          </p>
+          <div className="space-y-0.5">
+            {k.detail!.slice(0, 4).map((d) => (
+              <div key={d.label} className="flex items-center justify-between gap-2 text-xs">
+                <span className="truncate text-muted-foreground">{d.label}</span>
+                {d.value !== undefined && (
+                  <span className="tabular font-medium">
+                    <Money value={d.value} compact />
+                  </span>
+                )}
+                {d.hint && d.value === undefined && <span className="font-medium">{d.hint}</span>}
+              </div>
+            ))}
+          </div>
+        </span>
+      </span>
+    </button>
+  );
+}

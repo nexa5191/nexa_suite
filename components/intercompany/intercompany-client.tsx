@@ -1,0 +1,237 @@
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import { Plus, X, ArrowRight, Layers, CheckCircle2, AlertTriangle, Link2 } from "lucide-react";
+import { PageHeader } from "@/components/shell/page-header";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Select, Input } from "@/components/ui/input";
+import { Money } from "@/components/ui/money";
+import { usePrefs } from "@/components/prefs/prefs-provider";
+import { cn, formatDate } from "@/lib/utils";
+import { ENTITIES } from "@/lib/accounting/org";
+import {
+  allIc,
+  loadCreatedIc,
+  saveCreatedIc,
+  loadSettlements,
+  saveSettlements,
+  isSettled,
+  icVariance,
+  entityName,
+  nextIcId,
+  IC_TYPE_META,
+  type IcTransaction,
+  type IcType,
+} from "@/lib/intercompany/intercompany";
+
+const TODAY = new Date().toISOString().slice(0, 10);
+const TYPES = Object.keys(IC_TYPE_META) as IcType[];
+
+export function IntercompanyClient() {
+  const prefs = usePrefs();
+  const [created, setCreated] = React.useState<IcTransaction[]>([]);
+  const [settled, setSettled] = React.useState<Record<string, boolean>>({});
+  const [adding, setAdding] = React.useState(false);
+  const [typeFilter, setTypeFilter] = React.useState<"all" | IcType>("all");
+
+  React.useEffect(() => {
+    setCreated(loadCreatedIc());
+    setSettled(loadSettlements());
+  }, []);
+
+  const rows = allIc(created).filter((t) => {
+    if (prefs.entityId !== "all" && t.fromEntityId !== prefs.entityId && t.toEntityId !== prefs.entityId) return false;
+    if (typeFilter !== "all" && t.type !== typeFilter) return false;
+    return true;
+  });
+
+  const volume = rows.reduce((s, t) => s + t.amount, 0);
+  const openBal = rows.filter((t) => !isSettled(t, settled)).reduce((s, t) => s + t.amount, 0);
+  const loansOut = rows.filter((t) => t.type === "loan" && !isSettled(t, settled)).reduce((s, t) => s + t.amount, 0);
+  const variances = rows.filter((t) => icVariance(t) !== 0);
+
+  function toggleSettle(t: IcTransaction) {
+    setSettled((prev) => {
+      const next = { ...prev, [t.id]: !isSettled(t, prev) };
+      saveSettlements(next);
+      return next;
+    });
+  }
+  function addTxn(t: IcTransaction) {
+    setCreated((prev) => {
+      const next = [...prev, t];
+      saveCreatedIc(next);
+      return next;
+    });
+    setAdding(false);
+  }
+
+  return (
+    <>
+      <Link href="/group" className="mb-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+        <Layers className="size-4" /> Group reporting
+      </Link>
+      <PageHeader
+        title="Inter-company Transactions"
+        subtitle="Related-party dealings between the group entities, with two-sided reconciliation. These eliminate on consolidation."
+        actions={
+          <Button onClick={() => setAdding((v) => !v)}>
+            {adding ? <X className="size-4" /> : <Plus className="size-4" />} {adding ? "Cancel" : "New transaction"}
+          </Button>
+        }
+      />
+
+      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Kpi label="Total IC volume" value={volume} />
+        <Kpi label="Open balances" value={openBal} accent />
+        <Kpi label="Loans outstanding" value={loansOut} />
+        <Kpi label="Reconciliation variances" value={variances.reduce((s, t) => s + Math.abs(icVariance(t)), 0)} highlight={variances.length > 0} count={variances.length} />
+      </div>
+
+      {adding && <AddIcForm created={created} onAdd={addTxn} />}
+
+      <div className="mb-4 flex flex-wrap gap-1">
+        {(["all", ...TYPES] as const).map((k) => (
+          <button
+            key={k}
+            onClick={() => setTypeFilter(k)}
+            className={cn(
+              "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+              typeFilter === k ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-accent",
+            )}
+          >
+            {k === "all" ? "All types" : IC_TYPE_META[k].label}
+          </button>
+        ))}
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto scrollbar-thin">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-muted/40 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                <th className="px-4 py-3 font-medium">Date</th>
+                <th className="px-4 py-3 font-medium">Type</th>
+                <th className="px-4 py-3 font-medium">Counterparties</th>
+                <th className="px-4 py-3 font-medium">Booking (from / to)</th>
+                <th className="px-4 py-3 text-right font-medium">Amount</th>
+                <th className="px-4 py-3 text-right font-medium">Counterparty</th>
+                <th className="px-4 py-3 font-medium">Reconciliation</th>
+                <th className="px-4 py-3 text-right font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.length === 0 && (
+                <tr><td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">No inter-company transactions in this view.</td></tr>
+              )}
+              {rows.map((t) => {
+                const m = IC_TYPE_META[t.type];
+                const variance = icVariance(t);
+                const counter = t.counterAmount ?? t.amount;
+                const done = isSettled(t, settled);
+                return (
+                  <tr key={t.id} className="border-b align-top transition-colors last:border-0 hover:bg-accent/40">
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{formatDate(t.date)}</td>
+                    <td className="px-4 py-3"><Badge variant="default">{m.label}</Badge></td>
+                    <td className="px-4 py-3">
+                      <p className="flex items-center gap-1.5 text-sm font-medium">
+                        {entityName(t.fromEntityId)} <ArrowRight className="size-3 text-muted-foreground" /> {entityName(t.toEntityId)}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">{t.memo}</p>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      <span className="text-foreground">{m.fromBooking}</span><br />{m.toBooking}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular font-semibold"><Money value={t.amount} /></td>
+                    <td className="px-4 py-3 text-right tabular text-muted-foreground"><Money value={counter} /></td>
+                    <td className="px-4 py-3">
+                      {variance === 0 ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-success"><Link2 className="size-3.5" /> Matched</span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-xs text-danger">
+                          <AlertTriangle className="size-3.5" /> Variance <Money value={variance} className="font-medium" bracketNegatives />
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button onClick={() => toggleSettle(t)} className="inline-flex">
+                        {done ? <Badge variant="success" className="cursor-pointer"><CheckCircle2 className="size-3" /> Settled</Badge> : <Badge variant="warning" className="cursor-pointer">Open</Badge>}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </>
+  );
+}
+
+function AddIcForm({ created, onAdd }: { created: IcTransaction[]; onAdd: (t: IcTransaction) => void }) {
+  const [type, setType] = React.useState<IcType>("sale");
+  const [from, setFrom] = React.useState(ENTITIES[0].id);
+  const [to, setTo] = React.useState(ENTITIES[1].id);
+  const [amount, setAmount] = React.useState("");
+  const [date, setDate] = React.useState(TODAY);
+  const [memo, setMemo] = React.useState("");
+  const num = (s: string) => parseFloat(s) || 0;
+  const valid = from !== to && num(amount) > 0 && memo;
+
+  return (
+    <Card className="mb-4 p-4">
+      <h3 className="mb-3 text-sm font-semibold">New inter-company transaction</h3>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <L label="Type">
+          <Select value={type} onChange={(e) => setType(e.target.value as IcType)}>
+            {TYPES.map((t) => <option key={t} value={t}>{IC_TYPE_META[t].label}</option>)}
+          </Select>
+        </L>
+        <L label="From (provider)">
+          <Select value={from} onChange={(e) => setFrom(e.target.value)}>
+            {ENTITIES.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+          </Select>
+        </L>
+        <L label="To (receiver)">
+          <Select value={to} onChange={(e) => setTo(e.target.value)}>
+            {ENTITIES.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+          </Select>
+        </L>
+        <L label="Amount (₹)"><Input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" placeholder="0" /></L>
+        <L label="Date"><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></L>
+        <L label="Memo"><Input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="description" /></L>
+      </div>
+      {from === to && <p className="mt-2 text-xs text-danger">Provider and receiver must be different entities.</p>}
+      <div className="mt-3 flex justify-end">
+        <Button disabled={!valid} onClick={() => onAdd({ id: nextIcId(created), date, type, fromEntityId: from, toEntityId: to, amount: num(amount), memo, status: "open" })}>
+          <Plus className="size-4" /> Add transaction
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
+function L({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function Kpi({ label, value, accent, highlight, count }: { label: string; value: number; accent?: boolean; highlight?: boolean; count?: number }) {
+  return (
+    <Card className={cn("p-4", accent && "border-primary/40", highlight && "border-danger/40")}>
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={cn("mt-1 text-2xl font-bold tabular", accent && "text-primary", highlight && "text-danger")}>
+        <Money value={value} compact />
+        {count != null && count > 0 && <span className="ml-1.5 text-sm font-normal text-muted-foreground">({count})</span>}
+      </p>
+    </Card>
+  );
+}
