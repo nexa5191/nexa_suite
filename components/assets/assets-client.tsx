@@ -213,7 +213,12 @@ export function AssetsClient() {
                 const ap = appraise(a);
                 const nbv = netBookValue(a, TODAY);
                 return (
-                  <tr key={a.id} className="group border-b align-top transition-colors last:border-0 hover:bg-accent/40">
+                  <tr
+                    key={a.id}
+                    data-split-href={`/assets/${a.id}`}
+                    title="Ctrl/⌘-click to open in split screen"
+                    className="group border-b align-top transition-colors last:border-0 hover:bg-accent/40"
+                  >
                     <td className="px-4 py-3">
                       <p className="flex items-center gap-1.5 font-medium">
                         <Building2 className="size-3.5 text-muted-foreground" /> {a.name}

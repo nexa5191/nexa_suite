@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { Search, CornerDownLeft, Keyboard, X } from "lucide-react";
 import { NAV_GROUPS, SECONDARY_NAV, type NavItem } from "./nav-items";
 import { useAccess } from "@/components/access/access-provider";
+import { useSplit } from "@/components/shell/split/split-provider";
 import { cn } from "@/lib/utils";
 import {
   PALETTE_CHORD,
@@ -43,6 +44,7 @@ export function CommandPalette() {
   const router = useRouter();
   const pathname = usePathname();
   const { can, currentUserId } = useAccess();
+  const { openInSplit } = useSplit();
 
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
@@ -111,7 +113,7 @@ export function CommandPalette() {
   }, []);
 
   const go = React.useCallback(
-    (cmd: Command | undefined) => {
+    (cmd: Command | undefined, split = false) => {
       if (!cmd) return;
       // Bump into recents (most-recent first, de-duped, capped).
       setRecent((prev) => {
@@ -120,9 +122,10 @@ export function CommandPalette() {
         return next;
       });
       close();
-      router.push(cmd.href);
+      if (split) openInSplit(cmd.href, pathname);
+      else router.push(cmd.href);
     },
-    [router, close, currentUserId],
+    [router, close, currentUserId, openInSplit, pathname],
   );
 
   const persistBindings = React.useCallback(
@@ -203,7 +206,7 @@ export function CommandPalette() {
       setActive((a) => Math.max(a - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      go(results[active]);
+      go(results[active], e.ctrlKey || e.metaKey);
     }
   };
 
@@ -258,7 +261,7 @@ export function CommandPalette() {
                 key={cmd.key}
                 data-idx={i}
                 onMouseEnter={() => setActive(i)}
-                onClick={() => go(cmd)}
+                onClick={(e) => go(cmd, e.ctrlKey || e.metaKey)}
                 className={cn(
                   "mx-1.5 flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm",
                   isActive ? "bg-accent text-foreground" : "text-muted-foreground",
@@ -320,6 +323,7 @@ export function CommandPalette() {
             <CornerDownLeft className="size-3" /> open
           </span>
           <span>↑↓ navigate</span>
+          <span>{formatChord("Mod+Enter")} split</span>
           <span className="flex items-center gap-1">
             <Keyboard className="size-3" /> assign shortcut
           </span>

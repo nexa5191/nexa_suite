@@ -7,6 +7,7 @@ import { Topbar } from "./topbar";
 import { MimicBanner } from "@/components/access/mimic-banner";
 import { ModuleGuard } from "@/components/access/module-guard";
 import { SplitView } from "./split/split-view";
+import { SplitClickCatcher } from "./split/split-click";
 import { CommandPalette } from "./command-palette";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -21,6 +22,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Topbar />
         <main className="mx-auto w-full max-w-[1400px] px-4 py-6">{guarded}</main>
         <SplitView />
+        <SplitClickCatcher />
         <CommandPalette />
       </div>
     );
