@@ -41,6 +41,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {nav === "right" && <Sidebar side="right" />}
       </div>
       <SplitView />
+      <SplitClickCatcher />
       <CommandPalette />
     </div>
   );
