@@ -1,13 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { Landmark, Link2, Unlink, Wand2, CheckCircle2, Plus, ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { Landmark, Link2, Unlink, Wand2, CheckCircle2, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/input";
 import { Money } from "@/components/ui/money";
+import { VoucherButton } from "@/components/accounting/voucher-button";
 import { cn, formatDate } from "@/lib/utils";
 import { monthLabel } from "@/lib/tax/gst";
 import {
@@ -22,7 +23,7 @@ import {
   type MatchStore,
   type BookedStore,
 } from "@/lib/banking/banking";
-import { autoMatch, reconcile, type MatchMap } from "@/lib/banking/reconcile";
+import { autoMatch, reconcile, suggestionsFor, type MatchMap } from "@/lib/banking/reconcile";
 
 const MONTHS = ["2026-05", "2026-04", "2026-03", "2026-02", "2026-01", "2025-12"];
 function rangeOf(m: string) {
@@ -37,6 +38,7 @@ export function BankingClient() {
   const [matchStore, setMatchStore] = React.useState<MatchStore>({});
   const [bookedStore, setBookedStore] = React.useState<BookedStore>({});
   const [selBook, setSelBook] = React.useState<string | null>(null);
+  const [dismissed, setDismissed] = React.useState<Set<string>>(new Set());
 
   React.useEffect(() => {
     setMatchStore(loadMatches());
@@ -60,6 +62,7 @@ export function BankingClient() {
       return next;
     });
     setSelBook(null);
+    setDismissed(new Set());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
@@ -70,6 +73,20 @@ export function BankingClient() {
   const matchedBookIds = new Set(Object.values(matches));
   const matchedStmtIds = new Set(Object.keys(matches));
   const bookedSet = new Set(booked);
+  const bookById = React.useMemo(() => new Map(book.map((b) => [b.id, b])), [book]);
+
+  // Amount/date-only proposals (UTR-verified ones are already auto-committed),
+  // minus any the user waved off this session.
+  const suggestions = React.useMemo(
+    () => suggestionsFor(book, stmt, matches).filter((p) => !dismissed.has(p.stmtId)),
+    [book, stmt, matches, dismissed],
+  );
+  /** A committed match is UTR-verified when book & statement refs agree. */
+  const isUtrVerified = (stmtId: string) => {
+    const b = bookById.get(matches[stmtId]);
+    const s = stmt.find((x) => x.id === stmtId);
+    return !!b && !!s && !!s.ref && s.ref === b.ref;
+  };
 
   function setMatches(m: MatchMap) {
     setMatchStore((prev) => {
@@ -81,6 +98,17 @@ export function BankingClient() {
   function runAuto() {
     setMatches(autoMatch(book, stmt, matches));
     setSelBook(null);
+  }
+  function acceptSuggestion(stmtId: string, bookId: string) {
+    setMatches({ ...matches, [stmtId]: bookId });
+  }
+  function acceptAllSuggestions() {
+    const m = { ...matches };
+    for (const s of suggestions) m[s.stmtId] = s.bookId;
+    setMatches(m);
+  }
+  function dismissSuggestion(stmtId: string) {
+    setDismissed((prev) => new Set(prev).add(stmtId));
   }
   function unmatch(stmtId: string) {
     const m = { ...matches };
@@ -111,9 +139,15 @@ export function BankingClient() {
         title="Bank Reconciliation"
         subtitle="Match the books to each bank statement across all entities, then bridge the balances with a reconciliation statement."
         actions={
-          <Select value={month} onChange={(e) => setMonth(e.target.value)} className="h-9 w-40">
-            {MONTHS.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}
-          </Select>
+          <div className="flex flex-wrap items-center gap-2">
+            <VoucherButton type="receipt" label="Receipt" variant="outline" size="sm" />
+            <VoucherButton type="payment" label="Payment" variant="outline" size="sm" />
+            <VoucherButton type="contra" label="Contra" variant="outline" size="sm" />
+            <VoucherButton type="bank" label="Bank" variant="outline" size="sm" />
+            <Select value={month} onChange={(e) => setMonth(e.target.value)} className="h-9 w-40">
+              {MONTHS.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}
+            </Select>
+          </div>
         }
       />
 
@@ -154,7 +188,7 @@ export function BankingClient() {
         <Kpi label="Balance per books" value={rec.bookBalance} />
         <Kpi label="Balance per statement" value={rec.statementBalance} />
         <Kpi label="Reconciling items" value={rec.unmatchedBook.length + rec.unmatchedStmt.length} plain accent />
-        <div className="flex items-center justify-center rounded-lg border bg-card p-4 shadow-sm">
+        <div className="flex items-center justify-center rounded-lg border bg-card px-4 py-2.5 shadow-sm">
           <Button variant="outline" onClick={runAuto} className="w-full">
             <Wand2 className="size-4" /> Auto-match
           </Button>
@@ -166,6 +200,36 @@ export function BankingClient() {
           <span>Selected book line: <strong>{selBookLine.memo}</strong> · <Money value={selBookLine.amount} /> — now click a matching statement line.</span>
           <Button size="sm" variant="ghost" onClick={() => setSelBook(null)}>Clear</Button>
         </div>
+      )}
+
+      {suggestions.length > 0 && (
+        <Card className="mb-4 border-primary/40 bg-primary/5 p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="flex items-center gap-1.5 text-sm font-semibold">
+              <Sparkles className="size-4 text-primary" /> {suggestions.length} suggested match{suggestions.length > 1 ? "es" : ""}
+              <span className="font-normal text-muted-foreground">— amount lines up but no UTR to confirm</span>
+            </h3>
+            <Button size="sm" onClick={acceptAllSuggestions}>Accept all</Button>
+          </div>
+          <div className="space-y-1.5">
+            {suggestions.map((sg) => {
+              const b = bookById.get(sg.bookId);
+              const s = stmt.find((x) => x.id === sg.stmtId);
+              if (!b || !s) return null;
+              return (
+                <div key={sg.stmtId} className="flex items-center gap-3 rounded-md border bg-card px-3 py-2 text-sm">
+                  <span className="flex-1 truncate">
+                    <strong>{s.description}</strong> <Money value={s.amount} className="text-muted-foreground" /> · {formatDate(s.date)}
+                    <span className="ml-1 text-[11px] text-muted-foreground">↔ {b.memo}</span>
+                  </span>
+                  <Badge variant="warning" className="text-[10px]">{sg.reason}</Badge>
+                  <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => acceptSuggestion(sg.stmtId, sg.bookId)}>Accept</Button>
+                  <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => dismissSuggestion(sg.stmtId)}>Dismiss</Button>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
       )}
 
       {/* matching workspace */}
@@ -221,7 +285,12 @@ export function BankingClient() {
                           <Plus className="size-3" /> Book
                         </Button>
                       ) : matched ? (
-                        <span className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground"><Unlink className="size-3" /> Unmatch</span>
+                        <span className="inline-flex items-center gap-1">
+                          {isUtrVerified(s.id) && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] text-success" title="Matched on bank UTR"><ShieldCheck className="size-3" /> UTR</span>
+                          )}
+                          <span className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground"><Unlink className="size-3" /> Unmatch</span>
+                        </span>
                       ) : isBooked ? (
                         <Badge variant="success" className="text-[10px]">Booked</Badge>
                       ) : null

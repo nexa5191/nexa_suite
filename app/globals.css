@@ -122,6 +122,47 @@
   }
 }
 
+/* Embed mode — applied to <html> when the page is rendered inside a
+   split-screen iframe pane. Strips the shell chrome so the pane shows only
+   the module content, and lets it use the full pane width. */
+@layer utilities {
+  html.embed [data-chrome] {
+    display: none !important;
+  }
+  html.embed main {
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding: 0.875rem !important;
+  }
+}
+
+/* Print — strip the app chrome and any UI marked data-no-print so a report
+   prints (or "Save as PDF"s) as a clean document. */
+@media print {
+  [data-chrome],
+  [data-no-print] {
+    display: none !important;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  main {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  /* Keep statement rows and cards from splitting across page breaks. */
+  tr,
+  [data-print-keep] {
+    break-inside: avoid;
+  }
+  @page {
+    margin: 14mm;
+  }
+}
+
 @layer utilities {
   .tabular {
     font-variant-numeric: tabular-nums;

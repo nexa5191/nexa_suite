@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Play, FileText, X, Check } from "lucide-react";
+import { Play, FileText, X, Check, BookCheck } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Money } from "@/components/ui/money";
 import { cn, formatDate } from "@/lib/utils";
 import { departmentName, employeeName } from "@/lib/hr/employees";
+import { useJournal } from "@/components/accounting/journal-provider";
+import { planPayrollGl } from "@/lib/hr/payroll-posting";
 import {
   PAYROLL_RUNS, runMembers, runTotals, salaryStructure, type RunStatus, type Payslip,
 } from "@/lib/hr/payroll";
@@ -89,6 +91,7 @@ export function PayrollClient() {
           <Summary label="Deductions" value={totals.deductions} />
           <Summary label="Net payout" value={totals.net} highlight />
         </div>
+        <PayrollGlControl month={month} processed={status === "paid"} />
       </Card>
 
       {/* Members */}
@@ -133,6 +136,41 @@ export function PayrollClient() {
 
       {slip && <PayslipModal slip={slip} onClose={() => setSlip(null)} />}
     </>
+  );
+}
+
+// Posts the payroll accrual journal (Dr Salaries / Cr TDS + Salaries Payable),
+// grouped per entity+location, with already-posted detection.
+function PayrollGlControl({ month, processed }: { month: string; processed: boolean }) {
+  const { entries, postMany } = useJournal();
+  const [justPosted, setJustPosted] = React.useState<number | null>(null);
+  const plan = React.useMemo(() => planPayrollGl(month, entries), [month, entries]);
+  React.useEffect(() => setJustPosted(null), [month]);
+
+  const allPosted = plan.groups.length > 0 && plan.drafts.length === 0;
+
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-2 border-t pt-3 text-sm">
+      <BookCheck className="size-4 text-muted-foreground" />
+      <span className="font-medium">Accrual to GL</span>
+      {!processed ? (
+        <span className="text-xs text-muted-foreground">Run payroll first to post its journal.</span>
+      ) : allPosted ? (
+        <Badge variant="success"><Check className="size-3" /> Posted to ledger</Badge>
+      ) : (
+        <>
+          <span className="text-muted-foreground">
+            Dr Salaries <Money value={plan.total} compact /> / Cr TDS Payable + Salaries Payable
+          </span>
+          <Button size="sm" className="ml-auto" onClick={() => setJustPosted(postMany(plan.drafts).posted)}>
+            <BookCheck className="size-4" /> Post to GL
+          </Button>
+        </>
+      )}
+      {justPosted !== null && (
+        <span className="flex items-center gap-1 text-xs text-success"><Check className="size-3.5" /> Posted {justPosted} voucher{justPosted === 1 ? "" : "s"}.</span>
+      )}
+    </div>
   );
 }
 

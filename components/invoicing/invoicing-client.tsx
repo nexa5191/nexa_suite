@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Plus, Receipt, AlertTriangle, RotateCcw } from "lucide-react";
+import { Plus, Receipt, AlertTriangle, RotateCcw, Wallet, FileDown } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Drawer } from "@/components/ui/modal";
 import { Card } from "@/components/ui/card";
@@ -10,9 +10,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/input";
 import { Money } from "@/components/ui/money";
+import { VoucherButton } from "@/components/accounting/voucher-button";
+import { ReceivePayment } from "./receive-payment";
 import { cn, formatDate } from "@/lib/utils";
 import { accountById } from "@/lib/crm";
 import { entityById } from "@/lib/accounting/org";
+import { useAccess } from "@/components/access/access-provider";
+import { ServicesInvoicingClient } from "@/components/services-billing/services-invoicing-client";
 import {
   allInvoices,
   invoiceTotal,
@@ -24,21 +28,40 @@ import {
   loadCreatedInvoices,
   loadStatusOverrides,
   saveStatusOverrides,
+  loadInvoicePayments,
+  outstandingOf,
+  amountInWords,
   INVOICE_STATUSES,
   type Invoice,
   type InvoiceStatus,
 } from "@/lib/invoicing";
 
+// When the Professional Services sector is enabled (the "timesheets" function
+// is provisioned & role-granted), Invoicing flips to the time-based format.
+// Otherwise it stays the product/GST invoice below. One switch, no shared state.
 export function InvoicingClient() {
+  const { can } = useAccess();
+  if (can("timesheets")) return <ServicesInvoicingClient />;
+  return <ProductInvoicingClient />;
+}
+
+function ProductInvoicingClient() {
   const [created, setCreated] = React.useState<Invoice[]>([]);
   const [overrides, setOverrides] = React.useState<Record<string, InvoiceStatus>>({});
+  const [payments, setPayments] = React.useState<Record<string, number>>({});
   const [filter, setFilter] = React.useState<"all" | InvoiceStatus>("all");
   const [openId, setOpenId] = React.useState<string | null>(null);
+  const [receiveOpen, setReceiveOpen] = React.useState(false);
 
-  React.useEffect(() => {
+  const refresh = React.useCallback(() => {
     setCreated(loadCreatedInvoices());
     setOverrides(loadStatusOverrides());
+    setPayments(loadInvoicePayments());
   }, []);
+
+  React.useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   function setStatus(inv: Invoice, status: InvoiceStatus) {
     setOverrides((prev) => {
@@ -66,14 +89,16 @@ export function InvoicingClient() {
 
   const outstanding = invoices
     .filter((r) => r.status === "sent" || r.status === "overdue" || r.status === "partial")
-    .reduce((s, r) => s + r.total, 0);
-  const overdueAmt = invoices.filter((r) => r.status === "overdue").reduce((s, r) => s + r.total, 0);
+    .reduce((s, r) => s + outstandingOf(r.inv, payments), 0);
+  const overdueAmt = invoices
+    .filter((r) => r.status === "overdue")
+    .reduce((s, r) => s + outstandingOf(r.inv, payments), 0);
   const paidAmt = invoices.filter((r) => r.status === "paid").reduce((s, r) => s + r.total, 0);
 
   // Outstanding broken down by ageing status — drives the flip card.
   const outstandingBreakdown = (["sent", "partial", "overdue"] as InvoiceStatus[]).map((k) => ({
     label: statusMeta(k).label,
-    value: invoices.filter((r) => r.status === k).reduce((s, r) => s + r.total, 0),
+    value: invoices.filter((r) => r.status === k).reduce((s, r) => s + outstandingOf(r.inv, payments), 0),
   }));
 
   const open = openId ? invoices.find((r) => r.inv.id === openId) ?? null : null;
@@ -84,11 +109,18 @@ export function InvoicingClient() {
         title="Invoicing"
         subtitle="GST-compliant accounts-receivable invoices billed to CRM accounts."
         actions={
-          <Link href="/invoicing/new">
-            <Button>
-              <Plus className="size-4" /> New invoice
+          <div className="flex flex-wrap gap-2">
+            <VoucherButton type="credit_note" label="Credit note" variant="outline" />
+            <Button variant="outline" onClick={() => setReceiveOpen(true)}>
+              <Wallet className="size-4" /> Receive payment
             </Button>
-          </Link>
+            <VoucherButton type="sales" label="Sales voucher" variant="outline" />
+            <Link href="/invoicing/new">
+              <Button>
+                <Plus className="size-4" /> New invoice
+              </Button>
+            </Link>
+          </div>
         }
       />
 
@@ -200,6 +232,7 @@ export function InvoicingClient() {
       </Card>
 
       <InvoiceDrawer open={open} overridden={open ? open.inv.id in overrides : false} onClose={() => setOpenId(null)} />
+      <ReceivePayment open={receiveOpen} onClose={() => setReceiveOpen(false)} onPosted={refresh} />
     </>
   );
 }
@@ -225,6 +258,23 @@ function InvoiceDrawer({
   const totals = inv ? computeTotals(inv.lines, inv.discountType, inv.discountValue, treatment) : null;
   const meta = open ? statusMeta(open.status) : null;
 
+  async function downloadPdf() {
+    if (!inv || !totals || !lh) return;
+    const { downloadInvoicePdf } = await import("@/lib/pdf/invoice-pdf");
+    downloadInvoicePdf({
+      letterhead: lh,
+      number: inv.number,
+      date: formatDate(inv.date),
+      dueDate: formatDate(inv.dueDate),
+      billTo,
+      treatment,
+      lines: inv.lines,
+      totals,
+      notes: inv.notes,
+      amountWords: amountInWords(totals.total, "INR", "Rupee"),
+    });
+  }
+
   return (
     <Drawer
       open={!!inv}
@@ -232,7 +282,16 @@ function InvoiceDrawer({
       title={inv?.number}
       subtitle={inv ? `${lh?.name} · ${formatDate(inv.date)}` : undefined}
       width="max-w-xl"
-      actions={meta ? <Badge variant={meta.variant}>{meta.label}{overridden ? " (edited)" : ""}</Badge> : undefined}
+      actions={
+        <div className="flex items-center gap-1.5">
+          {inv && (
+            <Button size="sm" variant="outline" onClick={downloadPdf}>
+              <FileDown className="size-4" /> PDF
+            </Button>
+          )}
+          {meta && <Badge variant={meta.variant}>{meta.label}{overridden ? " (edited)" : ""}</Badge>}
+        </div>
+      }
     >
       {inv && totals && (
         <div className="space-y-5">

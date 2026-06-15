@@ -45,6 +45,7 @@ import {
   isLocked,
   submitForReview,
   approveAndFile,
+  canApprove,
   returnForRework,
   reopenFiled,
   loadItc,
@@ -75,6 +76,7 @@ type ReportKey =
   | "gstr9"
   | "tdsPayable"
   | "tdsReceivable"
+  | "msme"
   | "rcm"
   | "recon"
   | "cashLedger"
@@ -83,7 +85,7 @@ type ReportKey =
 
 const GROUPS: { key: string; label: string; reports: ReportKey[] }[] = [
   { key: "gst", label: "GST returns", reports: ["gstr1", "hsn", "gstr2b", "gstr3b", "gstr9"] },
-  { key: "tds", label: "TDS", reports: ["tdsPayable", "tdsReceivable"] },
+  { key: "tds", label: "TDS & MSME", reports: ["tdsPayable", "tdsReceivable", "msme"] },
   { key: "other", label: "RCM & recon", reports: ["rcm", "recon"] },
   { key: "ledger", label: "Ledgers", reports: ["cashLedger", "creditLedger"] },
   { key: "review", label: "Review & lock", reports: ["review"] },
@@ -95,8 +97,9 @@ const REPORT_META: Record<ReportKey, { label: string; blurb: string }> = {
   gstr2b: { label: "GSTR-2B (ITC)", blurb: "Inward supplies from registered vendors — eligible input tax credit." },
   gstr3b: { label: "GSTR-3B", blurb: "Monthly summary — output tax less ITC, with statutory set-off." },
   gstr9: { label: "GSTR-9 (annual)", blurb: "Annual consolidation of outward supplies, ITC and net liability." },
-  tdsPayable: { label: "TDS payable (26Q)", blurb: "TDS deducted on vendor payments — deposit via challan." },
+  tdsPayable: { label: "TDS payable (26Q)", blurb: "TDS deducted on vendor payments — incl. sec.197 lower-deduction certificates." },
   tdsReceivable: { label: "TDS receivable (26AS)", blurb: "TDS withheld by customers on our fees — Form 16A credit." },
+  msme: { label: "MSME vendors", blurb: "Micro & Small vendor dues — 45-day payment rule (MSMED sec.15 / 43B(h))." },
   rcm: { label: "Reverse charge (RCM)", blurb: "Inward supplies on which we self-pay GST, then claim as ITC." },
   recon: { label: "Books vs return", blurb: "Reconcile the books against what's been filed — gap = unfiled." },
   cashLedger: { label: "Electronic cash ledger", blurb: "GST cash deposits via challan & GSTR-3B settlements." },
@@ -334,6 +337,8 @@ export function TaxClient() {
         return renderTdsPayable();
       case "tdsReceivable":
         return renderTdsReceivable();
+      case "msme":
+        return renderMsme();
       case "rcm":
         return renderRcm();
       case "recon":
@@ -367,14 +372,14 @@ export function TaxClient() {
           onExport={() =>
             downloadCsv(
               `gstr1-${periodLabel}`,
-              ["Date", "Customer", "GSTIN", "Type", "Place of supply", "Nature", "HSN", "Rate", "Taxable", "CGST", "SGST", "IGST"],
-              rows.map((r) => [formatDate(r.date), r.customerName, r.customerGstin || "—", r.supplyType, stateName(r.placeOfSupply), r.nature, r.hsn, r.rate, r.taxable, r.cgst, r.sgst, r.igst]),
+              ["Date", "Customer", "GSTIN", "Type", "Place of supply", "Nature", "HSN", "Rate", "Taxable", "CGST", "SGST/UTGST", "IGST"],
+              rows.map((r) => [formatDate(r.date), r.customerName, r.customerGstin || "—", r.supplyType, stateName(r.placeOfSupply), r.nature, r.hsn, r.rate, r.taxable, r.cgst, r.sgst + r.utgst, r.igst]),
             )
           }
         />
         <div className="overflow-x-auto scrollbar-thin">
           <table className="w-full text-sm">
-            <THead cols={["Date", "Customer", "Type", "POS", "HSN", "Rate", "Taxable", "CGST", "SGST", "IGST"]} numFrom={6} />
+            <THead cols={["Date", "Customer", "Type", "POS", "HSN", "Rate", "Taxable", "CGST", "SGST/UTGST", "IGST"]} numFrom={6} />
             <tbody>
               {shown.map((r) => (
                 <tr key={r.id} className="border-b last:border-0 hover:bg-accent/40">
@@ -391,12 +396,12 @@ export function TaxClient() {
                   <td className="px-4 py-2 text-right text-xs">{r.rate}%</td>
                   <Num v={r.taxable} />
                   <Num v={r.cgst} />
-                  <Num v={r.sgst} />
+                  <Num v={r.sgst + r.utgst} />
                   <Num v={r.igst} />
                 </tr>
               ))}
             </tbody>
-            <TFoot label="Total" cols={[t.taxable, t.cgst, t.sgst, t.igst]} span={6} />
+            <TFoot label="Total" cols={[t.taxable, t.cgst, t.sgst + t.utgst, t.igst]} span={6} />
           </table>
         </div>
         <ShowMore shown={shown.length} total={rows.length} onMore={() => setLimit((l) => l + 100)} />
@@ -407,16 +412,16 @@ export function TaxClient() {
   // ---- HSN summary ---------------------------------------------------------
   function renderHsn() {
     const groups = hsnSummary(outward);
-    const t = groups.reduce((a, g) => ({ taxable: a.taxable + g.taxable, cgst: a.cgst + g.cgst, sgst: a.sgst + g.sgst, igst: a.igst + g.igst }), { taxable: 0, cgst: 0, sgst: 0, igst: 0 });
+    const t = groups.reduce((a, g) => ({ taxable: a.taxable + g.taxable, cgst: a.cgst + g.cgst, sgst: a.sgst + g.sgst + g.utgst, igst: a.igst + g.igst }), { taxable: 0, cgst: 0, sgst: 0, igst: 0 });
     return (
       <Card className="overflow-hidden">
         <TableToolbar
           count={groups.length}
-          onExport={() => downloadCsv(`hsn-${periodLabel}`, ["Code", "Kind", "Description", "Rate", "Lines", "Taxable", "CGST", "SGST", "IGST"], groups.map((g) => [g.code, g.kind, g.desc, g.rate, g.lines, g.taxable, g.cgst, g.sgst, g.igst]))}
+          onExport={() => downloadCsv(`hsn-${periodLabel}`, ["Code", "Kind", "Description", "Rate", "Lines", "Taxable", "CGST", "SGST/UTGST", "IGST"], groups.map((g) => [g.code, g.kind, g.desc, g.rate, g.lines, g.taxable, g.cgst, g.sgst + g.utgst, g.igst]))}
         />
         <div className="overflow-x-auto scrollbar-thin">
           <table className="w-full text-sm">
-            <THead cols={["Code", "Description", "Rate", "Lines", "Taxable", "CGST", "SGST", "IGST"]} numFrom={3} />
+            <THead cols={["Code", "Description", "Rate", "Lines", "Taxable", "CGST", "SGST/UTGST", "IGST"]} numFrom={3} />
             <tbody>
               {groups.map((g) => (
                 <tr key={`${g.code}-${g.rate}`} className="border-b last:border-0 hover:bg-accent/40">
@@ -429,7 +434,7 @@ export function TaxClient() {
                   <td className="px-4 py-2 text-right text-xs tabular">{g.lines}</td>
                   <Num v={g.taxable} />
                   <Num v={g.cgst} />
-                  <Num v={g.sgst} />
+                  <Num v={g.sgst + g.utgst} />
                   <Num v={g.igst} />
                 </tr>
               ))}
@@ -564,9 +569,26 @@ export function TaxClient() {
             Filing &amp; locking for <strong className="text-foreground">{monthLabel(month)}</strong> is handled in the
             <Badge variant="outline" className="mx-1">Review &amp; lock</Badge> tab.
           </div>
-          <Button variant="outline" size="sm" onClick={() => { setGroup("review"); setReport("review"); }}>
-            <ShieldCheck className="size-4" /> Go to review
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                const { downloadGstr3bPdf } = await import("@/lib/pdf/gstr3b-pdf");
+                downloadGstr3bPdf({
+                  scopeName,
+                  periodLabel,
+                  gstin: prefs.entityId === "all" ? undefined : entityById(prefs.entityId)?.gstin,
+                  r,
+                });
+              }}
+            >
+              <Download className="size-4" /> PDF
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => { setGroup("review"); setReport("review"); }}>
+              <ShieldCheck className="size-4" /> Go to review
+            </Button>
+          </div>
         </Card>
       </div>
     );
@@ -611,15 +633,19 @@ export function TaxClient() {
     const shown = rows.slice(0, limit);
     const totalTds = rows.reduce((s, r) => s + r.tds, 0);
     const pending = rows.filter((r) => !tdsp[r.id]?.deposited).reduce((s, r) => s + r.tds, 0);
+    const ldcRows = rows.filter((r) => r.ldc);
+    // Tax saved by the lower-deduction certificates vs the statutory section rate.
+    const ldcSaving = ldcRows.reduce((s, r) => s + (r.taxable * (r.tdsBaseRate - r.tdsRate)) / 100, 0);
     return (
       <>
-        <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Kpi label="TDS deducted" value={totalTds} />
           <Kpi label="Deposited" value={totalTds - pending} />
           <Kpi label="Pending challan" value={pending} accent />
+          <Kpi label="Saved via 197 LDC" value={ldcSaving} />
         </div>
         <Card className="overflow-hidden">
-          <TableToolbar count={rows.length} onExport={() => downloadCsv(`tds-payable-${periodLabel}`, ["Date", "Vendor", "PAN", "Section", "Base", "Rate", "TDS", "Net payable", "Status", "Challan"], rows.map((r) => [formatDate(r.date), r.vendorName, r.vendorPan, r.tdsSection, r.taxable, r.tdsRate, r.tds, r.netPayable, tdsp[r.id]?.deposited ? "Deposited" : "Pending", tdsp[r.id]?.challan ?? ""]))} />
+          <TableToolbar count={rows.length} onExport={() => downloadCsv(`tds-payable-${periodLabel}`, ["Date", "Vendor", "PAN", "Section", "Base", "Section rate", "Applied rate", "LDC cert", "TDS", "Net payable", "Status", "Challan"], rows.map((r) => [formatDate(r.date), r.vendorName, r.vendorPan, r.tdsSection, r.taxable, r.tdsBaseRate, r.tdsRate, r.ldcCertNo ?? "", r.tds, r.netPayable, tdsp[r.id]?.deposited ? "Deposited" : "Pending", tdsp[r.id]?.challan ?? ""]))} />
           <div className="overflow-x-auto scrollbar-thin">
             <table className="w-full text-sm">
               <THead cols={["Date", "Vendor", "Section", "Base", "Rate", "TDS", "Net pay", "Status", "Action"]} numFrom={3} />
@@ -633,9 +659,21 @@ export function TaxClient() {
                         <p className="font-medium">{r.vendorName}</p>
                         <p className="font-mono text-[10px] text-muted-foreground">PAN {r.vendorPan}</p>
                       </td>
-                      <td className="px-4 py-2"><Badge variant="outline">{r.tdsSection}</Badge></td>
+                      <td className="px-4 py-2">
+                        <Badge variant="outline">{r.tdsSection}</Badge>
+                        {r.ldc && <Badge variant="primary" className="ml-1 text-[9px]" title={`Lower-deduction certificate ${r.ldcCertNo}`}>197 LDC</Badge>}
+                      </td>
                       <Num v={r.taxable} />
-                      <td className="px-4 py-2 text-right text-xs">{r.tdsRate}%</td>
+                      <td className="px-4 py-2 text-right text-xs">
+                        {r.ldc ? (
+                          <span className="flex items-center justify-end gap-1">
+                            <span className="text-muted-foreground line-through">{r.tdsBaseRate}%</span>
+                            <span className="font-semibold text-primary">{r.tdsRate}%</span>
+                          </span>
+                        ) : (
+                          <>{r.tdsRate}%</>
+                        )}
+                      </td>
                       <Num v={r.tds} />
                       <Num v={r.netPayable} />
                       <td className="px-4 py-2 text-center">{dep ? <Badge variant="success">Deposited</Badge> : <Badge variant="default">Pending</Badge>}</td>
@@ -647,6 +685,73 @@ export function TaxClient() {
                     </tr>
                   );
                 })}
+              </tbody>
+            </table>
+          </div>
+          <ShowMore shown={shown.length} total={rows.length} onMore={() => setLimit((l) => l + 100)} />
+        </Card>
+      </>
+    );
+  }
+
+  // ---- MSME vendor dues (45-day rule) --------------------------------------
+  function renderMsme() {
+    const rows = inward.filter((r) => r.msme);
+    const shown = rows.slice(0, limit);
+    const nowMs = Date.now();
+    const DAY = 86_400_000;
+    // 45-day payment limit from the bill date (MSMED sec.15; sec.43B(h) ties the
+    // deduction to actual payment within the limit).
+    const enrich = (r: (typeof rows)[number]) => {
+      const due = new Date(new Date(r.date).getTime() + 45 * DAY);
+      const daysLeft = Math.round((due.getTime() - nowMs) / DAY);
+      return { due: due.toISOString().slice(0, 10), daysLeft, overdue: daysLeft < 0 };
+    };
+    const total = rows.reduce((s, r) => s + r.gross, 0);
+    const overdueRows = rows.filter((r) => enrich(r).overdue);
+    const overdue = overdueRows.reduce((s, r) => s + r.gross, 0);
+    const micro = rows.filter((r) => r.msmeClass === "Micro").reduce((s, r) => s + r.gross, 0);
+    const small = rows.filter((r) => r.msmeClass === "Small").reduce((s, r) => s + r.gross, 0);
+    const csvRows = rows.map((r) => {
+      const e = enrich(r);
+      return [formatDate(r.date), r.vendorName, r.msmeClass ?? "MSME", r.invoiceNo, r.taxable, r.gross, e.due, e.daysLeft, e.overdue ? "Overdue" : "Within limit"];
+    });
+    return (
+      <>
+        <Card className="mb-3 border-warning/30 bg-warning/5 p-3 text-xs text-muted-foreground">
+          Micro &amp; Small enterprise dues must be settled within <strong className="text-foreground">45 days</strong> of the bill.
+          Amounts unpaid beyond the limit are disallowed under <strong className="text-foreground">sec.43B(h)</strong> until actually paid.
+        </Card>
+        <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Kpi label="MSME purchases" value={total} />
+          <Kpi label="Micro" value={micro} />
+          <Kpi label="Small" value={small} />
+          <Kpi label="Beyond 45 days" value={overdue} accent />
+        </div>
+        <Card className="overflow-hidden">
+          <TableToolbar count={rows.length} onExport={() => downloadCsv(`msme-${periodLabel}`, ["Date", "Vendor", "Class", "Bill no", "Taxable", "Invoice value", "Due (45d)", "Days left", "Status"], csvRows)} />
+          <div className="overflow-x-auto scrollbar-thin">
+            <table className="w-full text-sm">
+              <THead cols={["Date", "Vendor", "Class", "Bill no", "Taxable", "Invoice value", "Due (45d)", "Status"]} numFrom={4} />
+              <tbody>
+                {shown.map((r) => {
+                  const e = enrich(r);
+                  return (
+                    <tr key={r.id} className="border-b last:border-0 hover:bg-accent/40">
+                      <td className="px-4 py-2 text-xs text-muted-foreground">{formatDate(r.date)}</td>
+                      <td className="px-4 py-2 font-medium">{r.vendorName}</td>
+                      <td className="px-4 py-2"><Badge variant={r.msmeClass === "Micro" ? "primary" : "warning"}>{r.msmeClass ?? "MSME"}</Badge></td>
+                      <td className="px-4 py-2 font-mono text-xs">{r.invoiceNo}</td>
+                      <Num v={r.taxable} />
+                      <Num v={r.gross} />
+                      <td className="px-4 py-2 text-right text-xs">{formatDate(e.due)}</td>
+                      <td className="px-4 py-2 text-center">
+                        {e.overdue ? <Badge variant="danger">Overdue {Math.abs(e.daysLeft)}d</Badge> : <Badge variant="success">{e.daysLeft}d left</Badge>}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {rows.length === 0 && <EmptyRow span={8} />}
               </tbody>
             </table>
           </div>
@@ -711,13 +816,13 @@ export function TaxClient() {
     const t = sumHeads(rows);
     return (
       <Card className="overflow-hidden">
-        <TableToolbar count={rows.length} onExport={() => downloadCsv(`rcm-${periodLabel}`, ["Date", "Vendor", "HSN", "Rate", "Taxable", "CGST", "SGST", "IGST"], rows.map((r) => [formatDate(r.date), r.vendorName, r.hsn, r.rate, r.taxable, r.cgst, r.sgst, r.igst]))} />
+        <TableToolbar count={rows.length} onExport={() => downloadCsv(`rcm-${periodLabel}`, ["Date", "Vendor", "HSN", "Rate", "Taxable", "CGST", "SGST/UTGST", "IGST"], rows.map((r) => [formatDate(r.date), r.vendorName, r.hsn, r.rate, r.taxable, r.cgst, r.sgst + r.utgst, r.igst]))} />
         <div className="border-b bg-warning/10 px-4 py-2 text-xs text-muted-foreground">
           Self-pay GST in cash on these inward supplies (sec. 9(3)/9(4)), then claim the same as ITC — net cash impact nil but reportable.
         </div>
         <div className="overflow-x-auto scrollbar-thin">
           <table className="w-full text-sm">
-            <THead cols={["Date", "Vendor", "Supply", "HSN", "Rate", "Taxable", "CGST", "SGST", "IGST"]} numFrom={5} />
+            <THead cols={["Date", "Vendor", "Supply", "HSN", "Rate", "Taxable", "CGST", "SGST/UTGST", "IGST"]} numFrom={5} />
             <tbody>
               {rows.slice(0, limit).map((r) => (
                 <tr key={r.id} className="border-b last:border-0 hover:bg-accent/40">
@@ -728,13 +833,13 @@ export function TaxClient() {
                   <td className="px-4 py-2 text-right text-xs">{r.rate}%</td>
                   <Num v={r.taxable} />
                   <Num v={r.cgst} />
-                  <Num v={r.sgst} />
+                  <Num v={r.sgst + r.utgst} />
                   <Num v={r.igst} />
                 </tr>
               ))}
               {rows.length === 0 && <EmptyRow span={9} />}
             </tbody>
-            <TFoot label="Total RCM" cols={[t.taxable, t.cgst, t.sgst, t.igst]} span={5} />
+            <TFoot label="Total RCM" cols={[t.taxable, t.cgst, t.sgst + t.utgst, t.igst]} span={5} />
           </table>
         </div>
       </Card>
@@ -916,11 +1021,20 @@ export function TaxClient() {
           {st.status === "in_review" && (
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground">
-                Prepared by <strong>{employeeName(st.preparedBy ?? null)}</strong>. Reviewer signs off to file &amp; lock.
+                Prepared by <strong>{employeeName(st.preparedBy ?? null)}</strong>. A different reviewer signs off to file &amp; lock.
               </p>
+              {!canApprove(st, actor) && (
+                <p className="flex items-center gap-1.5 rounded-md bg-warning/10 px-2.5 py-1.5 text-xs text-warning">
+                  <ShieldCheck className="size-3.5 shrink-0" />
+                  Segregation of duties: the preparer can’t approve their own return. Switch the acting user to file.
+                </p>
+              )}
               <div className="flex gap-2">
                 <Input placeholder="ARN (auto if blank)" value={arn} onChange={(e) => setArn(e.target.value)} className="h-9 text-sm" />
-                <Button onClick={() => { persistFilings(approveAndFile(filings, rk, month, actor, now(), arn || `AA${month.replace("-", "")}${rk === "gstr1" ? "R1" : "3B"}`)); setArn(""); }}>
+                <Button
+                  disabled={!canApprove(st, actor)}
+                  onClick={() => { persistFilings(approveAndFile(filings, rk, month, actor, now(), arn || `AA${month.replace("-", "")}${rk === "gstr1" ? "R1" : "3B"}`)); setArn(""); }}
+                >
                   <CheckCircle2 className="size-4" /> Approve &amp; file
                 </Button>
               </div>

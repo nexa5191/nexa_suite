@@ -11,44 +11,113 @@ const dayDiff = (a: string, b: string) => Math.abs((new Date(a).getTime() - new 
 
 export type MatchMap = Record<string, string>; // stmtId → bookId
 
+/** How sure we are about a proposed pairing. */
+export type MatchConfidence = "exact" | "likely";
+
+export interface MatchProposal {
+  stmtId: string;
+  bookId: string;
+  confidence: MatchConfidence;
+  reason: string;
+  dayGap: number;
+}
+
 /**
- * Auto-match statement lines to book lines by equal amount and nearest date
- * (within 7 days). Existing valid matches are preserved. Bank-only lines
- * (charges / interest) never match a book line.
+ * Drop existing pairs that no longer reference live, unused lines. Returns a
+ * fresh map plus the set of book ids it consumes (so further passes don't
+ * double-assign a book line).
  */
-export function autoMatch(book: BookLine[], stmt: StmtLine[], existing: MatchMap): MatchMap {
+function keepValid(book: BookLine[], stmt: StmtLine[], existing: MatchMap) {
   const bookById = new Map(book.map((b) => [b.id, b]));
   const stmtById = new Map(stmt.map((s) => [s.id, s]));
   const usedBook = new Set<string>();
   const result: MatchMap = {};
-
-  // keep existing, still-valid pairs
   for (const [stmtId, bookId] of Object.entries(existing)) {
     if (stmtById.has(stmtId) && bookById.has(bookId) && !usedBook.has(bookId)) {
       result[stmtId] = bookId;
       usedBook.add(bookId);
     }
   }
+  return { result, usedBook };
+}
 
-  const openStmt = stmt.filter((s) => s.kind === "normal" && !(s.id in result)).sort((a, b) => a.date.localeCompare(b.date));
+/**
+ * Rank every plausible (statement ↔ book) pairing not already taken in
+ * `existing`, then greedily assign best-first so each line is used once.
+ *
+ * Signals, strongest first:
+ *  - UTR (bank reference) + equal amount  → "exact"  (auto-committable)
+ *  - equal amount within 7 days, no UTR   → "likely" (needs a human nod)
+ *
+ * Matching on UTR — not just amount + nearest date — is what stops two equal
+ * payments from cross-pairing to the wrong book line. Bank-only lines (charges
+ * / interest) never propose a match.
+ */
+export function proposeMatches(book: BookLine[], stmt: StmtLine[], existing: MatchMap): MatchProposal[] {
+  const usedBook = new Set(Object.values(existing));
+  const usedStmt = new Set(Object.keys(existing));
+  const openStmt = stmt.filter((s) => s.kind === "normal" && !usedStmt.has(s.id));
+
+  type Cand = MatchProposal & { score: number };
+  const cands: Cand[] = [];
   for (const s of openStmt) {
-    let best: BookLine | null = null;
-    let bestD = Infinity;
     for (const b of book) {
       if (usedBook.has(b.id)) continue;
       if (r2(b.amount) !== r2(s.amount)) continue;
-      const d = dayDiff(s.date, b.date);
-      if (d <= 7 && d < bestD) {
-        best = b;
-        bestD = d;
+      const gap = dayDiff(s.date, b.date);
+      const refEqual = !!s.ref && s.ref === b.ref;
+      if (refEqual) {
+        cands.push({
+          stmtId: s.id,
+          bookId: b.id,
+          confidence: "exact",
+          reason: gap === 0 ? "UTR + amount verified" : `UTR + amount verified · ${gap}d apart`,
+          dayGap: gap,
+          score: 10_000 - gap,
+        });
+      } else if (gap <= 7) {
+        cands.push({
+          stmtId: s.id,
+          bookId: b.id,
+          confidence: "likely",
+          reason: gap === 0 ? "Amount match · same day" : `Amount match · ${gap}d apart`,
+          dayGap: gap,
+          score: 1_000 - gap * 10,
+        });
       }
     }
-    if (best) {
-      result[s.id] = best.id;
-      usedBook.add(best.id);
-    }
+  }
+
+  cands.sort((a, b) => b.score - a.score);
+  const out: MatchProposal[] = [];
+  const ub = new Set<string>();
+  const us = new Set<string>();
+  for (const c of cands) {
+    if (ub.has(c.bookId) || us.has(c.stmtId)) continue;
+    ub.add(c.bookId);
+    us.add(c.stmtId);
+    out.push({ stmtId: c.stmtId, bookId: c.bookId, confidence: c.confidence, reason: c.reason, dayGap: c.dayGap });
+  }
+  return out;
+}
+
+/**
+ * Auto-match: preserve still-valid existing pairs, then commit only the
+ * high-confidence (UTR-verified) proposals. Amount-and-date-only guesses are
+ * left for {@link proposeMatches} to surface as reviewable suggestions rather
+ * than being silently trusted.
+ */
+export function autoMatch(book: BookLine[], stmt: StmtLine[], existing: MatchMap): MatchMap {
+  const { result } = keepValid(book, stmt, existing);
+  for (const p of proposeMatches(book, stmt, result)) {
+    if (p.confidence === "exact") result[p.stmtId] = p.bookId;
   }
   return result;
+}
+
+/** The amount+date-only proposals worth showing the user for a one-click confirm. */
+export function suggestionsFor(book: BookLine[], stmt: StmtLine[], current: MatchMap): MatchProposal[] {
+  return proposeMatches(book, stmt, current).filter((p) => p.confidence === "likely");
 }
 
 export interface BrsLine {

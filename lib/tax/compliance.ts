@@ -141,6 +141,11 @@ export function submitForReview(
   return { ...store, [filingKey(rk, period)]: next };
 }
 
+/** Segregation of duties: the reviewer who files must not be the preparer. */
+export function canApprove(state: FilingState, by: string): boolean {
+  return state.status === "in_review" && state.preparedBy !== by;
+}
+
 export function approveAndFile(
   store: FilingStore,
   rk: ReturnKey,
@@ -151,6 +156,8 @@ export function approveAndFile(
 ): FilingStore {
   const cur = filingState(store, rk, period);
   if (cur.status !== "in_review") return store;
+  // Maker-checker control: the preparer cannot approve their own return.
+  if (cur.preparedBy === by) return store;
   const next = withEvent(
     { ...cur, status: "filed", reviewedBy: by, arn, filedOn: now.slice(0, 10) },
     { ts: now, action: "approved", by, ref: arn },
