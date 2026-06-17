@@ -1,15 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, Plus, Undo2 } from "lucide-react";
 import { useReport } from "@/components/reports/use-report";
 import { ReportControls } from "@/components/reports/report-controls";
 import { PageHeader } from "@/components/shell/page-header";
 import { Drawer } from "@/components/ui/modal";
 import { Input, Select } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Money } from "@/components/ui/money";
+import { useJournal } from "@/components/accounting/journal-provider";
+import { NewJournalEntry } from "@/components/accounting/new-journal-entry";
 import { allPostings, filteredPostings } from "@/lib/accounting/ledger";
+import { isManualPosting, manualEntryIdFromPosting } from "@/lib/accounting/manual-entries";
 import { CHART_OF_ACCOUNTS, accountSafe } from "@/lib/accounting/chart-of-accounts";
 import { locationById, entityById } from "@/lib/accounting/org";
 import type { Posting } from "@/lib/accounting/types";
@@ -19,10 +23,12 @@ const PAGE = 200;
 
 export function JournalClient() {
   const ctl = useReport();
+  const { entries, reverse } = useJournal();
   const [account, setAccount] = useState("all");
   const [q, setQ] = useState("");
   const [limit, setLimit] = useState(PAGE);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [showNew, setShowNew] = useState(false);
 
   const postings = useMemo(() => filteredPostings(ctl.filters), [
     ctl.filters.entityId,
@@ -31,6 +37,7 @@ export function JournalClient() {
     ctl.filters.basis,
     ctl.filters.from,
     ctl.filters.to,
+    ctl.version,
   ]);
 
   const term = q.trim().toLowerCase();
@@ -54,10 +61,17 @@ export function JournalClient() {
     const sel = allPostings().find((p) => p.id === openId);
     if (!sel) return [] as Posting[];
     return allPostings().filter((p) => p.eventId === sel.eventId && p.basis === sel.basis && p.date === sel.date);
-  }, [openId]);
+  }, [openId, ctl.version]);
   const selected = entryLines[0];
   const entryDr = entryLines.reduce((s, p) => s + p.debit, 0);
   const entryCr = entryLines.reduce((s, p) => s + p.credit, 0);
+
+  // If the open entry is a manual voucher, resolve it so we can show its status
+  // and offer reversal (GAAP: correct by offsetting entry, never edit/delete).
+  const manualEntry =
+    selected && isManualPosting(selected.eventId)
+      ? entries.find((e) => e.id === manualEntryIdFromPosting(selected.eventId))
+      : undefined;
 
   return (
     <>
@@ -78,9 +92,14 @@ export function JournalClient() {
               <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search narration…" className="pl-8" />
             </div>
+            <Button onClick={() => setShowNew(true)} className="shrink-0">
+              <Plus className="size-4" /> New entry
+            </Button>
           </div>
         }
       />
+
+      <NewJournalEntry open={showNew} onClose={() => setShowNew(false)} />
       <ReportControls ctl={ctl} />
 
       <div className="mb-3 grid grid-cols-3 gap-3">
@@ -89,10 +108,10 @@ export function JournalClient() {
         <Stat label="Total Credit" money={totalCr} />
       </div>
 
-      <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
+      <div className="max-h-[70vh] overflow-auto rounded-lg border bg-card shadow-sm">
         <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
+          <thead className="sticky top-0 z-10">
+            <tr className="border-b bg-muted text-left text-xs text-muted-foreground">
               <th className="px-4 py-2.5 font-medium">Date</th>
               <th className="px-4 py-2.5 font-medium">Account</th>
               <th className="px-4 py-2.5 font-medium">Narration</th>
@@ -119,7 +138,9 @@ export function JournalClient() {
                   </td>
                   <td className="px-4 py-2.5">
                     <span className="block max-w-[280px] truncate">{p.memo}</span>
-                    <Badge variant="default" className="mt-0.5">{p.category}</Badge>
+                    <Badge variant={isManualPosting(p.eventId) ? "primary" : "default"} className="mt-0.5">
+                      {p.category}
+                    </Badge>
                   </td>
                   <td className="whitespace-nowrap px-4 py-2.5 text-xs text-muted-foreground">
                     {ent?.name} · {loc?.name}
@@ -154,17 +175,44 @@ export function JournalClient() {
         open={!!selected}
         onClose={() => setOpenId(null)}
         title="Journal entry"
-        subtitle={selected ? `${formatDate(selected.date)} · ${selected.eventId}` : undefined}
+        subtitle={selected ? `${formatDate(selected.date)} · ${manualEntry?.voucherNo ?? selected.eventId}` : undefined}
         width="max-w-lg"
-        actions={selected ? <Badge variant="default" className="uppercase">{selected.basis}</Badge> : undefined}
+        actions={
+          selected ? (
+            <div className="flex items-center gap-1.5">
+              {manualEntry?.status === "reversed" && <Badge variant="danger">Reversed</Badge>}
+              {manualEntry?.reversalOf && <Badge variant="warning">Reversal</Badge>}
+              <Badge variant="default" className="uppercase">{selected.basis}</Badge>
+            </div>
+          ) : undefined
+        }
       >
         {selected && (
           <div className="space-y-5">
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Narration</p>
               <p className="mt-1 text-sm">{selected.memo}</p>
-              <Badge variant="default" className="mt-1.5">{selected.category}</Badge>
+              <Badge variant={manualEntry ? "primary" : "default"} className="mt-1.5">{selected.category}</Badge>
             </div>
+
+            {manualEntry && manualEntry.status !== "reversed" && !manualEntry.reversalOf && (
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-dashed bg-muted/30 p-3">
+                <p className="text-xs text-muted-foreground">
+                  Posted entries can&apos;t be edited. To correct, post a reversing entry.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => {
+                    reverse(manualEntry.id);
+                    setOpenId(null);
+                  }}
+                >
+                  <Undo2 className="size-4" /> Reverse
+                </Button>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <Field label="Entity" value={entityById(selected.entityId)?.name ?? "—"} />

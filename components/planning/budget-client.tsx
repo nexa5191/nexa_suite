@@ -378,7 +378,7 @@ function ForecastView({ model, method }: { model: BudgetModel; method: BudgetAss
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border bg-card p-4 shadow-sm">
+      <div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
         <h3 className="mb-3 text-sm font-semibold">Monthly net profit — actual then forecast</h3>
         <ResponsiveContainer width="100%" height={240}>
           <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>

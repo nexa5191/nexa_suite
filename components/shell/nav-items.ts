@@ -4,10 +4,12 @@ import {
   ListTodo,
   ListTree,
   BookOpen,
+  NotebookPen,
   Building2,
   PieChart,
   Target,
   FileText,
+  Calculator,
   Landmark,
   Layers,
   ArrowLeftRight,
@@ -21,21 +23,32 @@ import {
   Clock,
   CalendarDays,
   Banknote,
+  Coins,
+  ReceiptText,
+  FileSpreadsheet,
   Palmtree,
   ClipboardCheck,
   Contact,
+  Handshake,
   HeartHandshake,
+  Plug,
+  ShoppingCart,
   Receipt,
   Warehouse,
   Truck,
   FolderOpen,
   UserCircle,
   Settings,
+  SlidersHorizontal,
   LifeBuoy,
+  Briefcase,
+  Timer,
   type LucideIcon,
 } from "lucide-react";
 
 export interface NavItem {
+  /** Stable access key — what provisioning & RBAC are keyed on (NOT the URL). */
+  key: string;
   href: string;
   label: string;
   icon: LucideIcon;
@@ -50,85 +63,103 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Overview",
     items: [
-      { href: "/", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/calendar", label: "Calendar", icon: Calendar },
-      { href: "/tasks", label: "Tasks", icon: ListTodo },
+      { key: "dashboard", href: "/", label: "Dashboard", icon: LayoutDashboard },
+      { key: "calendar", href: "/calendar", label: "Calendar", icon: Calendar },
+      { key: "tasks", href: "/tasks", label: "Tasks", icon: ListTodo },
     ],
+  },
+  {
+    label: "Data & Integrations",
+    items: [{ key: "connections", href: "/connections", label: "Connections", icon: Plug }],
   },
   {
     label: "Accounting",
     items: [
-      { href: "/chart-of-accounts", label: "Chart of Accounts", icon: ListTree },
-      { href: "/journal", label: "General Ledger", icon: BookOpen },
-      { href: "/assets", label: "Fixed Assets", icon: Building2 },
+      { key: "chart-of-accounts", href: "/chart-of-accounts", label: "Chart of Accounts", icon: ListTree },
+      { key: "general-ledger", href: "/journal", label: "General Ledger", icon: BookOpen },
+      { key: "journal-entries", href: "/journal-entries", label: "Journal Entries", icon: NotebookPen },
+      { key: "petty-cash", href: "/petty-cash", label: "Petty Cash Book", icon: Coins },
+      { key: "reimbursements", href: "/reimbursements", label: "Reimbursements", icon: ReceiptText },
+      { key: "fixed-assets", href: "/assets", label: "Fixed Assets", icon: Building2 },
     ],
   },
   {
     label: "Tax & Compliance",
-    items: [{ href: "/tax", label: "GST & TDS", icon: Landmark }],
+    items: [
+      { key: "gst-tds", href: "/tax", label: "GST & TDS", icon: Landmark },
+      { key: "gst-registers", href: "/tax/registers", label: "GST Registers", icon: FileSpreadsheet },
+    ],
   },
   {
     label: "Group & Treasury",
     items: [
-      { href: "/group", label: "Group Reporting", icon: Layers },
-      { href: "/group/intercompany", label: "Inter-company", icon: ArrowLeftRight },
-      { href: "/banking", label: "Bank Reconciliation", icon: Repeat },
+      { key: "group-reporting", href: "/group", label: "Group Reporting", icon: Layers },
+      { key: "intercompany", href: "/group/intercompany", label: "Inter-company", icon: ArrowLeftRight },
+      { key: "bank-recon", href: "/banking", label: "Bank Reconciliation", icon: Repeat },
     ],
   },
   {
     label: "Sales & Revenue",
     items: [
-      { href: "/crm", label: "CRM", icon: HeartHandshake },
-      { href: "/invoicing", label: "Invoicing", icon: Receipt },
+      { key: "crm", href: "/crm", label: "CRM", icon: HeartHandshake },
+      { key: "orders", href: "/orders", label: "Orders", icon: ShoppingCart },
+      { key: "invoicing", href: "/invoicing", label: "Invoicing", icon: Receipt },
+    ],
+  },
+  {
+    label: "Professional Services",
+    items: [
+      { key: "projects", href: "/projects", label: "Engagements", icon: Briefcase },
+      { key: "timesheets", href: "/timesheets", label: "Timesheets", icon: Timer },
     ],
   },
   {
     label: "Planning & Analysis",
     items: [
-      { href: "/analysis/cost-audit", label: "Cost Audit", icon: PieChart },
-      { href: "/planning/budget", label: "Budget & Forecast", icon: Target },
-      { href: "/planning/business-plan", label: "Business Plan", icon: FileText },
+      { key: "cost-audit", href: "/analysis/cost-audit", label: "Cost Audit", icon: PieChart },
+      { key: "capital-decisions", href: "/planning/decisions", label: "Capital Decisions", icon: Calculator },
+      { key: "budget", href: "/planning/budget", label: "Budget & Forecast", icon: Target },
+      { key: "business-plan", href: "/planning/business-plan", label: "Business Plan", icon: FileText },
     ],
   },
   {
     label: "Reports",
     items: [
-      { href: "/reports/profit-loss", label: "Profit & Loss", icon: TrendingUp },
-      { href: "/reports/balance-sheet", label: "Balance Sheet", icon: Scale },
-      { href: "/reports/cash-flow", label: "Cash Flow", icon: Wallet },
-      { href: "/reports/explorer", label: "Report Explorer", icon: Table2 },
+      { key: "profit-loss", href: "/reports/profit-loss", label: "Profit & Loss", icon: TrendingUp },
+      { key: "balance-sheet", href: "/reports/balance-sheet", label: "Balance Sheet", icon: Scale },
+      { key: "cash-flow", href: "/reports/cash-flow", label: "Cash Flow", icon: Wallet },
+      { key: "report-explorer", href: "/reports/explorer", label: "Report Explorer", icon: Table2 },
     ],
   },
   {
     label: "People & HR",
     items: [
-      { href: "/hr", label: "HR Overview", icon: UserRound },
-      { href: "/people", label: "Directory", icon: Users },
-      { href: "/hr/attendance", label: "Attendance", icon: Clock },
-      { href: "/leave", label: "Leave", icon: CalendarDays },
-      { href: "/hr/payroll", label: "Payroll", icon: Banknote },
-      { href: "/hr/holidays", label: "Holidays", icon: Palmtree },
-      { href: "/approvals", label: "Approvals", icon: ClipboardCheck },
+      { key: "hr-overview", href: "/hr", label: "HR Overview", icon: UserRound },
+      { key: "directory", href: "/people", label: "Directory", icon: Users },
+      { key: "attendance", href: "/hr/attendance", label: "Attendance", icon: Clock },
+      { key: "leave", href: "/leave", label: "Leave", icon: CalendarDays },
+      { key: "payroll", href: "/hr/payroll", label: "Payroll", icon: Banknote },
+      { key: "holidays", href: "/hr/holidays", label: "Holidays", icon: Palmtree },
+      { key: "cv-bank", href: "/cv-bank", label: "CV Bank", icon: Contact },
+      { key: "agency-portal", href: "/agency-portal", label: "Agency Portal", icon: Handshake },
+      { key: "approvals", href: "/approvals", label: "Approvals", icon: ClipboardCheck },
     ],
-  },
-  {
-    label: "Talent",
-    items: [{ href: "/cv-bank", label: "CV Bank", icon: Contact }],
   },
   {
     label: "Workspace",
     items: [
-      { href: "/inventory", label: "Inventory", icon: Warehouse },
-      { href: "/vendors", label: "Vendors", icon: Truck },
-      { href: "/documents", label: "Documents", icon: FolderOpen },
+      { key: "inventory", href: "/inventory", label: "Inventory", icon: Warehouse },
+      { key: "vendors", href: "/vendors", label: "Vendors", icon: Truck },
+      { key: "documents", href: "/documents", label: "Documents", icon: FolderOpen },
     ],
   },
 ];
 
 export const SECONDARY_NAV: NavItem[] = [
-  { href: "/portal", label: "My Portal", icon: UserCircle },
-  { href: "/settings", label: "Settings", icon: Settings },
-  { href: "/help", label: "Help", icon: LifeBuoy },
+  { key: "portal", href: "/portal", label: "My Portal", icon: UserCircle },
+  { key: "setup", href: "/setup", label: "Access & Setup", icon: SlidersHorizontal },
+  { key: "settings", href: "/settings", label: "Settings", icon: Settings },
+  { key: "help", href: "/help", label: "Help", icon: LifeBuoy },
 ];
 
 export const FLAT_NAV: NavItem[] = NAV_GROUPS.flatMap((g) => g.items);
@@ -137,5 +168,9 @@ export function isNavActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   // /hr should not stay active on /hr/payroll etc.; match exact for the hub
   if (href === "/hr") return pathname === "/hr";
+  // /journal must not stay active on /journal-entries (separate page).
+  if (href === "/journal") return pathname === "/journal";
+  // /tax must not stay active on /tax/registers (separate page).
+  if (href === "/tax") return pathname === "/tax";
   return pathname.startsWith(href);
 }

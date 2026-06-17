@@ -56,16 +56,17 @@ export interface ReportSheet {
   notes?: string[]; // footnotes below the table
 }
 
-function numFmt(type: ColType | undefined, sym: string): string | undefined {
+function numFmt(type: ColType | undefined, sym: string, decimals = 0): string | undefined {
+  const dec = decimals > 0 ? "." + "0".repeat(decimals) : "";
   switch (type) {
     case "money": {
       const p = sym ? `"${sym}"` : "";
-      return `${p}#,##0;[Red]${p}-#,##0`;
+      return `${p}#,##0${dec};[Red]${p}-#,##0${dec}`;
     }
     case "integer":
       return "#,##0";
     case "number":
-      return "#,##0.00";
+      return `#,##0.${"0".repeat(Math.max(2, decimals))}`;
     case "percent":
       return "0.0%";
     case "ratio":
@@ -86,21 +87,24 @@ export function buildReportSheet(spec: ReportSheet, t: ExcelTemplate): XlsxSheet
   const lastColLetter = colLetter(ncol - 1);
   const merges: string[] = [];
 
+  const font = t.fontName || "Calibri";
+  const dec = t.moneyDecimals ?? 0;
+
   // ---- Title block -------------------------------------------------------
   let cursor = 0;
   if (t.showTitleBlock) {
     if (spec.title) {
       rows.push([
-        { value: spec.title, style: { bold: true, fontSize: t.fontSize + 6, fontColor: t.titleColor } },
+        { value: spec.title, style: { bold: true, fontName: font, fontSize: t.fontSize + 6, fontColor: t.titleColor } },
       ]);
       merges.push(`A${rows.length}:${lastColLetter}${rows.length}`);
     }
     if (spec.subtitle) {
-      rows.push([{ value: spec.subtitle, style: { fontColor: "6B7280", fontSize: t.fontSize } }]);
+      rows.push([{ value: spec.subtitle, style: { fontName: font, fontColor: "6B7280", fontSize: t.fontSize } }]);
       merges.push(`A${rows.length}:${lastColLetter}${rows.length}`);
     }
     for (const m of spec.meta ?? []) {
-      rows.push([{ value: m, style: { fontColor: "9CA3AF", fontSize: t.fontSize - 1 } }]);
+      rows.push([{ value: m, style: { fontName: font, fontColor: "9CA3AF", fontSize: t.fontSize - 1 } }]);
       merges.push(`A${rows.length}:${lastColLetter}${rows.length}`);
     }
     rows.push([]); // spacer
@@ -108,9 +112,11 @@ export function buildReportSheet(spec: ReportSheet, t: ExcelTemplate): XlsxSheet
 
   // ---- Header row --------------------------------------------------------
   const headerStyle: XlsxStyle = {
-    bold: true,
+    bold: t.headerBold ?? true,
+    italic: t.headerItalic ?? false,
     fill: t.accent,
     fontColor: t.headerText,
+    fontName: font,
     fontSize: t.fontSize,
     border: t.borders ? "all" : "none",
   };
@@ -138,8 +144,12 @@ export function buildReportSheet(spec: ReportSheet, t: ExcelTemplate): XlsxSheet
     const band = t.bandColor && ri % 2 === 1 ? t.bandColor : undefined;
     const cells: CellInput[] = spec.columns.map((col, ci) => {
       const base: XlsxStyle = {
+        fontName: font,
         fontSize: t.fontSize,
-        numFmt: numFmt(col.type, t.currencySymbol),
+        fontColor: t.bodyText,
+        bold: t.bodyBold,
+        italic: t.bodyItalic,
+        numFmt: numFmt(col.type, t.currencySymbol, dec),
         align: alignFor(col.type, col.align),
         fill: band,
         border: t.borders ? "all" : "none",
@@ -180,16 +190,18 @@ export function buildReportSheet(spec: ReportSheet, t: ExcelTemplate): XlsxSheet
   // ---- Totals row --------------------------------------------------------
   if (spec.totals) {
     const totalStyle: XlsxStyle = {
-      bold: true,
+      bold: t.totalBold ?? true,
+      italic: t.totalItalic ?? false,
       fill: t.totalFill,
       fontColor: t.totalText,
+      fontName: font,
       fontSize: t.fontSize,
       border: t.borders ? "all" : "topbottom",
     };
     const cells: CellInput[] = spec.columns.map((col, ci) => {
       const style: XlsxStyle = {
         ...totalStyle,
-        numFmt: numFmt(col.type, t.currencySymbol),
+        numFmt: numFmt(col.type, t.currencySymbol, dec),
         align: alignFor(col.type, col.align),
       };
       const letter = colLetterByIndex(ci);
@@ -212,7 +224,7 @@ export function buildReportSheet(spec: ReportSheet, t: ExcelTemplate): XlsxSheet
   if (spec.notes?.length) {
     rows.push([]);
     for (const n of spec.notes) {
-      rows.push([{ value: n, style: { italic: true, fontColor: "9CA3AF", fontSize: t.fontSize - 1 } }]);
+      rows.push([{ value: n, style: { italic: true, fontName: font, fontColor: "9CA3AF", fontSize: t.fontSize - 1 } }]);
       merges.push(`A${rows.length}:${lastColLetter}${rows.length}`);
     }
   }

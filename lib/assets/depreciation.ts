@@ -5,7 +5,7 @@
 // schedule is just those months bucketed by Indian financial year.
 // ---------------------------------------------------------------------------
 
-import type { FixedAsset } from "./assets";
+import type { FixedAsset, AssetCategory, DepMethod } from "./assets";
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 const ymIndex = (iso: string) => parseInt(iso.slice(0, 4), 10) * 12 + (parseInt(iso.slice(5, 7), 10) - 1);
@@ -110,6 +110,130 @@ export function depreciationSchedule(asset: FixedAsset): ScheduleRow[] {
     opening = closing;
   }
   return rows;
+}
+
+// ---------------------------------------------------------------------------
+// Depreciation bases — the SAME asset depreciated three ways:
+//   • Companies Act 2013 (Schedule II) — useful-life basis, SLM or WDV, 5%
+//     residual. This is the book/financial-statement charge (the default above).
+//   • Income-tax Act 1961 — block-of-assets WDV at prescribed block rates, with
+//     the half-year rule (assets put to use < 180 days in year 1 → half rate).
+//     No residual value; the block depreciates toward nil.
+//   • User-defined — a custom method, rate/life and residual.
+// The book-vs-tax difference is what drives deferred tax.
+// ---------------------------------------------------------------------------
+
+export type DepBasis = "companies" | "incometax" | "custom";
+
+export interface CustomDep {
+  method: DepMethod;
+  rate: number; // WDV % p.a. (used when method = WDV)
+  life: number; // years (used when method = SLM)
+  residualPct: number; // residual value as % of cost
+}
+
+/** Income-tax Act block-of-assets WDV rates by asset category. */
+export const IT_BLOCK_RATES: Record<AssetCategory, { rate: number; block: string }> = {
+  "Plant & Machinery": { rate: 15, block: "Plant & machinery (general)" },
+  "Furniture & Fixtures": { rate: 10, block: "Furniture & fittings" },
+  "Computers & IT": { rate: 40, block: "Computers incl. software" },
+  Vehicles: { rate: 15, block: "Motor vehicles" },
+  "Office Equipment": { rate: 15, block: "Plant & machinery (general)" },
+  Buildings: { rate: 10, block: "Buildings (general)" },
+};
+
+/** FY (April-start) that an ISO date falls in. */
+function fyStartYear(iso: string): number {
+  const y = parseInt(iso.slice(0, 4), 10);
+  const m = parseInt(iso.slice(5, 7), 10);
+  return m >= 4 ? y : y - 1;
+}
+
+/** Days from acquisition to the end of its acquisition FY (31 Mar). */
+function daysToFyEnd(iso: string): number {
+  const fy = fyStartYear(iso);
+  const end = new Date(Date.UTC(fy + 1, 2, 31)); // 31 Mar
+  const acq = new Date(`${iso}T00:00:00Z`);
+  return Math.round((end.getTime() - acq.getTime()) / 86_400_000) + 1;
+}
+
+/** Income-tax Act 1961 WDV schedule (block rate + half-year rule in year 1). */
+export function incomeTaxSchedule(asset: FixedAsset): ScheduleRow[] {
+  const { rate } = IT_BLOCK_RATES[asset.category];
+  const r = rate / 100;
+  const halfYear1 = daysToFyEnd(asset.acquisitionDate) < 180; // put to use < 180 days
+  const acqFy = fyStartYear(asset.acquisitionDate);
+  const rows: ScheduleRow[] = [];
+  let wdv = asset.cost;
+  const floor = asset.cost * 0.001; // stop once the block is effectively written off
+  for (let i = 0; i < 30 && wdv > floor; i++) {
+    const thisRate = i === 0 && halfYear1 ? r / 2 : r;
+    const dep = r2(wdv * thisRate);
+    const closing = r2(wdv - dep);
+    rows.push({
+      fyStartYear: acqFy + i,
+      label: fyLabel(acqFy + i),
+      opening: r2(wdv),
+      depreciation: dep,
+      closing,
+      accumulated: r2(asset.cost - closing),
+    });
+    wdv = closing;
+  }
+  return rows;
+}
+
+/** Companies Act 2013 (Schedule II) schedule — the financial-statement charge. */
+export function companiesActSchedule(asset: FixedAsset): ScheduleRow[] {
+  return depreciationSchedule(asset);
+}
+
+/** User-defined schedule from a custom method / rate / life / residual. */
+export function customScheduleFor(asset: FixedAsset, c: CustomDep): ScheduleRow[] {
+  const salvage = r2((asset.cost * (Number(c.residualPct) || 0)) / 100);
+  const derived: FixedAsset = {
+    ...asset,
+    method: c.method,
+    usefulLifeYears: Math.max(1, Number(c.life) || asset.usefulLifeYears),
+    salvage,
+    wdvRate: c.method === "WDV" ? Number(c.rate) || undefined : undefined,
+  };
+  return depreciationSchedule(derived);
+}
+
+/** Schedule for any basis. */
+export function scheduleForBasis(asset: FixedAsset, basis: DepBasis, custom?: CustomDep): ScheduleRow[] {
+  if (basis === "incometax") return incomeTaxSchedule(asset);
+  if (basis === "custom" && custom) return customScheduleFor(asset, custom);
+  return companiesActSchedule(asset);
+}
+
+/** Depreciation charged in one FY under a basis (from its schedule). */
+export function fyDepForBasis(asset: FixedAsset, fyStart: number, basis: DepBasis, custom?: CustomDep): number {
+  const row = scheduleForBasis(asset, basis, custom).find((s) => s.fyStartYear === fyStart);
+  return row?.depreciation ?? 0;
+}
+
+export interface BasisMeta {
+  label: string;
+  detail: string;
+}
+
+export function basisMeta(asset: FixedAsset, basis: DepBasis, custom?: CustomDep): BasisMeta {
+  if (basis === "incometax") {
+    const b = IT_BLOCK_RATES[asset.category];
+    return { label: "Income-tax Act 1961", detail: `Block WDV @ ${b.rate}% · ${b.block}` };
+  }
+  if (basis === "custom" && custom) {
+    return {
+      label: "User-defined",
+      detail: custom.method === "WDV" ? `WDV @ ${custom.rate}% · ${custom.residualPct}% residual` : `SLM · ${custom.life}y · ${custom.residualPct}% residual`,
+    };
+  }
+  return {
+    label: "Companies Act 2013",
+    detail: `Schedule II · ${asset.method === "SLM" ? "straight line" : "WDV"} · ${asset.usefulLifeYears}y useful life`,
+  };
 }
 
 // ---------------------------------------------------------------------------

@@ -23,11 +23,25 @@ export const STATE_NAMES: Record<string, string> = {
   "32": "Kerala",
   "33": "Tamil Nadu",
   "36": "Telangana",
+  // Union Territories that levy UTGST (no legislature of their own).
+  "04": "Chandigarh",
+  "26": "Dadra & Nagar Haveli and Daman & Diu",
+  "35": "Andaman & Nicobar Islands",
+  "38": "Ladakh",
   SG: "Overseas (Export)",
 };
 
 export function stateName(code: string): string {
   return STATE_NAMES[code] ?? code;
+}
+
+// Union Territories WITHOUT a legislature — an intra-UT supply attracts CGST +
+// UTGST (not SGST). Delhi (07), Puducherry (34) and J&K (01) have legislatures
+// and levy SGST, so they are deliberately excluded here.
+export const UT_CODES = new Set(["04", "26", "31", "35", "38", "97"]);
+
+export function isUnionTerritory(code: string): boolean {
+  return UT_CODES.has(code);
 }
 
 export type TaxNature = "intra" | "inter" | "export";
@@ -43,6 +57,7 @@ export interface GstSplit {
   taxable: number;
   cgst: number;
   sgst: number;
+  utgst: number;
   igst: number;
   tax: number;
   gross: number;
@@ -52,13 +67,23 @@ export interface GstSplit {
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
-/** Split a taxable base at a rate into CGST/SGST or IGST per the supply nature. */
-export function splitTax(taxable: number, rate: number, nature: TaxNature): GstSplit {
+/**
+ * Split a taxable base at a rate into the right heads for the supply nature:
+ *   intra-state          → CGST + SGST
+ *   intra Union Territory → CGST + UTGST   (pass isUT = true)
+ *   inter-state          → IGST
+ *   export               → zero-rated
+ * The state-half lands in UTGST instead of SGST when the place of supply is a
+ * Union Territory without a legislature.
+ */
+export function splitTax(taxable: number, rate: number, nature: TaxNature, isUT = false): GstSplit {
   const tax = nature === "export" ? 0 : r2((taxable * rate) / 100);
   const cgst = nature === "intra" ? r2(tax / 2) : 0;
-  const sgst = nature === "intra" ? r2(tax - cgst) : 0;
+  const stateHalf = nature === "intra" ? r2(tax - cgst) : 0;
+  const sgst = isUT ? 0 : stateHalf;
+  const utgst = isUT ? stateHalf : 0;
   const igst = nature === "inter" ? tax : 0;
-  return { taxable: r2(taxable), cgst, sgst, igst, tax: cgst + sgst + igst, gross: r2(taxable + tax), rate, nature };
+  return { taxable: r2(taxable), cgst, sgst, utgst, igst, tax: cgst + sgst + utgst + igst, gross: r2(taxable + tax), rate, nature };
 }
 
 // ---- Return-period maths (Indian FY, Apr–Mar) ------------------------------

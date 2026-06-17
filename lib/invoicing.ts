@@ -245,6 +245,7 @@ interface RawInvoice {
   due: string;
   status: InvoiceStatus;
   signatory: string;
+  fy?: string; // FY label for the invoice number (defaults to the current FY)
   discountType?: DiscountType;
   discountValue?: number;
   notes?: string;
@@ -285,13 +286,72 @@ const RAW_INVOICES: RawInvoice[] = [
     lines: [L("Organic rice — 20ft container (FOB)", "1006", 1, 980000, 0), L("Assorted spices — pallet", "0910", 12, 18500, 0)],
     notes: "Export — zero-rated under LUT. Incoterms: FOB Chennai.",
   },
+
+  // ---- History: FreshMart (acc-001) — fortnightly staples, FY24-25 & FY25-26
+  {
+    acc: "acc-001", seq: 11, date: "2024-10-15", due: "2024-10-30", status: "paid", signatory: "emp-002", fy: "24-25",
+    lines: [L("Wheat flour (50kg bag)", "1101", 100, 1850, 5), L("Sunflower oil (15L tin)", "1512", 60, 1650, 5)],
+    notes: "First contract shipment.",
+  },
+  {
+    acc: "acc-001", seq: 12, date: "2024-12-12", due: "2024-12-27", status: "paid", signatory: "emp-002", fy: "24-25",
+    lines: [L("Wheat flour (50kg bag)", "1101", 130, 1850, 5), L("Atta (10kg)", "1101", 400, 360, 5)],
+  },
+  {
+    acc: "acc-001", seq: 13, date: "2025-02-14", due: "2025-03-01", status: "paid", signatory: "emp-002", fy: "24-25",
+    lines: [L("Wheat flour (50kg bag)", "1101", 120, 1850, 5), L("Sunflower oil (15L tin)", "1512", 70, 1650, 5)],
+  },
+  {
+    acc: "acc-001", seq: 14, date: "2025-06-18", due: "2025-07-03", status: "paid", signatory: "emp-002", fy: "25-26",
+    lines: [L("Wheat flour (50kg bag)", "1101", 140, 1850, 5), L("Atta (10kg)", "1101", 500, 360, 5)],
+  },
+  {
+    acc: "acc-001", seq: 15, date: "2025-09-20", due: "2025-10-05", status: "paid", signatory: "emp-002", fy: "25-26",
+    lines: [L("Wheat flour (50kg bag)", "1101", 150, 1850, 5), L("Sunflower oil (15L tin)", "1512", 80, 1650, 5)],
+  },
+  {
+    acc: "acc-001", seq: 16, date: "2025-12-15", due: "2025-12-30", status: "paid", signatory: "emp-002", fy: "25-26",
+    lines: [L("Wheat flour (50kg bag)", "1101", 160, 1850, 5), L("Atta (10kg)", "1101", 600, 360, 5)],
+  },
+  {
+    acc: "acc-001", seq: 17, date: "2026-02-20", due: "2026-03-07", status: "paid", signatory: "emp-002", fy: "25-26",
+    lines: [L("Wheat flour (50kg bag)", "1101", 150, 1850, 5), L("Sunflower oil (15L tin)", "1512", 85, 1650, 5)],
+  },
+
+  // ---- History: Spencer's Gourmet (acc-002, Nexa Trading) — monthly specialty
+  {
+    acc: "acc-002", seq: 11, date: "2025-02-11", due: "2025-02-26", status: "paid", signatory: "emp-002", fy: "24-25",
+    discountType: "percent", discountValue: 4,
+    lines: [L("Specialty 00 flour (25kg)", "1101", 35, 2200, 5), L("Extra-virgin olive oil (5L)", "1509", 25, 4200, 12)],
+    notes: "Pilot converted to standing order.",
+  },
+  {
+    acc: "acc-002", seq: 12, date: "2025-05-20", due: "2025-06-04", status: "paid", signatory: "emp-002", fy: "25-26",
+    discountType: "percent", discountValue: 4,
+    lines: [L("Specialty 00 flour (25kg)", "1101", 40, 2200, 5), L("Durum semolina (25kg)", "1103", 20, 1900, 5)],
+  },
+  {
+    acc: "acc-002", seq: 13, date: "2025-08-12", due: "2025-08-27", status: "paid", signatory: "emp-002", fy: "25-26",
+    discountType: "percent", discountValue: 4,
+    lines: [L("Specialty 00 flour (25kg)", "1101", 42, 2200, 5), L("Extra-virgin olive oil (5L)", "1509", 28, 4200, 12)],
+  },
+  {
+    acc: "acc-002", seq: 14, date: "2025-11-10", due: "2025-11-25", status: "paid", signatory: "emp-002", fy: "25-26",
+    discountType: "percent", discountValue: 4,
+    lines: [L("Specialty 00 flour (25kg)", "1101", 45, 2200, 5), L("Durum semolina (25kg)", "1103", 22, 1900, 5)],
+  },
+  {
+    acc: "acc-002", seq: 15, date: "2026-01-15", due: "2026-01-30", status: "paid", signatory: "emp-002", fy: "25-26",
+    discountType: "percent", discountValue: 4,
+    lines: [L("Specialty 00 flour (25kg)", "1101", 44, 2200, 5), L("Extra-virgin olive oil (5L)", "1509", 30, 4200, 12)],
+  },
 ];
 
 export const SEED_INVOICES: Invoice[] = RAW_INVOICES.map((r) => {
   const acc = ACCOUNTS.find((a) => a.id === r.acc)!;
   return {
     id: `inv-${r.acc}-${r.seq}`,
-    number: `${entityPrefix(acc.entityId)}/${FY_LABEL}/${String(r.seq + 100).padStart(4, "0")}`,
+    number: `${entityPrefix(acc.entityId)}/${r.fy ?? FY_LABEL}/${String(r.seq + 100).padStart(4, "0")}`,
     accountId: r.acc,
     entityId: acc.entityId,
     date: r.date,
@@ -334,6 +394,17 @@ export const saveCreatedInvoices = (i: Invoice[]) => write(INVOICES_KEY, i);
 
 export const loadStatusOverrides = () => read<Record<string, InvoiceStatus>>(INVOICE_STATUS_KEY, {});
 export const saveStatusOverrides = (s: Record<string, InvoiceStatus>) => write(INVOICE_STATUS_KEY, s);
+
+// Cumulative amount received against each invoice (drives part-payment & the
+// Receive Payment allocation screen). Keyed by invoice id → INR received.
+export const INVOICE_PAYMENTS_KEY = "nexa-invoice-payments";
+export const loadInvoicePayments = () => read<Record<string, number>>(INVOICE_PAYMENTS_KEY, {});
+export const saveInvoicePayments = (p: Record<string, number>) => write(INVOICE_PAYMENTS_KEY, p);
+
+/** Amount still due on an invoice after part-payments. */
+export function outstandingOf(inv: Invoice, payments: Record<string, number>): number {
+  return Math.max(0, Math.round(invoiceTotal(inv) - (payments[inv.id] ?? 0)));
+}
 
 /** Seed + created invoices, newest first. */
 export function allInvoices(created: Invoice[]): Invoice[] {

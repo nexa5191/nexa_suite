@@ -11,17 +11,32 @@ export type ItemCategory = "raw" | "packing" | "semi-finished" | "finished";
 
 export type Uom = "kg" | "L" | "pcs";
 
+// How a producible item is manufactured / sourced:
+//  • own           — made in our own plant (RM + packing + our conversion)
+//  • loan-license  — made at a licensee's facility under our licence; we bear
+//                    material + a per-unit job-work / loan-licence charge
+//  • third-party   — bought in as finished goods from a contract manufacturer
+export type OwnershipModel = "own" | "loan-license" | "third-party";
+
 export interface Item {
   id: string;
   code: string;
   name: string;
   category: ItemCategory;
-  uom: Uom;
+  uom: Uom; // base unit of measure (BUoM) — stock is always held in this
   rate: number; // standard valuation rate, base INR per UoM
   hsn: string;
   reorderLevel: number; // group-wide reorder point, in UoM
   primaryLocationId: string; // where it is mainly held / produced
+  // Optional alternative / purchase unit (e.g. a case or bag) — can be added
+  // later. `altPack` = how many base units one alternative unit contains.
+  altUom?: string;
+  altPack?: number;
   shelfLifeDays?: number;
+  ownership?: OwnershipModel; // producible items; defaults to "own"
+  conversionRate?: number; // ₹/unit conversion (own factory) or job-work (loan-license)
+  buyRate?: number; // ₹/unit landed purchase cost for third-party finished goods
+  manufacturer?: string; // loan-licensee / third-party supplier name
 }
 
 export interface BomComponent {
@@ -50,4 +65,6 @@ export interface Movement {
   ref?: string; // PO / production / invoice / transfer reference
   note?: string;
   byId?: string; // employee
+  batchNo?: string; // lot / batch number (perishable & traceable items)
+  expiry?: string; // ISO expiry / best-before date for this batch
 }

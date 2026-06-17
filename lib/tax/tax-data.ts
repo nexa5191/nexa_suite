@@ -13,11 +13,12 @@ import { BUSINESS_EVENTS, gstRateFor } from "@/lib/accounting/events";
 import type { BusinessEvent } from "@/lib/accounting/types";
 import { locationById, entityById } from "@/lib/accounting/org";
 import { ACCOUNTS } from "@/lib/crm";
-import { VENDORS } from "@/lib/vendors";
+import { TAX_VENDOR_POOL, ldcRateFor, type MsmeClass } from "@/lib/vendors";
 import {
   classify,
   splitTax,
   natureOf,
+  isUnionTerritory,
   monthKeyOf,
   fyOf,
   panFromGstin,
@@ -50,6 +51,7 @@ function rngFor(seed: string) {
 // ---- row types -------------------------------------------------------------
 export interface OutwardRow {
   id: string;
+  invoiceNo: string; // tax-invoice number
   date: string;
   period: string; // YYYY-MM
   fy: string;
@@ -62,6 +64,7 @@ export interface OutwardRow {
   placeOfSupply: string; // state code
   supplyType: "B2B" | "B2C";
   nature: TaxNature;
+  ut: boolean; // intra-UT supply → CGST + UTGST
   desc: string;
   hsn: string;
   kind: TaxKind;
@@ -69,6 +72,7 @@ export interface OutwardRow {
   taxable: number;
   cgst: number;
   sgst: number;
+  utgst: number;
   igst: number;
   tax: number;
   gross: number;
@@ -78,6 +82,7 @@ export interface OutwardRow {
 
 export interface InwardRow {
   id: string;
+  invoiceNo: string; // vendor bill / tax-invoice number
   date: string;
   period: string;
   fy: string;
@@ -88,8 +93,11 @@ export interface InwardRow {
   vendorGstin: string;
   vendorPan: string;
   supplierState: string;
+  recipientState: string;
   msme: boolean;
+  msmeClass?: MsmeClass;
   nature: TaxNature;
+  ut: boolean; // intra-UT supply → CGST + UTGST
   desc: string;
   hsn: string;
   kind: TaxKind;
@@ -97,13 +105,17 @@ export interface InwardRow {
   taxable: number;
   cgst: number;
   sgst: number;
+  utgst: number;
   igst: number;
   tax: number;
   gross: number;
   itcEligible: boolean;
   rcm: boolean; // reverse charge — recipient pays GST in cash, then claims ITC
   tdsSection: string;
-  tdsRate: number;
+  tdsBaseRate: number; // statutory section rate
+  tdsRate: number; // effective rate (lower if an LDC applies)
+  ldc: boolean; // a sec.197 lower-deduction certificate was applied
+  ldcCertNo?: string;
   tds: number;
   netPayable: number;
 }
@@ -111,6 +123,25 @@ export interface InwardRow {
 // ---- enrichment pools ------------------------------------------------------
 // Domestic customer states for B2B inter-state spread.
 const POS_POOL = ["29", "27", "07", "33", "36", "24", "09", "06"];
+
+// Union-Territory places of supply (no legislature → CGST + UTGST). A small,
+// deterministic slice of intra-state supplies is re-cast as intra-UT so the
+// UTGST column is exercised in the registers; only the CGST/SGST→CGST/UTGST
+// classification changes — taxable value and total tax are untouched.
+const UT_POS = ["04", "26", "35", "38"];
+
+/** A short, stable tax-invoice / bill number derived from the event. */
+function docNumber(memo: string, fallbackId: string, prefix: string, fy: string): string {
+  const m = memo.match(/\b(?:INV|BILL)-\d{6}-\d+\b/);
+  if (m) return m[0];
+  const seq = (fallbackId.match(/\d+/)?.[0] ?? "0").padStart(4, "0").slice(-4);
+  return `${prefix}/${fy.replace("-", "")}/${seq}`;
+}
+
+/** Re-stamp a GSTIN onto a different state code (keeps PAN + suffix intact). */
+function regstin(gstin: string, stateCode: string): string {
+  return gstin.length >= 2 ? stateCode + gstin.slice(2) : gstin;
+}
 
 // Vendor TDS section by the expense account hit.
 const TDS_BY_ACCOUNT: Record<string, { section: string; rate: number }> = {
@@ -131,7 +162,7 @@ function entityGstin(entityId: string): string {
 function buildOutward(ev: BusinessEvent): OutwardRow {
   const rnd = rngFor("out-" + ev.id);
   const loc = locationById(ev.locationId);
-  const supplierState = loc?.stateCode ?? "29";
+  let supplierState = loc?.stateCode ?? "29";
   const rate = Math.round(gstRateFor(ev) * 100); // 0 or 18
   const isExport = rate === 0;
 
@@ -161,27 +192,43 @@ function buildOutward(ev: BusinessEvent): OutwardRow {
     placeOfSupply = supplierState;
   }
 
-  const nature = natureOf(supplierState, placeOfSupply);
+  let supplierGstin = entityGstin(ev.entityId);
+
+  // Deterministically re-cast ~9% of intra-state supplies as intra-UT supplies
+  // (supplier + place of supply both in a UT) so the UTGST head is exercised.
+  let nature = natureOf(supplierState, placeOfSupply);
+  if (!isExport && nature === "intra" && rnd() < 0.09) {
+    const ut = UT_POS[Math.floor(rnd() * UT_POS.length)];
+    supplierState = ut;
+    placeOfSupply = ut;
+    supplierGstin = regstin(supplierGstin, ut);
+    if (customerGstin) customerGstin = regstin(customerGstin, ut);
+    nature = natureOf(supplierState, placeOfSupply);
+  }
+  const isUT = isUnionTerritory(placeOfSupply) && nature === "intra";
+
   const cls = classify(ev.memo);
-  const split = splitTax(ev.amount, rate, nature);
+  const split = splitTax(ev.amount, rate, nature, isUT);
 
   // Registered B2B domestic customers withhold 194J @10% on the taxable value.
   const tdsReceivable = b2b && customerGstin ? tdsAmount(ev.amount, 10) : 0;
 
   return {
     id: ev.id,
+    invoiceNo: docNumber(ev.memo, ev.id, "INV", fyOf(ev.accrualDate)),
     date: ev.accrualDate,
     period: monthKeyOf(ev.accrualDate),
     fy: fyOf(ev.accrualDate),
     entityId: ev.entityId,
     locationId: ev.locationId,
     supplierState,
-    supplierGstin: entityGstin(ev.entityId),
+    supplierGstin,
     customerName,
     customerGstin,
     placeOfSupply,
     supplyType: customerGstin ? "B2B" : "B2C",
     nature,
+    ut: isUT,
     desc: ev.memo,
     hsn: cls.code,
     kind: cls.kind,
@@ -189,6 +236,7 @@ function buildOutward(ev: BusinessEvent): OutwardRow {
     taxable: split.taxable,
     cgst: split.cgst,
     sgst: split.sgst,
+    utgst: split.utgst,
     igst: split.igst,
     tax: split.tax,
     gross: split.gross,
@@ -203,24 +251,41 @@ function buildInward(ev: BusinessEvent): InwardRow {
   const rate = Math.round(gstRateFor(ev) * 100); // 0 (global) or 18
 
   // Assign a vendor deterministically; vendor GSTIN gives the supplier state.
-  const vendor = VENDORS[Math.floor(rnd() * VENDORS.length)];
-  const supplierState = stateCodeFromGstin(vendor.gstin);
-  const nature = natureOf(supplierState, recipientState);
+  const vendor = TAX_VENDOR_POOL[Math.floor(rnd() * TAX_VENDOR_POOL.length)];
+  let supplierState = stateCodeFromGstin(vendor.gstin);
+  let vendorGstin = vendor.gstin;
+  let recipientStateFinal = recipientState;
+
+  // Deterministically re-cast ~9% of intra-state purchases as intra-UT.
+  let nature = natureOf(supplierState, recipientStateFinal);
+  if (nature === "intra" && rnd() < 0.09) {
+    const ut = UT_POS[Math.floor(rnd() * UT_POS.length)];
+    supplierState = ut;
+    recipientStateFinal = ut;
+    vendorGstin = regstin(vendor.gstin, ut);
+    nature = natureOf(supplierState, recipientStateFinal);
+  }
+  const isUT = isUnionTerritory(recipientStateFinal) && nature === "intra";
+
   const cls = classify(ev.memo);
-  const split = splitTax(ev.amount, rate, nature);
+  const split = splitTax(ev.amount, rate, nature, isUT);
 
   // Reverse charge for goods-transport / freight inward.
   const rcm = cls.code === "996511" || /freight|transport|logistic/i.test(ev.memo);
 
   const acct = ev.incomeOrExpenseAccount;
   const tdsCfg = TDS_BY_ACCOUNT[acct] ?? { section: "194C", rate: 2 };
-  const tds = tdsAmount(ev.amount, tdsCfg.rate);
+  // Apply a sec.197 lower-deduction certificate if the vendor holds a valid one.
+  const ldc = ldcRateFor(vendor, tdsCfg.section, ev.accrualDate);
+  const effRate = ldc ? ldc.rate : tdsCfg.rate;
+  const tds = tdsAmount(ev.amount, effRate);
 
   // A few bills are flagged ITC-ineligible (blocked credits, sec.17(5)).
   const itcEligible = !rcm ? rnd() > 0.08 : true;
 
   return {
     id: ev.id,
+    invoiceNo: docNumber(ev.memo, ev.id, "BILL", fyOf(ev.accrualDate)),
     date: ev.accrualDate,
     period: monthKeyOf(ev.accrualDate),
     fy: fyOf(ev.accrualDate),
@@ -228,11 +293,14 @@ function buildInward(ev: BusinessEvent): InwardRow {
     locationId: ev.locationId,
     vendorId: vendor.id,
     vendorName: vendor.name,
-    vendorGstin: vendor.gstin,
+    vendorGstin,
     vendorPan: panFromGstin(vendor.gstin),
     supplierState,
+    recipientState: recipientStateFinal,
     msme: vendor.msme,
+    msmeClass: vendor.msmeClass,
     nature,
+    ut: isUT,
     desc: ev.memo,
     hsn: cls.code,
     kind: cls.kind,
@@ -240,13 +308,17 @@ function buildInward(ev: BusinessEvent): InwardRow {
     taxable: split.taxable,
     cgst: split.cgst,
     sgst: split.sgst,
+    utgst: split.utgst,
     igst: split.igst,
     tax: split.tax,
     gross: split.gross,
     itcEligible,
     rcm,
     tdsSection: tdsCfg.section,
-    tdsRate: tdsCfg.rate,
+    tdsBaseRate: tdsCfg.rate,
+    tdsRate: effRate,
+    ldc: !!ldc,
+    ldcCertNo: ldc?.certNo,
     tds,
     netPayable: Math.round((split.gross - tds) * 100) / 100,
   };
@@ -304,6 +376,7 @@ export interface HeadTotals {
   taxable: number;
   cgst: number;
   sgst: number;
+  utgst: number;
   igst: number;
   tax: number;
 }
@@ -314,10 +387,11 @@ export function sumHeads(rows: Array<OutwardRow | InwardRow>): HeadTotals {
       taxable: a.taxable + r.taxable,
       cgst: a.cgst + r.cgst,
       sgst: a.sgst + r.sgst,
+      utgst: a.utgst + r.utgst,
       igst: a.igst + r.igst,
       tax: a.tax + r.tax,
     }),
-    { taxable: 0, cgst: 0, sgst: 0, igst: 0, tax: 0 },
+    { taxable: 0, cgst: 0, sgst: 0, utgst: 0, igst: 0, tax: 0 },
   );
 }
 
@@ -330,6 +404,7 @@ export interface HsnGroup {
   taxable: number;
   cgst: number;
   sgst: number;
+  utgst: number;
   igst: number;
   tax: number;
 }
@@ -340,11 +415,12 @@ export function hsnSummary(rows: Array<OutwardRow | InwardRow>): HsnGroup[] {
     const key = `${r.hsn}-${r.rate}`;
     const g =
       map.get(key) ??
-      ({ code: r.hsn, kind: r.kind, desc: classify(r.desc).desc, rate: r.rate, lines: 0, taxable: 0, cgst: 0, sgst: 0, igst: 0, tax: 0 } as HsnGroup);
+      ({ code: r.hsn, kind: r.kind, desc: classify(r.desc).desc, rate: r.rate, lines: 0, taxable: 0, cgst: 0, sgst: 0, utgst: 0, igst: 0, tax: 0 } as HsnGroup);
     g.lines += 1;
     g.taxable += r.taxable;
     g.cgst += r.cgst;
     g.sgst += r.sgst;
+    g.utgst += r.utgst;
     g.igst += r.igst;
     g.tax += r.tax;
     map.set(key, g);

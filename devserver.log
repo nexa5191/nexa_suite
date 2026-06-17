@@ -1,0 +1,241 @@
+
+> nexa@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 1872ms
+ ○ Compiling / ...
+ ✓ Compiled / in 7.3s (2027 modules)
+ GET / 200 in 7725ms
+ ○ Compiling /setup ...
+ ✓ Compiled /setup in 4.1s (1900 modules)
+ GET /setup 200 in 4317ms
+ ✓ Compiled /projects in 355ms (1903 modules)
+ GET /projects 200 in 515ms
+ ✓ Compiled /timesheets in 355ms (1914 modules)
+ GET /timesheets 200 in 476ms
+ ○ Compiling /invoicing ...
+ ✓ Compiled /invoicing in 518ms (1935 modules)
+ GET /invoicing 200 in 677ms
+ GET /invoicing 200 in 76ms
+ GET /setup 200 in 135ms
+ GET /invoicing 200 in 93ms
+ GET /timesheets 200 in 87ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 3s (1361 modules)
+ GET /patients 404 in 313ms
+ GET /reports 404 in 96ms
+ GET /products?tab=stock 404 in 92ms
+ ○ Compiling /vendors ...
+ ✓ Compiled /vendors in 1775ms (1401 modules)
+ GET /locations 404 in 260ms
+ ✓ Compiled / in 303ms (950 modules)
+ GET / 200 in 815ms
+ GET / 200 in 161ms
+ ○ Compiling /invoicing ...
+ ✓ Compiled /invoicing in 808ms (952 modules)
+ ○ Compiling /hr/payroll ...
+ ✓ Compiled /hr/payroll in 1480ms (1949 modules)
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 506ms (1938 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /_next/static/webpack/8daa5e2c387e277e.webpack.hot-update.json 404 in 906ms
+ GET /hr/payroll 200 in 134ms
+ ○ Compiling /portal ...
+ ✓ Compiled /portal in 1149ms (1963 modules)
+ ○ Compiling /vendors ...
+ ✓ Compiled /vendors in 629ms (981 modules)
+ ○ Compiling /inventory ...
+ ✓ Compiled /inventory in 1119ms (1986 modules)
+ ○ Compiling /reports/profit-loss ...
+ ✓ Compiled /reports/profit-loss in 2.1s (2009 modules)
+ ○ Compiling /calendar ...
+ ✓ Compiled /calendar in 1174ms (2011 modules)
+ ○ Compiling /tasks ...
+ ✓ Compiled /tasks in 973ms (2017 modules)
+ ○ Compiling /connections ...
+ ✓ Compiled /connections in 1364ms (2021 modules)
+ ○ Compiling /chart-of-accounts ...
+ ✓ Compiled /chart-of-accounts in 1464ms (2017 modules)
+ ○ Compiling /journal-entries ...
+ ✓ Compiled /journal-entries in 1090ms (2028 modules)
+ ○ Compiling /assets ...
+ ✓ Compiled /assets in 1179ms (2027 modules)
+ ○ Compiling /tax ...
+ ✓ Compiled /tax in 2s (1515 modules)
+ ○ Compiling /group ...
+ ✓ Compiled /group in 1744ms (1521 modules)
+ ○ Compiling /group/intercompany ...
+ ✓ Compiled /group/intercompany in 1150ms (1521 modules)
+ ○ Compiling /banking ...
+ ✓ Compiled /banking in 1087ms (1534 modules)
+ ○ Compiling /crm ...
+ ✓ Compiled /crm in 1477ms (1548 modules)
+ ○ Compiling /orders ...
+ ✓ Compiled /orders in 4.8s (2072 modules)
+ ○ Compiling /invoicing ...
+ ✓ Compiled /invoicing in 776ms (982 modules)
+ ○ Compiling /invoicing/new ...
+ ✓ Compiled /invoicing/new in 1791ms (2080 modules)
+ ○ Compiling /analysis/cost-audit ...
+ ✓ Compiled /analysis/cost-audit in 2.6s (2086 modules)
+ ○ Compiling /planning/budget ...
+ ✓ Compiled /planning/budget in 2.3s (2103 modules)
+ ○ Compiling /planning/business-plan ...
+ ✓ Compiled /planning/business-plan in 3.3s (2097 modules)
+ ○ Compiling /planning/decisions ...
+ ✓ Compiled /planning/decisions in 2.1s (2098 modules)
+ ○ Compiling /reports/profit-loss ...
+ ✓ Compiled /reports/profit-loss in 1057ms (980 modules)
+ ○ Compiling /reports/balance-sheet ...
+ ✓ Compiled /reports/cash-flow in 2.9s (2104 modules)
+ ○ Compiling /reports/explorer ...
+ ✓ Compiled /reports/explorer in 2.5s (2098 modules)
+ ○ Compiling /inventory ...
+ ✓ Compiled /inventory in 1527ms (980 modules)
+ ○ Compiling /vendors ...
+ ✓ Compiled /vendors in 991ms (465 modules)
+ ○ Compiling /documents ...
+ ✓ Compiled /documents in 3.2s (1616 modules)
+ ✓ Compiled in 896ms (1138 modules)
+ ○ Compiling /hr ...
+ ✓ Compiled /hr in 2.9s (1619 modules)
+ ✓ Compiled in 1021ms (1143 modules)
+ ○ Compiling /leave ...
+ ✓ Compiled /leave in 2s (1607 modules)
+ ○ Compiling /leave/config ...
+ ✓ Compiled /leave/config in 2.3s (1619 modules)
+ ○ Compiling /hr/attendance ...
+ ✓ Compiled /hr/attendance in 2.1s (1602 modules)
+ ○ Compiling /hr/payroll ...
+ ✓ Compiled /hr/payroll in 648ms (442 modules)
+ ○ Compiling /hr/holidays ...
+ ✓ Compiled /hr/holidays in 2.3s (1608 modules)
+ ○ Compiling /cv-bank ...
+ ✓ Compiled /cv-bank in 2.8s (1604 modules)
+ ○ Compiling /agency-portal ...
+ ✓ Compiled /approvals in 5.8s (1626 modules)
+ ○ Compiling /portal ...
+ ✓ Compiled /portal in 878ms (462 modules)
+ ○ Compiling /setup ...
+ ✓ Compiled /setup in 1142ms (466 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 3.5s (991 modules)
+ ○ Compiling /tasks ...
+ ✓ Compiled /tasks in 635ms (990 modules)
+ ✓ Compiled /calendar in 263ms (1000 modules)
+ ✓ Compiled in 1699ms (2148 modules)
+ ✓ Compiled in 1079ms (2148 modules)
+ ✓ Compiled in 979ms (2148 modules)
+ ✓ Compiled in 1166ms (2148 modules)
+ ⨯ ./lib/accounting/events.ts:3:1
+Module not found: Can't resolve './revenue-bridge'
+[0m [90m 1 |[39m [36mimport[39m type { [33mBusinessEvent[39m } [36mfrom[39m [32m"./types"[39m[33m;[39m[0m
+[0m [90m 2 |[39m [36mimport[39m { [33mENTITIES[39m[33m,[39m [33mLOCATIONS[39m } [36mfrom[39m [32m"./org"[39m[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m { [33mMODULE_REVENUE_EVENTS[39m } [36mfrom[39m [32m"./revenue-bridge"[39m[33m;[39m[0m
+[0m [90m   |[39m [31m[1m^[22m[39m[0m
+[0m [90m 4 |[39m[0m
+[0m [90m 5 |[39m [90m// Deterministic PRNG (mulberry32) so server and client render identical seed[39m[0m
+[0m [90m 6 |[39m [90m// data — no Math.random / Date.now anywhere in the data layer.[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./lib/accounting/ledger.ts
+./components/accounting/journal-provider.tsx
+ ⨯ ./lib/accounting/events.ts:3:1
+Module not found: Can't resolve './revenue-bridge'
+[0m [90m 1 |[39m [36mimport[39m type { [33mBusinessEvent[39m } [36mfrom[39m [32m"./types"[39m[33m;[39m[0m
+[0m [90m 2 |[39m [36mimport[39m { [33mENTITIES[39m[33m,[39m [33mLOCATIONS[39m } [36mfrom[39m [32m"./org"[39m[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m { [33mMODULE_REVENUE_EVENTS[39m } [36mfrom[39m [32m"./revenue-bridge"[39m[33m;[39m[0m
+[0m [90m   |[39m [31m[1m^[22m[39m[0m
+[0m [90m 4 |[39m[0m
+[0m [90m 5 |[39m [90m// Deterministic PRNG (mulberry32) so server and client render identical seed[39m[0m
+[0m [90m 6 |[39m [90m// data — no Math.random / Date.now anywhere in the data layer.[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./lib/accounting/ledger.ts
+./components/accounting/journal-provider.tsx
+ ⨯ ./lib/accounting/events.ts:3:1
+Module not found: Can't resolve './revenue-bridge'
+[0m [90m 1 |[39m [36mimport[39m type { [33mBusinessEvent[39m } [36mfrom[39m [32m"./types"[39m[33m;[39m[0m
+[0m [90m 2 |[39m [36mimport[39m { [33mENTITIES[39m[33m,[39m [33mLOCATIONS[39m } [36mfrom[39m [32m"./org"[39m[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m { [33mMODULE_REVENUE_EVENTS[39m } [36mfrom[39m [32m"./revenue-bridge"[39m[33m;[39m[0m
+[0m [90m   |[39m [31m[1m^[22m[39m[0m
+[0m [90m 4 |[39m[0m
+[0m [90m 5 |[39m [90m// Deterministic PRNG (mulberry32) so server and client render identical seed[39m[0m
+[0m [90m 6 |[39m [90m// data — no Math.random / Date.now anywhere in the data layer.[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./lib/accounting/ledger.ts
+./components/accounting/journal-provider.tsx
+ ⨯ ./lib/accounting/events.ts:3:1
+Module not found: Can't resolve './revenue-bridge'
+[0m [90m 1 |[39m [36mimport[39m type { [33mBusinessEvent[39m } [36mfrom[39m [32m"./types"[39m[33m;[39m[0m
+[0m [90m 2 |[39m [36mimport[39m { [33mENTITIES[39m[33m,[39m [33mLOCATIONS[39m } [36mfrom[39m [32m"./org"[39m[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m { [33mMODULE_REVENUE_EVENTS[39m } [36mfrom[39m [32m"./revenue-bridge"[39m[33m;[39m[0m
+[0m [90m   |[39m [31m[1m^[22m[39m[0m
+[0m [90m 4 |[39m[0m
+[0m [90m 5 |[39m [90m// Deterministic PRNG (mulberry32) so server and client render identical seed[39m[0m
+[0m [90m 6 |[39m [90m// data — no Math.random / Date.now anywhere in the data layer.[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./lib/accounting/ledger.ts
+./components/accounting/journal-provider.tsx
+ ⨯ ./lib/accounting/events.ts:3:1
+Module not found: Can't resolve './revenue-bridge'
+[0m [90m 1 |[39m [36mimport[39m type { [33mBusinessEvent[39m } [36mfrom[39m [32m"./types"[39m[33m;[39m[0m
+[0m [90m 2 |[39m [36mimport[39m { [33mENTITIES[39m[33m,[39m [33mLOCATIONS[39m } [36mfrom[39m [32m"./org"[39m[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m { [33mMODULE_REVENUE_EVENTS[39m } [36mfrom[39m [32m"./revenue-bridge"[39m[33m;[39m[0m
+[0m [90m   |[39m [31m[1m^[22m[39m[0m
+[0m [90m 4 |[39m[0m
+[0m [90m 5 |[39m [90m// Deterministic PRNG (mulberry32) so server and client render identical seed[39m[0m
+[0m [90m 6 |[39m [90m// data — no Math.random / Date.now anywhere in the data layer.[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./lib/accounting/ledger.ts
+./components/accounting/journal-provider.tsx
+ ⨯ ./lib/accounting/events.ts:3:1
+Module not found: Can't resolve './revenue-bridge'
+[0m [90m 1 |[39m [36mimport[39m type { [33mBusinessEvent[39m } [36mfrom[39m [32m"./types"[39m[33m;[39m[0m
+[0m [90m 2 |[39m [36mimport[39m { [33mENTITIES[39m[33m,[39m [33mLOCATIONS[39m } [36mfrom[39m [32m"./org"[39m[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m { [33mMODULE_REVENUE_EVENTS[39m } [36mfrom[39m [32m"./revenue-bridge"[39m[33m;[39m[0m
+[0m [90m   |[39m [31m[1m^[22m[39m[0m
+[0m [90m 4 |[39m[0m
+[0m [90m 5 |[39m [90m// Deterministic PRNG (mulberry32) so server and client render identical seed[39m[0m
+[0m [90m 6 |[39m [90m// data — no Math.random / Date.now anywhere in the data layer.[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./lib/accounting/ledger.ts
+./components/accounting/journal-provider.tsx
+ ⨯ ./lib/accounting/events.ts:3:1
+Module not found: Can't resolve './revenue-bridge'
+[0m [90m 1 |[39m [36mimport[39m type { [33mBusinessEvent[39m } [36mfrom[39m [32m"./types"[39m[33m;[39m[0m
+[0m [90m 2 |[39m [36mimport[39m { [33mENTITIES[39m[33m,[39m [33mLOCATIONS[39m } [36mfrom[39m [32m"./org"[39m[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m { [33mMODULE_REVENUE_EVENTS[39m } [36mfrom[39m [32m"./revenue-bridge"[39m[33m;[39m[0m
+[0m [90m   |[39m [31m[1m^[22m[39m[0m
+[0m [90m 4 |[39m[0m
+[0m [90m 5 |[39m [90m// Deterministic PRNG (mulberry32) so server and client render identical seed[39m[0m
+[0m [90m 6 |[39m [90m// data — no Math.random / Date.now anywhere in the data layer.[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./lib/accounting/ledger.ts
+./components/accounting/journal-provider.tsx
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename 'C:\Users\Administrator\NEXA\.next\cache\webpack\client-development\1.pack.gz_' -> 'C:\Users\Administrator\NEXA\.next\cache\webpack\client-development\1.pack.gz'
+ ⚠ Found a change in next.config.mjs. Restarting the server to apply the changes...
+[?25h

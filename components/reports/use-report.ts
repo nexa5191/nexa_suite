@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePrefs } from "@/components/prefs/prefs-provider";
+import { useJournal } from "@/components/accounting/journal-provider";
 import { periodPresets, DEFAULT_PERIOD_ID, type Period } from "@/lib/accounting/periods";
 import { ENTITIES, LOCATIONS, ALL } from "@/lib/accounting/org";
 import type { ReportFilters } from "@/lib/accounting/types";
@@ -13,6 +14,9 @@ const PERIOD_KEY = "nexa-report-period";
 
 export function useReport() {
   const prefs = usePrefs();
+  // Subscribing to the journal version makes every report re-render (and re-read
+  // the merged ledger) the moment a manual entry is posted or reversed.
+  const { version } = useJournal();
   const presets = useMemo(() => periodPresets(new Date()), []);
   const [periodId, setPeriodId] = useState(DEFAULT_PERIOD_ID);
   const [custom, setCustom] = useState<{ from: string; to: string } | null>(null);
@@ -61,6 +65,7 @@ export function useReport() {
 
   return {
     filters,
+    version,
     presets,
     periodId,
     setPeriodId: (id: string) => {

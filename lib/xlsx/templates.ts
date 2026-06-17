@@ -13,10 +13,38 @@ export interface ExcelTemplate {
   totalFill: string; // totals row fill
   totalText: string; // totals row font colour
   gridColor: string; // (kept for parity / future use)
+  fontName: string; // font family (Calibri, Arial, …)
   fontSize: number; // body font size (pt)
+  headerBold: boolean; // header row bold
+  headerItalic: boolean; // header row italic
+  moneyDecimals: number; // decimal places in money/number formats (0–2)
   currencySymbol: string; // prefix used in money number formats ("₹", "$", "")
   showTitleBlock: boolean; // render title + meta rows above the table
   borders: boolean; // thin borders on body cells
+  bodyText: string; // data-row font colour
+  bodyBold: boolean; // data rows bold
+  bodyItalic: boolean; // data rows italic
+  totalBold: boolean; // totals row bold
+  totalItalic: boolean; // totals row italic
+}
+
+// Defaults for knobs added after the first templates shipped — used to upgrade
+// older saved presets so they always have every field.
+export const TEMPLATE_DEFAULTS = {
+  fontName: "Calibri",
+  headerBold: true,
+  headerItalic: false,
+  moneyDecimals: 0,
+  bodyText: "111827",
+  bodyBold: false,
+  bodyItalic: false,
+  totalBold: true,
+  totalItalic: false,
+} as const;
+
+/** Fill any missing fields on a (possibly older) stored template. */
+export function normalizeTemplate(t: Partial<ExcelTemplate> & { id: string; name: string }): ExcelTemplate {
+  return { ...BUILTIN_TEMPLATES[0], ...TEMPLATE_DEFAULTS, ...t };
 }
 
 export const BUILTIN_TEMPLATES: ExcelTemplate[] = [
@@ -31,7 +59,16 @@ export const BUILTIN_TEMPLATES: ExcelTemplate[] = [
     totalFill: "EEF2FF",
     totalText: "1E1B4B",
     gridColor: "D1D5DB",
+    fontName: "Calibri",
     fontSize: 11,
+    headerBold: true,
+    headerItalic: false,
+    moneyDecimals: 0,
+    bodyText: "111827",
+    bodyBold: false,
+    bodyItalic: false,
+    totalBold: true,
+    totalItalic: false,
     currencySymbol: "₹",
     showTitleBlock: true,
     borders: true,
@@ -47,7 +84,16 @@ export const BUILTIN_TEMPLATES: ExcelTemplate[] = [
     totalFill: "D1FAE5",
     totalText: "064E3B",
     gridColor: "A7F3D0",
+    fontName: "Calibri",
     fontSize: 11,
+    headerBold: true,
+    headerItalic: false,
+    moneyDecimals: 0,
+    bodyText: "111827",
+    bodyBold: false,
+    bodyItalic: false,
+    totalBold: true,
+    totalItalic: false,
     currencySymbol: "₹",
     showTitleBlock: true,
     borders: true,
@@ -63,7 +109,16 @@ export const BUILTIN_TEMPLATES: ExcelTemplate[] = [
     totalFill: "F3F4F6",
     totalText: "111827",
     gridColor: "E5E7EB",
+    fontName: "Calibri",
     fontSize: 11,
+    headerBold: true,
+    headerItalic: false,
+    moneyDecimals: 0,
+    bodyText: "111827",
+    bodyBold: false,
+    bodyItalic: false,
+    totalBold: true,
+    totalItalic: false,
     currencySymbol: "₹",
     showTitleBlock: true,
     borders: false,
@@ -79,7 +134,16 @@ export const BUILTIN_TEMPLATES: ExcelTemplate[] = [
     totalFill: "FFFFFF",
     totalText: "111827",
     gridColor: "111827",
+    fontName: "Cambria",
     fontSize: 10,
+    headerBold: true,
+    headerItalic: false,
+    moneyDecimals: 0,
+    bodyText: "111827",
+    bodyBold: false,
+    bodyItalic: false,
+    totalBold: true,
+    totalItalic: false,
     currencySymbol: "",
     showTitleBlock: true,
     borders: true,
@@ -95,7 +159,7 @@ export function loadUserTemplates(): ExcelTemplate[] {
     const raw = localStorage.getItem(KEY);
     if (!raw) return [];
     const arr = JSON.parse(raw) as ExcelTemplate[];
-    return Array.isArray(arr) ? arr.map((t) => ({ ...t, builtin: false })) : [];
+    return Array.isArray(arr) ? arr.map((t) => normalizeTemplate({ ...t, builtin: false })) : [];
   } catch {
     return [];
   }

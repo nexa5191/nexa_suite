@@ -326,6 +326,24 @@ export function accountMonthly(f: ReportFilters, code: string): Array<{ month: s
     .map(([month, amount]) => ({ month, amount }));
 }
 
+/**
+ * Outstanding receivables / payables as at `f.to`, ALWAYS measured on the
+ * accrual ledger regardless of the report's selected basis.
+ *
+ * Cash-basis books carry no AR/AP — a sale only hits the books when the cash is
+ * collected — so switching a report to "cash" correctly shows zero receivables
+ * and payables. But the money owed is still real and useful operationally, so
+ * this exposes it as a memo (MIS) figure that reports can surface without
+ * affecting the cash-basis accounting itself.
+ */
+export function outstandingControl(f: ReportFilters): { receivables: number; payables: number } {
+  const bal = cumulativeBalance({ ...f, basis: "accrual" }, f.to);
+  return {
+    receivables: bal.get("1100") ?? 0,
+    payables: -(bal.get("2010") ?? 0),
+  };
+}
+
 export function cashAndReceivables(f: ReportFilters): { cash: number; receivables: number; payables: number } {
   const bal = cumulativeBalance(f, f.to);
   let cash = 0;

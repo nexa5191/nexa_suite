@@ -43,7 +43,7 @@ function Face({ k }: { k: Kpi }) {
         {k.href && <ArrowUpRight className="size-3 opacity-0 transition-opacity group-hover:opacity-70" />}
         {k.detail && <RotateCw className="size-3 opacity-0 transition-opacity group-hover:opacity-70" />}
       </p>
-      <p className={cn("mt-1 text-xl font-bold tracking-tight", k.colored && k.value < 0 && "text-danger")}>
+      <p className={cn("mt-0.5 text-lg font-bold leading-tight tracking-tight", k.colored && k.value < 0 && "text-danger")}>
         <Money value={k.value} compact />
       </p>
       {k.sub && <p className="mt-0.5 text-xs text-muted-foreground">{k.sub}</p>}
@@ -51,7 +51,7 @@ function Face({ k }: { k: Kpi }) {
   );
 }
 
-const SHELL = "rounded-lg border bg-card p-4 shadow-sm transition-colors";
+const SHELL = "rounded-lg border bg-card px-4 py-2.5 shadow-sm transition-colors";
 
 function KpiCard({ k }: { k: Kpi }) {
   // Flip card — reveals a breakdown on the back face.
@@ -84,7 +84,7 @@ function Flip({ k }: { k: Kpi }) {
     <button
       type="button"
       onClick={() => setFlipped((f) => !f)}
-      className="relative block h-[104px] w-full text-left [transform-style:preserve-3d]"
+      className="relative block h-[72px] w-full text-left [transform-style:preserve-3d]"
       aria-label={`${k.label} — show breakdown`}
     >
       <span
@@ -102,11 +102,11 @@ function Flip({ k }: { k: Kpi }) {
             "absolute inset-0 block overflow-hidden [backface-visibility:hidden] [transform:rotateY(180deg)]",
           )}
         >
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="mb-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             {k.detailTitle ?? "Breakdown"}
           </p>
-          <div className="space-y-0.5">
-            {k.detail!.slice(0, 4).map((d) => (
+          <div className="space-y-0">
+            {k.detail!.slice(0, 3).map((d) => (
               <div key={d.label} className="flex items-center justify-between gap-2 text-xs">
                 <span className="truncate text-muted-foreground">{d.label}</span>
                 {d.value !== undefined && (

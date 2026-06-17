@@ -83,14 +83,29 @@ function expand(ev: BusinessEvent, out: Posting[]) {
   }
 }
 
-// Build once and cache (module-level singleton).
-let _postings: Posting[] | null = null;
-export function allPostings(): Posting[] {
-  if (_postings) return _postings;
+// Build the seed ledger once and cache (module-level singleton).
+let _seed: Posting[] | null = null;
+function seedPostings(): Posting[] {
+  if (_seed) return _seed;
   const out: Posting[] = [];
   for (const ev of BUSINESS_EVENTS) expand(ev, out);
-  _postings = out;
+  _seed = out;
   return out;
+}
+
+// Manually-posted vouchers, registered by the JournalProvider (client-side,
+// hydrated from localStorage). Merged into every ledger read so the General
+// Ledger and all statements reflect user entries. Empty during SSR.
+let _manual: Posting[] = [];
+
+/** Replace the set of manual postings merged into the ledger. */
+export function setManualPostings(postings: Posting[]): void {
+  _manual = postings;
+}
+
+export function allPostings(): Posting[] {
+  const seed = seedPostings();
+  return _manual.length ? seed.concat(_manual) : seed;
 }
 
 function matchesOrg(p: Posting, f: ReportFilters) {

@@ -8,7 +8,8 @@
 // mismatch surfaces as an inter-company reconciliation variance.
 // ---------------------------------------------------------------------------
 
-import { entityById } from "@/lib/accounting/org";
+import { entityById, locationsForEntity } from "@/lib/accounting/org";
+import type { EntryDraft } from "@/lib/accounting/manual-entries";
 
 export type IcType = "loan" | "sale" | "service-fee" | "royalty" | "expense-recharge";
 
@@ -128,6 +129,68 @@ export function icVariance(tx: IcTransaction): number {
 
 export function entityName(id: string): string {
   return entityById(id)?.name ?? id;
+}
+
+// ---------------------------------------------------------------------------
+// Double-sided GL posting — auto-mirror an IC deal into BOTH entities' books.
+// The provider (`from`) recognises the receivable + income/loan-out; the
+// receiver (`to`) recognises the payable + cost/loan-in. Both legs use the
+// inter-company control accounts (1320 / 2020) so consolidation eliminates them
+// cleanly. A sale in one company therefore becomes a purchase in the other.
+// ---------------------------------------------------------------------------
+
+const IC_RECEIVABLE = "1320";
+const IC_PAYABLE = "2020";
+const BANK = "1020";
+
+// Per type: the provider's P&L/cash credit, and the receiver's P&L/cash debit.
+const IC_POSTING: Record<IcType, { fromCredit: string; toDebit: string; cash: boolean }> = {
+  loan: { fromCredit: BANK, toDebit: BANK, cash: true }, // funds move; no P&L
+  sale: { fromCredit: "4010", toDebit: "5010", cash: false }, // revenue ↔ COGS
+  "service-fee": { fromCredit: "4900", toDebit: "6050", cash: false }, // other income ↔ opex
+  royalty: { fromCredit: "4900", toDebit: "6050", cash: false },
+  "expense-recharge": { fromCredit: "4900", toDebit: "6050", cash: false },
+};
+
+const firstLoc = (entityId: string) => locationsForEntity(entityId)[0]?.id ?? "";
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
+/** Build the two mirrored vouchers for an IC deal (provider draft, receiver draft). */
+export function buildMirrorDrafts(tx: IcTransaction): { from: EntryDraft; to: EntryDraft } {
+  const m = IC_TYPE_META[tx.type];
+  const p = IC_POSTING[tx.type];
+  const amt = r2(tx.amount);
+  const counter = r2(tx.counterAmount ?? tx.amount);
+
+  const from: EntryDraft = {
+    type: "journal",
+    date: tx.date,
+    narration: `IC ${m.label} to ${entityName(tx.toEntityId)} — ${tx.memo} [${tx.id}]`,
+    entityId: tx.fromEntityId,
+    locationId: firstLoc(tx.fromEntityId),
+    currency: "INR",
+    basis: "accrual",
+    lines: [
+      { accountCode: IC_RECEIVABLE, debit: amt, credit: 0 },
+      { accountCode: p.fromCredit, debit: 0, credit: amt },
+    ],
+  };
+
+  const to: EntryDraft = {
+    type: "journal",
+    date: tx.date,
+    narration: `IC ${m.label} from ${entityName(tx.fromEntityId)} — ${tx.memo} [${tx.id}]`,
+    entityId: tx.toEntityId,
+    locationId: firstLoc(tx.toEntityId),
+    currency: "INR",
+    basis: "accrual",
+    lines: [
+      { accountCode: p.toDebit, debit: counter, credit: 0 },
+      { accountCode: IC_PAYABLE, debit: 0, credit: counter },
+    ],
+  };
+
+  return { from, to };
 }
 
 export function nextIcId(created: IcTransaction[]): string {

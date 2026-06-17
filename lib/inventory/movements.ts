@@ -62,23 +62,25 @@ interface RawMove {
   ref?: string;
   note?: string;
   by?: string;
+  batch?: string; // lot / batch number
+  expiry?: string; // ISO best-before / expiry date
 }
 
 // ---- recent history (signed quantities) ----
 const HISTORY: RawMove[] = [
   // goods receipts against vendor POs (see lib/vendors.ts)
-  { date: "2026-06-03", itemId: "rm-wheat", loc: "loc-mys", type: "receipt", qty: 50000, ref: "PO-2007", note: "Sterling Foods — June restock", by: "emp-023" },
+  { date: "2026-06-03", itemId: "rm-wheat", loc: "loc-mys", type: "receipt", qty: 50000, ref: "PO-2007", note: "Sterling Foods — June restock", by: "emp-023", batch: "WHT-2606" },
   { date: "2026-06-04", itemId: "pm-carton", loc: "loc-mys", type: "receipt", qty: 6000, ref: "PO-2008", note: "BlueOcean Packaging", by: "emp-021" },
   { date: "2026-06-04", itemId: "pm-label", loc: "loc-mys", type: "receipt", qty: 30000, ref: "PO-2008", note: "BlueOcean Packaging", by: "emp-021" },
 
   // production run — mill wheat into flour (PROD-3001): slight milling wastage
   { date: "2026-05-20", itemId: "rm-wheat", loc: "loc-mys", type: "consumption", qty: -21300, std: -21000, ref: "PROD-3001", note: "Milling → refined flour", by: "emp-020" },
-  { date: "2026-05-20", itemId: "sfg-flour", loc: "loc-mys", type: "production", qty: 20000, std: 20000, ref: "PROD-3001", note: "Milling → refined flour", by: "emp-020" },
+  { date: "2026-05-20", itemId: "sfg-flour", loc: "loc-mys", type: "production", qty: 20000, std: 20000, ref: "PROD-3001", note: "Milling → refined flour", by: "emp-020", batch: "FLR-2605", expiry: "2026-11-16" },
 
   // production run — pack 50kg flour bags (PROD-3002): 5 bags rejected
   { date: "2026-05-22", itemId: "sfg-flour", loc: "loc-mys", type: "consumption", qty: -15000, std: -15000, ref: "PROD-3002", note: "Pack 50kg bags", by: "emp-020" },
   { date: "2026-05-22", itemId: "pm-bag50", loc: "loc-mys", type: "consumption", qty: -305, std: -300, ref: "PROD-3002", note: "Pack 50kg bags", by: "emp-020" },
-  { date: "2026-05-22", itemId: "fg-flour50", loc: "loc-mys", type: "production", qty: 300, std: 300, ref: "PROD-3002", note: "Pack 50kg bags", by: "emp-020" },
+  { date: "2026-05-22", itemId: "fg-flour50", loc: "loc-mys", type: "production", qty: 300, std: 300, ref: "PROD-3002", note: "Pack 50kg bags", by: "emp-020", batch: "FL50-2605", expiry: "2026-10-19" },
 
   // dispatches against sales invoices (see lib/invoicing.ts)
   { date: "2026-05-16", itemId: "fg-flour50", loc: "loc-blr", type: "sale", qty: -120, ref: "NXF/26-27/0101", note: "FreshMart Retail", by: "emp-010" },
@@ -91,6 +93,24 @@ const HISTORY: RawMove[] = [
 
   // a stock-take adjustment
   { date: "2026-05-31", itemId: "sfg-oil", loc: "loc-mys", type: "adjustment", qty: -120, ref: "ADJ-501", note: "Stock-take variance", by: "emp-020" },
+
+  // ---- Finished-goods build + dispatch (FY26-27) ----------------------------
+  // Gives every finished SKU real production/receipt + sales so the cost-audit
+  // product view, per-unit costs and the stock-movement table all tie to one
+  // ledger (no synthetic weights). Dispatch volumes mirror the sales invoices.
+  { date: "2026-05-10", itemId: "fg-flour50", loc: "loc-mys", type: "production", qty: 600, ref: "MFG-3101", note: "Pack 50kg flour", by: "emp-020", batch: "FL50-2605B", expiry: "2026-11-06" },
+  { date: "2026-05-10", itemId: "fg-flour00", loc: "loc-mys", type: "production", qty: 200, ref: "MFG-3102", note: "Pack specialty 00 flour 25kg", by: "emp-020", batch: "F025-2605" },
+  { date: "2026-05-10", itemId: "fg-atta10", loc: "loc-mys", type: "production", qty: 900, ref: "MFG-3103", note: "Pack atta 10kg", by: "emp-020", batch: "AT10-2605" },
+  { date: "2026-05-10", itemId: "fg-semolina25", loc: "loc-mys", type: "production", qty: 60, ref: "MFG-3104", note: "Pack durum semolina 25kg", by: "emp-020" },
+  { date: "2026-05-10", itemId: "fg-oil15", loc: "loc-mys", type: "production", qty: 250, ref: "MFG-3105", note: "Loan-licence oil fill — 15L tins", by: "emp-020" },
+  { date: "2026-05-10", itemId: "fg-rice25", loc: "loc-mys", type: "receipt", qty: 100, ref: "GRN-3106", note: "Third-party rice 25kg — Annapurna", by: "emp-021" },
+
+  { date: "2026-06-05", itemId: "fg-flour50", loc: "loc-mys", type: "sale", qty: -600, ref: "NXF/26-27/0110", note: "Wholesale dispatch — flour", by: "emp-010" },
+  { date: "2026-06-05", itemId: "fg-oil15", loc: "loc-mys", type: "sale", qty: -255, ref: "NXF/26-27/0111", note: "Wholesale dispatch — oil", by: "emp-010" },
+  { date: "2026-06-05", itemId: "fg-rice25", loc: "loc-mys", type: "sale", qty: -60, ref: "NXF/26-27/0112", note: "Wholesale dispatch — rice", by: "emp-010" },
+  { date: "2026-06-05", itemId: "fg-flour00", loc: "loc-mys", type: "sale", qty: -216, ref: "NXT/26-27/0110", note: "Specialty dispatch — 00 flour", by: "emp-010" },
+  { date: "2026-06-05", itemId: "fg-semolina25", loc: "loc-mys", type: "sale", qty: -47, ref: "NXT/26-27/0111", note: "Specialty dispatch — semolina", by: "emp-010" },
+  { date: "2026-06-05", itemId: "fg-atta10", loc: "loc-mys", type: "sale", qty: -1100, ref: "NXF/26-27/0113", note: "Private-label dispatch — atta", by: "emp-010" },
 ];
 
 export const SEED_MOVEMENTS: Movement[] = [
@@ -114,8 +134,40 @@ export const SEED_MOVEMENTS: Movement[] = [
     ref: m.ref,
     note: m.note,
     byId: m.by,
+    batchNo: m.batch,
+    expiry: m.expiry,
   })),
 ];
+
+// ---------------------------------------------------------------------------
+// Batch & expiry helpers
+// ---------------------------------------------------------------------------
+export interface BatchRow {
+  itemId: string;
+  locationId: string;
+  batchNo: string;
+  expiry?: string;
+  qtyIn: number; // produced/received into this batch
+}
+
+/** Distinct batches (with expiry) seen in the movement ledger. */
+export function batchRows(movements: Movement[]): BatchRow[] {
+  const map = new Map<string, BatchRow>();
+  for (const m of movements) {
+    if (!m.batchNo || m.qty <= 0) continue;
+    const k = `${m.itemId}|${m.locationId}|${m.batchNo}`;
+    const existing = map.get(k);
+    if (existing) existing.qtyIn += m.qty;
+    else map.set(k, { itemId: m.itemId, locationId: m.locationId, batchNo: m.batchNo, expiry: m.expiry, qtyIn: m.qty });
+  }
+  return [...map.values()];
+}
+
+/** Days until expiry relative to `today` (ISO); negative = already expired. */
+export function daysToExpiry(expiry: string, today: string): number {
+  const ms = new Date(expiry).getTime() - new Date(today).getTime();
+  return Math.round(ms / 86400000);
+}
 
 export const MOVEMENT_META: Record<MovementType, { label: string; variant: "default" | "primary" | "success" | "warning" | "danger" }> = {
   opening: { label: "Opening", variant: "default" },

@@ -17,6 +17,7 @@ import {
   loadAddedMovements,
   allMovements,
   MOVEMENT_META,
+  daysToExpiry,
 } from "@/lib/inventory/movements";
 import type { Movement, MovementType } from "@/lib/inventory/types";
 
@@ -25,6 +26,16 @@ function fmtQty(n: number) {
 }
 
 const TYPES: MovementType[] = ["opening", "receipt", "production", "consumption", "transfer-in", "transfer-out", "sale", "adjustment"];
+
+const todayIso = () => new Date().toISOString().slice(0, 10);
+
+/** Small badge describing a batch's expiry status. */
+function ExpiryBadge({ expiry }: { expiry: string }) {
+  const d = daysToExpiry(expiry, todayIso());
+  const variant = d < 0 ? "danger" : d <= 30 ? "warning" : "default";
+  const label = d < 0 ? `Expired ${formatDate(expiry)}` : d <= 30 ? `Expires in ${d}d` : `Exp ${formatDate(expiry)}`;
+  return <Badge variant={variant}>{label}</Badge>;
+}
 
 export function MovementsClient() {
   const [moves, setMoves] = React.useState<Movement[]>(() => allMovements([]));
@@ -81,13 +92,14 @@ export function MovementsClient() {
                 <th className="px-5 py-3 font-medium">Location</th>
                 <th className="px-5 py-3 font-medium">Type</th>
                 <th className="px-5 py-3 text-right font-medium">Qty</th>
+                <th className="px-5 py-3 font-medium">Batch / Expiry</th>
                 <th className="px-5 py-3 font-medium">Reference</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                  <td colSpan={7} className="px-5 py-10 text-center text-sm text-muted-foreground">
                     No movements in this view.
                   </td>
                 </tr>
@@ -116,6 +128,16 @@ export function MovementsClient() {
                         {inflow ? <ArrowDownRight className="size-3.5" /> : <ArrowUpRight className="size-3.5" />}
                         {fmtQty(m.qty)} <span className="text-xs font-normal text-muted-foreground">{item?.uom}</span>
                       </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      {m.batchNo ? (
+                        <div className="flex flex-col items-start gap-0.5">
+                          <span className="font-mono text-[11px]">{m.batchNo}</span>
+                          {m.expiry && <ExpiryBadge expiry={m.expiry} />}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex items-start justify-between gap-2">
@@ -206,6 +228,13 @@ function MovementDrawer({ movement: m, onClose }: { movement: Movement | null; o
           )}
           <Field label={refLabel(m.ref)} value={m.ref ?? "—"} mono />
           {m.byId && <Field label="Posted by" value={employeeName(m.byId)} />}
+          {m.batchNo && <Field label="Batch / lot" value={m.batchNo} mono />}
+          {m.expiry && (
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Expiry</dt>
+              <dd className="mt-0.5"><ExpiryBadge expiry={m.expiry} /></dd>
+            </div>
+          )}
         </dl>
 
         {m.note && (

@@ -24,16 +24,27 @@ import {
   type Disposal,
 } from "@/lib/assets/assets";
 import {
-  depreciationSchedule,
   accumulatedDepreciation,
   netBookValue,
   depreciationInFy,
   appraise,
   wdvRate,
+  scheduleForBasis,
+  basisMeta,
+  fyDepForBasis,
   type Appraisal,
+  type DepBasis,
+  type CustomDep,
 } from "@/lib/assets/depreciation";
+import { Select } from "@/components/ui/input";
 
 const TODAY = new Date().toISOString().slice(0, 10);
+const round2 = (n: number) => Math.round(n * 100) / 100;
+const BASES: { key: DepBasis; label: string }[] = [
+  { key: "companies", label: "Companies Act 2013" },
+  { key: "incometax", label: "Income-tax 1961" },
+  { key: "custom", label: "User-defined" },
+];
 const CUR_FY = (() => {
   const y = Number(TODAY.slice(0, 4));
   return Number(TODAY.slice(5, 7)) >= 4 ? y : y - 1;
@@ -43,6 +54,8 @@ export function AssetDetailClient({ assetId }: { assetId: string }) {
   const [created, setCreated] = React.useState<FixedAsset[]>([]);
   const [disposals, setDisposals] = React.useState<Disposal[]>([]);
   const [proceeds, setProceeds] = React.useState("");
+  const [basis, setBasis] = React.useState<DepBasis>("companies");
+  const [custom, setCustom] = React.useState<CustomDep>({ method: "WDV", rate: 15, life: 10, residualPct: 5 });
 
   React.useEffect(() => {
     setCreated(loadCreatedAssets());
@@ -61,7 +74,11 @@ export function AssetDetailClient({ assetId }: { assetId: string }) {
 
   const disposal = disposals.find((d) => d.assetId === asset.id);
   const ap = appraise(asset);
-  const schedule = depreciationSchedule(asset);
+  const schedule = scheduleForBasis(asset, basis, custom);
+  const bm = basisMeta(asset, basis, custom);
+  const depCompanies = fyDepForBasis(asset, CUR_FY, "companies");
+  const depTax = fyDepForBasis(asset, CUR_FY, "incometax");
+  const bookTaxDiff = round2(depCompanies - depTax);
   const nbv = netBookValue(asset, TODAY);
   const accum = accumulatedDepreciation(asset, TODAY);
   const depFy = depreciationInFy(asset, CUR_FY);
@@ -136,11 +153,51 @@ export function AssetDetailClient({ assetId }: { assetId: string }) {
         {/* depreciation schedule */}
         <Card className="lg:col-span-3 overflow-hidden">
           <div className="border-b bg-muted/40 px-4 py-2.5">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Depreciation schedule — {asset.method === "SLM" ? "straight line" : "written-down value"}
-            </h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Depreciation schedule</h3>
           </div>
-          <div className="max-h-[360px] overflow-y-auto scrollbar-thin">
+          {/* basis selector */}
+          <div className="flex flex-wrap items-center gap-1.5 border-b px-4 py-2">
+            {BASES.map((b) => (
+              <button
+                key={b.key}
+                onClick={() => setBasis(b.key)}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                  basis === b.key ? "border-primary bg-primary/10 text-primary" : "border-input text-muted-foreground hover:bg-accent",
+                )}
+              >
+                {b.label}
+              </button>
+            ))}
+            <span className="ml-auto text-[11px] text-muted-foreground">{bm.detail}</span>
+          </div>
+
+          {/* user-defined controls */}
+          {basis === "custom" && (
+            <div className="flex flex-wrap items-end gap-3 border-b bg-muted/20 px-4 py-2.5">
+              <CustomField label="Method">
+                <Select value={custom.method} onChange={(e) => setCustom((c) => ({ ...c, method: e.target.value as CustomDep["method"] }))} className="h-8 w-28 text-xs">
+                  <option value="WDV">WDV</option>
+                  <option value="SLM">SLM</option>
+                </Select>
+              </CustomField>
+              {custom.method === "WDV" ? (
+                <CustomField label="Rate % p.a."><Input value={String(custom.rate)} onChange={(e) => setCustom((c) => ({ ...c, rate: parseFloat(e.target.value) || 0 }))} inputMode="decimal" className="h-8 w-20 text-xs" /></CustomField>
+              ) : (
+                <CustomField label="Life (yrs)"><Input value={String(custom.life)} onChange={(e) => setCustom((c) => ({ ...c, life: parseFloat(e.target.value) || 0 }))} inputMode="decimal" className="h-8 w-20 text-xs" /></CustomField>
+              )}
+              <CustomField label="Residual %"><Input value={String(custom.residualPct)} onChange={(e) => setCustom((c) => ({ ...c, residualPct: parseFloat(e.target.value) || 0 }))} inputMode="decimal" className="h-8 w-20 text-xs" /></CustomField>
+            </div>
+          )}
+
+          {/* book vs tax comparison for the current FY */}
+          <div className="grid grid-cols-3 gap-px border-b bg-border text-sm">
+            <MiniStat label={`Book (FY ${CUR_FY % 100}-${(CUR_FY + 1) % 100})`} value={depCompanies} />
+            <MiniStat label="Income-tax" value={depTax} />
+            <MiniStat label="Timing diff." value={bookTaxDiff} signed />
+          </div>
+
+          <div className="max-h-[320px] overflow-y-auto scrollbar-thin">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-card">
                 <tr className="border-b text-left text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -168,7 +225,14 @@ export function AssetDetailClient({ assetId }: { assetId: string }) {
             </table>
           </div>
           <p className="border-t px-4 py-2 text-[11px] text-muted-foreground">
-            Posts to {DEP_EXPENSE_ACCOUNT} Depreciation / {ACCUM_DEP_ACCOUNT} Accumulated Depreciation. Salvage value <Money value={asset.salvage} />. Supplier: {asset.supplier ?? "—"}.
+            {basis === "companies" ? (
+              <>Book charge — posts to {DEP_EXPENSE_ACCOUNT} Depreciation / {ACCUM_DEP_ACCOUNT} Accumulated Depreciation.</>
+            ) : basis === "incometax" ? (
+              <>Income-tax Act 1961 — block WDV used for the tax computation (not the books); the book-vs-tax timing difference drives deferred tax.</>
+            ) : (
+              <>User-defined schedule — for analysis / comparison.</>
+            )}{" "}
+            Showing <strong className="text-foreground">{bm.label}</strong>.
           </p>
         </Card>
       </div>
@@ -212,6 +276,26 @@ function Kpi({ label, value, accent }: { label: string; value: number; accent?: 
         <Money value={value} compact />
       </p>
     </Card>
+  );
+}
+
+function CustomField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function MiniStat({ label, value, signed }: { label: string; value: number; signed?: boolean }) {
+  return (
+    <div className="bg-card px-4 py-2.5">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={cn("mt-0.5 text-sm font-bold tabular", signed && value !== 0 && (value > 0 ? "text-success" : "text-danger"))}>
+        <Money value={value} />
+      </p>
+    </div>
   );
 }
 

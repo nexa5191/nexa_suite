@@ -49,6 +49,42 @@ export interface Candidate {
   openingId: string | null; // null → general talent pool
   appliedOn: string; // ISO
   resumeFile: string;
+  agencyId?: string | null; // submitting recruitment agency (for commissions)
+}
+
+// ---------------------------------------------------------------------------
+// Recruitment agencies — third-party staffing partners who submit CVs against
+// open roles through the agency portal and earn a commission when their
+// candidate is hired (a % of the candidate's annual CTC).
+// ---------------------------------------------------------------------------
+export interface Agency {
+  id: string;
+  name: string;
+  spoc: string; // single point of contact
+  email: string;
+  commissionPct: number; // % of annual CTC, paid on successful hire
+  gstin?: string;
+}
+
+export const AGENCIES: Agency[] = [
+  { id: "ag-zenith", name: "Zenith Talent Partners", spoc: "Ritu Malhotra", email: "ritu@zenithtalent.in", commissionPct: 8.33, gstin: "29ZENAB1234A1Z5" },
+  { id: "ag-apex", name: "Apex Staffing Solutions", spoc: "Karan Mehta", email: "karan@apexstaffing.in", commissionPct: 8.33, gstin: "27APXAB5678B1Z3" },
+  { id: "ag-talentbridge", name: "TalentBridge Consultants", spoc: "Priya Nair", email: "priya@talentbridge.in", commissionPct: 10, gstin: "29TLBAB9012C1Z7" },
+  { id: "ag-prohire", name: "ProHire Executive Search", spoc: "Anand Rao", email: "anand@prohire.in", commissionPct: 12.5 },
+];
+
+const AGENCY_BY_ID = new Map(AGENCIES.map((a) => [a.id, a]));
+export function agencyById(id: string | null | undefined): Agency | undefined {
+  return id ? AGENCY_BY_ID.get(id) : undefined;
+}
+export function agencyName(id: string | null | undefined): string {
+  return agencyById(id)?.name ?? "—";
+}
+
+/** Commission payable on a candidate (₹), given their CTC and agency rate. */
+export function commissionAmount(expectedCtcLakh: number, agency: Agency | undefined): number {
+  if (!agency) return 0;
+  return Math.round(expectedCtcLakh * 100000 * (agency.commissionPct / 100));
 }
 
 export const OPENINGS: Opening[] = [
@@ -64,25 +100,26 @@ interface RawCand {
   name: string; role: string; company: string; loc: string; skills: string[];
   exp: number; notice: number; ctc: number; source: CandidateSource;
   stage: CandidateStage; rating: number; opening: string | null; appliedOn: string;
+  agency?: string;
 }
 
 const RAW: RawCand[] = [
   { name: "Nikhil Bansal", role: "Senior Accountant", company: "Tally Solutions", loc: "Bengaluru", skills: ["Tally", "GST", "IND-AS", "Reconciliation"], exp: 7, notice: 60, ctc: 14, source: "linkedin", stage: "interview", rating: 5, opening: "op-1", appliedOn: "2026-05-18" },
   { name: "Shruti Deshpande", role: "Accountant", company: "Infosys BPM", loc: "Bengaluru", skills: ["GST", "TDS", "SAP FICO"], exp: 5, notice: 30, ctc: 11, source: "referral", stage: "shortlisted", rating: 4, opening: "op-1", appliedOn: "2026-05-22" },
   { name: "Imran Sheikh", role: "Finance Analyst", company: "Wipro", loc: "Pune", skills: ["Excel", "FP&A", "Power BI"], exp: 4, notice: 45, ctc: 10, source: "portal", stage: "screening", rating: 3, opening: "op-1", appliedOn: "2026-05-29" },
-  { name: "Aishwarya Menon", role: "Regional Sales Manager", company: "Marico", loc: "Mumbai", skills: ["FMCG", "Distributor Mgmt", "Negotiation"], exp: 9, notice: 90, ctc: 22, source: "agency", stage: "offer", rating: 5, opening: "op-2", appliedOn: "2026-05-25" },
+  { name: "Aishwarya Menon", role: "Regional Sales Manager", company: "Marico", loc: "Mumbai", skills: ["FMCG", "Distributor Mgmt", "Negotiation"], exp: 9, notice: 90, ctc: 22, source: "agency", stage: "offer", rating: 5, opening: "op-2", appliedOn: "2026-05-25", agency: "ag-zenith" },
   { name: "Rohit Khanna", role: "Area Sales Manager", company: "Britannia", loc: "Mumbai", skills: ["Retail", "Channel Sales", "Forecasting"], exp: 6, notice: 30, ctc: 16, source: "linkedin", stage: "interview", rating: 4, opening: "op-2", appliedOn: "2026-05-27" },
   { name: "Pradeep Kumar", role: "Sales Executive", company: "Dabur", loc: "Nagpur", skills: ["Field Sales", "Primary/Secondary"], exp: 3, notice: 15, ctc: 8, source: "referral", stage: "new", rating: 3, opening: "op-2", appliedOn: "2026-06-02" },
   { name: "Vivek Subramanian", role: "Backend Engineer", company: "Razorpay", loc: "Bengaluru", skills: ["Node.js", "PostgreSQL", "AWS", "Microservices"], exp: 5, notice: 60, ctc: 28, source: "linkedin", stage: "shortlisted", rating: 5, opening: "op-3", appliedOn: "2026-05-08" },
   { name: "Megha Agarwal", role: "Software Engineer", company: "Swiggy", loc: "Bengaluru", skills: ["Go", "Kafka", "Redis"], exp: 4, notice: 30, ctc: 24, source: "portal", stage: "screening", rating: 4, opening: "op-3", appliedOn: "2026-05-11" },
-  { name: "Sandeep Rao", role: "Procurement Officer", company: "ITC", loc: "Mumbai", skills: ["Vendor Mgmt", "RFQ", "SAP MM"], exp: 6, notice: 45, ctc: 13, source: "agency", stage: "shortlisted", rating: 4, opening: "op-4", appliedOn: "2026-06-03" },
+  { name: "Sandeep Rao", role: "Procurement Officer", company: "ITC", loc: "Mumbai", skills: ["Vendor Mgmt", "RFQ", "SAP MM"], exp: 6, notice: 45, ctc: 13, source: "agency", stage: "shortlisted", rating: 4, opening: "op-4", appliedOn: "2026-06-03", agency: "ag-apex" },
   { name: "Farah Khan", role: "Buyer", company: "Reliance Retail", loc: "Mumbai", skills: ["Sourcing", "Negotiation", "Inventory"], exp: 4, notice: 30, ctc: 10, source: "referral", stage: "new", rating: 3, opening: "op-4", appliedOn: "2026-06-04" },
   { name: "Ananya Krishnan", role: "Product Design Intern", company: "NID Graduate", loc: "Singapore", skills: ["Figma", "UX Research", "Prototyping"], exp: 0, notice: 0, ctc: 4, source: "portal", stage: "interview", rating: 4, opening: "op-5", appliedOn: "2026-06-01" },
   // ---- general talent pool (no current opening) ----
   { name: "Karthik Iyer", role: "Full-stack Engineer", company: "Freshworks", loc: "Chennai", skills: ["React", "Node.js", "TypeScript", "GraphQL"], exp: 6, notice: 60, ctc: 30, source: "linkedin", stage: "new", rating: 5, opening: null, appliedOn: "2026-04-30" },
   { name: "Divya Pillai", role: "HR Business Partner", company: "Accenture", loc: "Bengaluru", skills: ["Talent Mgmt", "POSH", "HRBP"], exp: 8, notice: 60, ctc: 18, source: "referral", stage: "new", rating: 4, opening: null, appliedOn: "2026-05-02" },
   { name: "Mohit Saxena", role: "Data Analyst", company: "Flipkart", loc: "Bengaluru", skills: ["SQL", "Python", "Tableau"], exp: 3, notice: 30, ctc: 12, source: "portal", stage: "screening", rating: 3, opening: null, appliedOn: "2026-05-14" },
-  { name: "Sneha Joshi", role: "Marketing Lead", company: "Zomato", loc: "Mumbai", skills: ["Brand", "Performance Mktg", "SEO"], exp: 7, notice: 45, ctc: 19, source: "agency", stage: "new", rating: 4, opening: null, appliedOn: "2026-05-19" },
+  { name: "Sneha Joshi", role: "Marketing Lead", company: "Zomato", loc: "Mumbai", skills: ["Brand", "Performance Mktg", "SEO"], exp: 7, notice: 45, ctc: 19, source: "agency", stage: "new", rating: 4, opening: null, appliedOn: "2026-05-19", agency: "ag-talentbridge" },
   { name: "Arjun Nair", role: "DevOps Engineer", company: "PhonePe", loc: "Bengaluru", skills: ["Kubernetes", "Terraform", "CI/CD"], exp: 5, notice: 90, ctc: 26, source: "linkedin", stage: "archived", rating: 3, opening: null, appliedOn: "2026-04-22" },
 ];
 
@@ -106,6 +143,7 @@ export const CANDIDATES: Candidate[] = RAW.map((c, i) => ({
   openingId: c.opening,
   appliedOn: c.appliedOn,
   resumeFile: `${c.name.replace(/\s+/g, "_")}_CV.pdf`,
+  agencyId: c.agency ?? null,
 }));
 
 export function openingById(id: string | null) {

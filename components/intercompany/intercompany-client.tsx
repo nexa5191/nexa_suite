@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select, Input } from "@/components/ui/input";
 import { Money } from "@/components/ui/money";
 import { usePrefs } from "@/components/prefs/prefs-provider";
+import { useJournal } from "@/components/accounting/journal-provider";
 import { cn, formatDate } from "@/lib/utils";
 import { ENTITIES } from "@/lib/accounting/org";
 import {
@@ -22,6 +23,7 @@ import {
   icVariance,
   entityName,
   nextIcId,
+  buildMirrorDrafts,
   IC_TYPE_META,
   type IcTransaction,
   type IcType,
@@ -32,10 +34,13 @@ const TYPES = Object.keys(IC_TYPE_META) as IcType[];
 
 export function IntercompanyClient() {
   const prefs = usePrefs();
+  const { post } = useJournal();
   const [created, setCreated] = React.useState<IcTransaction[]>([]);
   const [settled, setSettled] = React.useState<Record<string, boolean>>({});
   const [adding, setAdding] = React.useState(false);
   const [typeFilter, setTypeFilter] = React.useState<"all" | IcType>("all");
+  const [mirror, setMirror] = React.useState<{ tx: IcTransaction; from: string; to: string } | null>(null);
+  const [mirrorErr, setMirrorErr] = React.useState<string[]>([]);
 
   React.useEffect(() => {
     setCreated(loadCreatedIc());
@@ -61,11 +66,26 @@ export function IntercompanyClient() {
     });
   }
   function addTxn(t: IcTransaction) {
+    // Auto-mirror: post the provider voucher in `from` and the matching
+    // counterparty voucher in `to`, so both companies carry real GL entries.
+    setMirrorErr([]);
+    const { from, to } = buildMirrorDrafts(t);
+    const r1 = post(from);
+    if (!r1.ok) {
+      setMirrorErr(r1.errors);
+      return;
+    }
+    const r2 = post(to);
+    if (!r2.ok) {
+      setMirrorErr(r2.errors);
+      return;
+    }
     setCreated((prev) => {
       const next = [...prev, t];
       saveCreatedIc(next);
       return next;
     });
+    setMirror({ tx: t, from: r1.entry.voucherNo, to: r2.entry.voucherNo });
     setAdding(false);
   }
 
@@ -76,13 +96,32 @@ export function IntercompanyClient() {
       </Link>
       <PageHeader
         title="Inter-company Transactions"
-        subtitle="Related-party dealings between the group entities, with two-sided reconciliation. These eliminate on consolidation."
+        subtitle="Related-party dealings between group entities. New deals auto-post mirrored vouchers in BOTH companies' books and eliminate on consolidation."
         actions={
           <Button onClick={() => setAdding((v) => !v)}>
             {adding ? <X className="size-4" /> : <Plus className="size-4" />} {adding ? "Cancel" : "New transaction"}
           </Button>
         }
       />
+
+      {mirror && (
+        <Card className="mb-4 flex items-start gap-2 border-success/40 bg-success/8 p-3 text-sm">
+          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" />
+          <p className="text-muted-foreground">
+            Mirrored to both ledgers — <span className="font-medium text-foreground">{entityName(mirror.tx.fromEntityId)}</span> {mirror.from}{" "}
+            (Dr Inter-company Receivable / Cr {IC_TYPE_META[mirror.tx.type].fromBooking.split(" / ").pop()}) &amp;{" "}
+            <span className="font-medium text-foreground">{entityName(mirror.tx.toEntityId)}</span> {mirror.to}{" "}
+            (Dr {IC_TYPE_META[mirror.tx.type].toBooking.split(" / ").pop()} / Cr Inter-company Payable).
+            <button onClick={() => setMirror(null)} className="ml-2 font-medium text-foreground hover:underline">Dismiss</button>
+          </p>
+        </Card>
+      )}
+      {mirrorErr.length > 0 && (
+        <Card className="mb-4 border-danger/40 bg-danger/8 p-3">
+          <p className="flex items-center gap-1.5 text-sm font-medium text-danger"><AlertTriangle className="size-4" /> Could not mirror the transaction</p>
+          <ul className="mt-1 list-inside list-disc text-sm text-danger/90">{mirrorErr.map((e, i) => <li key={i}>{e}</li>)}</ul>
+        </Card>
+      )}
 
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi label="Total IC volume" value={volume} />

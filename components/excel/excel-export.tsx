@@ -1,9 +1,27 @@
 "use client";
 
 import * as React from "react";
-import { FileSpreadsheet, ChevronDown, Settings2, Plus, Copy, Trash2, Check, X } from "lucide-react";
+import {
+  FileSpreadsheet,
+  ChevronDown,
+  Settings2,
+  Plus,
+  Copy,
+  Trash2,
+  Check,
+  Save,
+  Bold,
+  Italic,
+  Baseline,
+  PaintBucket,
+  Heading,
+  Grid2x2,
+  Minus,
+  Type,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input, Label } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
 import { cn } from "@/lib/utils";
 import {
   type ExcelTemplate,
@@ -14,17 +32,72 @@ import {
   newTemplateId,
   getActiveTemplateId,
   setActiveTemplateId,
+  normalizeTemplate,
   BUILTIN_TEMPLATES,
 } from "@/lib/xlsx/templates";
 import { downloadReport, type ReportSheet } from "@/lib/xlsx/report";
 
 const hx = (h: string) => (h ? `#${h}` : "#ffffff");
 const unhx = (h: string) => h.replace(/^#/, "").toUpperCase();
+const clamp = (n: number, a: number, b: number) => Math.max(a, Math.min(b, n));
+
+// Fonts offered in the editor. These are common workbook faces; the chosen name
+// is written into the .xlsx so Excel renders it (falls back if not installed).
+const FONTS = ["Calibri", "Aptos Narrow", "Arial", "Cambria", "Georgia", "Times New Roman", "Verdana", "Courier New"];
+
+/** Format a sample amount the way the export will (symbol + decimals). */
+function fmtMoney(n: number, t: ExcelTemplate) {
+  return `${t.currencySymbol}${n.toLocaleString("en-IN", {
+    minimumFractionDigits: t.moneyDecimals,
+    maximumFractionDigits: t.moneyDecimals,
+  })}`;
+}
+
+// Selectable sheet regions — click one in the preview to format just that part,
+// exactly like selecting cells in Excel.
+type Region = "title" | "header" | "data" | "total";
+
+type Fill = { kind: "color"; key: keyof ExcelTemplate } | { kind: "band" } | { kind: "none" };
+interface RegionStyle {
+  label: string;
+  hint: string;
+  boldKey?: keyof ExcelTemplate;
+  italicKey?: keyof ExcelTemplate;
+  textKey: keyof ExcelTemplate;
+  fill: Fill;
+}
+const REGION_STYLE: Record<Region, RegionStyle> = {
+  title: { label: "Title", hint: "report heading above the table", textKey: "titleColor", fill: { kind: "none" } },
+  header: {
+    label: "Header",
+    hint: "the column-heading row",
+    boldKey: "headerBold",
+    italicKey: "headerItalic",
+    textKey: "headerText",
+    fill: { kind: "color", key: "accent" },
+  },
+  data: {
+    label: "Data rows",
+    hint: "the body rows (zebra optional)",
+    boldKey: "bodyBold",
+    italicKey: "bodyItalic",
+    textKey: "bodyText",
+    fill: { kind: "band" },
+  },
+  total: {
+    label: "Total",
+    hint: "the grand-total / subtotal row",
+    boldKey: "totalBold",
+    italicKey: "totalItalic",
+    textKey: "totalText",
+    fill: { kind: "color", key: "totalFill" },
+  },
+};
 
 /**
  * Reusable "Export to Excel" control. The parent supplies a builder that returns
- * the logical report sheets; the control owns template selection, the editor
- * (save / edit / load), and the actual .xlsx download.
+ * the logical report sheets; the control owns template selection, the ribbon
+ * format editor (save / edit / load), and the actual .xlsx download.
  */
 export function ExcelExport({
   filename,
@@ -38,7 +111,7 @@ export function ExcelExport({
   size?: "sm" | "md";
 }) {
   const [open, setOpen] = React.useState(false);
-  const [editing, setEditing] = React.useState(false);
+  const [editorOpen, setEditorOpen] = React.useState(false);
   const [templates, setTemplates] = React.useState<ExcelTemplate[]>(BUILTIN_TEMPLATES);
   const [activeId, setActiveId] = React.useState(BUILTIN_TEMPLATES[0].id);
   const ref = React.useRef<HTMLDivElement>(null);
@@ -51,10 +124,7 @@ export function ExcelExport({
   React.useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-        setEditing(false);
-      }
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
@@ -62,9 +132,7 @@ export function ExcelExport({
 
   const active = templates.find((t) => t.id === activeId) ?? templateById(activeId);
 
-  const doExport = (tpl: ExcelTemplate) => {
-    downloadReport(filename, build(), tpl);
-  };
+  const doExport = (tpl: ExcelTemplate) => downloadReport(filename, build(), tpl);
 
   const pick = (id: string) => {
     setActiveId(id);
@@ -89,51 +157,57 @@ export function ExcelExport({
 
       {open && (
         <div className="absolute right-0 top-full z-50 mt-1 w-80 rounded-lg border bg-card p-2 shadow-lg">
-          {!editing ? (
-            <>
-              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                Excel template
-              </div>
-              <div className="max-h-64 space-y-0.5 overflow-auto">
-                {templates.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => pick(t.id)}
-                    className={cn(
-                      "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent",
-                      t.id === activeId && "bg-accent",
-                    )}
-                  >
-                    <Swatch t={t} />
-                    <span className="flex-1 truncate">{t.name}</span>
-                    {t.builtin && <span className="text-[10px] text-muted-foreground">built-in</span>}
-                    {t.id === activeId && <Check className="size-4 text-primary" />}
-                  </button>
-                ))}
-              </div>
-              <div className="mt-2 flex items-center gap-2 border-t pt-2">
-                <Button size="sm" variant="primary" className="flex-1" onClick={() => doExport(active)}>
-                  <FileSpreadsheet className="size-4" />
-                  Download .xlsx
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setEditing(true)} aria-label="Manage templates">
-                  <Settings2 className="size-4" />
-                </Button>
-              </div>
-            </>
-          ) : (
-            <TemplateEditor
-              templates={templates}
-              activeId={activeId}
-              onChange={(list, selectId) => {
-                setTemplates(list);
-                if (selectId) pick(selectId);
+          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Excel template</div>
+          <div className="max-h-64 space-y-0.5 overflow-auto">
+            {templates.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => pick(t.id)}
+                className={cn(
+                  "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent",
+                  t.id === activeId && "bg-accent",
+                )}
+              >
+                <Swatch t={t} />
+                <span className="flex-1 truncate">{t.name}</span>
+                {t.builtin && <span className="text-[10px] text-muted-foreground">built-in</span>}
+                {t.id === activeId && <Check className="size-4 text-primary" />}
+              </button>
+            ))}
+          </div>
+          <div className="mt-2 flex items-center gap-2 border-t pt-2">
+            <Button size="sm" variant="primary" className="flex-1" onClick={() => doExport(active)}>
+              <FileSpreadsheet className="size-4" />
+              Download .xlsx
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setOpen(false);
+                setEditorOpen(true);
               }}
-              onClose={() => setEditing(false)}
-            />
-          )}
+              aria-label="Format editor"
+              title="Format editor"
+            >
+              <Settings2 className="size-4" />
+            </Button>
+          </div>
         </div>
       )}
+
+      <RibbonEditor
+        open={editorOpen}
+        templates={templates}
+        activeId={activeId}
+        filename={filename}
+        onDownload={doExport}
+        onChange={(list, selectId) => {
+          setTemplates(list);
+          if (selectId) pick(selectId);
+        }}
+        onClose={() => setEditorOpen(false)}
+      />
     </div>
   );
 }
@@ -148,265 +222,453 @@ function Swatch({ t }: { t: ExcelTemplate }) {
 }
 
 // ---------------------------------------------------------------------------
-// Template editor — create / edit / duplicate / delete, with a live preview.
+// Ribbon format editor — Excel "Home"-style ribbon, live preview, saved presets.
 // ---------------------------------------------------------------------------
-function TemplateEditor({
+function RibbonEditor({
+  open,
   templates,
   activeId,
+  filename,
   onChange,
+  onDownload,
   onClose,
 }: {
+  open: boolean;
   templates: ExcelTemplate[];
   activeId: string;
+  filename: string;
   onChange: (list: ExcelTemplate[], selectId?: string) => void;
+  onDownload: (t: ExcelTemplate) => void;
   onClose: () => void;
 }) {
   const start = templates.find((t) => t.id === activeId) ?? templates[0];
-  const [draft, setDraft] = React.useState<ExcelTemplate>(() => normalizeForEdit(start));
-  const isBuiltin = !!BUILTIN_TEMPLATES.find((t) => t.id === draft.id);
+  const [draft, setDraft] = React.useState<ExcelTemplate>(() => normalizeTemplate(start));
+  const [region, setRegion] = React.useState<Region>("header");
 
-  const set = <K extends keyof ExcelTemplate>(k: K, v: ExcelTemplate[K]) =>
-    setDraft((d) => ({ ...d, [k]: v }));
+  // Re-seed the draft from the active template each time the editor is opened.
+  React.useEffect(() => {
+    if (open) {
+      setDraft(normalizeTemplate(templates.find((t) => t.id === activeId) ?? templates[0]));
+      setRegion("header");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
-  const loadInto = (id: string) => setDraft(normalizeForEdit(templates.find((t) => t.id === id) ?? templates[0]));
+  const set = <K extends keyof ExcelTemplate>(k: K, v: ExcelTemplate[K]) => setDraft((d) => ({ ...d, [k]: v }));
+  // Untyped setter for region-driven edits (the key is only known at runtime).
+  const put = (k: keyof ExcelTemplate, v: unknown) => setDraft((d) => ({ ...d, [k]: v }));
+  const rs = REGION_STYLE[region];
+  const fillColorKey = rs.fill.kind === "color" ? rs.fill.key : null;
 
-  const save = () => {
-    const list = upsertTemplate({ ...draft, builtin: false });
-    onChange(list, draft.id);
+  const isBuiltin = BUILTIN_TEMPLATES.some((t) => t.id === draft.id);
+  const isStored = templates.some((t) => t.id === draft.id) && !isBuiltin;
+
+  const loadInto = (id: string) => setDraft(normalizeTemplate(templates.find((t) => t.id === id) ?? templates[0]));
+
+  const create = () =>
+    setDraft(normalizeTemplate({ ...BUILTIN_TEMPLATES[0], id: newTemplateId(), name: "My template", builtin: false }));
+
+  const persist = () => {
+    if (isBuiltin) {
+      const id = newTemplateId();
+      const name = BUILTIN_TEMPLATES.some((b) => b.name === draft.name) ? `${draft.name} custom` : draft.name;
+      const copy = { ...draft, id, name, builtin: false };
+      onChange(upsertTemplate(copy), id);
+    } else {
+      onChange(upsertTemplate({ ...draft, builtin: false }), draft.id);
+    }
     onClose();
   };
-  const saveAsNew = () => {
+
+  const duplicate = () => {
     const id = newTemplateId();
     const copy = { ...draft, id, name: `${draft.name} copy`, builtin: false };
-    const list = upsertTemplate(copy);
-    onChange(list, id);
-    setDraft(normalizeForEdit(copy));
+    onChange(upsertTemplate(copy), id);
+    setDraft(normalizeTemplate(copy));
   };
-  const create = () => {
-    const id = newTemplateId();
-    const blank: ExcelTemplate = {
-      ...BUILTIN_TEMPLATES[0],
-      id,
-      name: "My template",
-      builtin: false,
-    };
-    setDraft(normalizeForEdit(blank));
-  };
+
   const remove = () => {
     const list = deleteTemplate(draft.id);
     onChange(list, list[0]?.id);
     onClose();
   };
 
+  if (!open) return null;
+
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between px-1">
-        <div className="text-xs font-semibold text-muted-foreground">Template editor</div>
-        <div className="flex gap-1">
-          <button onClick={create} className="rounded p-1 hover:bg-accent" title="New template">
-            <Plus className="size-4" />
-          </button>
-          <button onClick={onClose} className="rounded p-1 hover:bg-accent" title="Close">
-            <X className="size-4" />
-          </button>
-        </div>
-      </div>
-
-      <select
-        value={templates.some((t) => t.id === draft.id) ? draft.id : ""}
-        onChange={(e) => loadInto(e.target.value)}
-        className="h-8 w-full rounded-md border bg-card px-2 text-xs"
-      >
-        {!templates.some((t) => t.id === draft.id) && <option value="">{draft.name} (new)</option>}
-        {templates.map((t) => (
-          <option key={t.id} value={t.id}>
-            {t.name}
-            {t.builtin ? " · built-in" : ""}
-          </option>
-        ))}
-      </select>
-
-      <Preview t={draft} />
-
-      <div>
-        <Label>Name</Label>
-        <Input
-          value={draft.name}
-          onChange={(e) => set("name", e.target.value)}
-          className="mt-0.5 h-8 text-sm"
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        <ColorField label="Header fill" value={draft.accent} onChange={(v) => set("accent", v)} />
-        <ColorField label="Header text" value={draft.headerText} onChange={(v) => set("headerText", v)} />
-        <ColorField label="Title text" value={draft.titleColor} onChange={(v) => set("titleColor", v)} />
-        <ColorField label="Totals fill" value={draft.totalFill} onChange={(v) => set("totalFill", v)} />
-        <BandField draft={draft} set={set} />
-        <div>
-          <Label>Currency symbol</Label>
-          <Input
-            value={draft.currencySymbol}
-            onChange={(e) => set("currencySymbol", e.target.value.slice(0, 3))}
-            placeholder="₹ / $ / blank"
-            className="mt-0.5 h-8 text-sm"
-          />
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3 px-1 text-xs">
-        <label className="flex items-center gap-1.5">
-          <input type="checkbox" checked={draft.borders} onChange={(e) => set("borders", e.target.checked)} />
-          Borders
-        </label>
-        <label className="flex items-center gap-1.5">
-          <input
-            type="checkbox"
-            checked={draft.showTitleBlock}
-            onChange={(e) => set("showTitleBlock", e.target.checked)}
-          />
-          Title block
-        </label>
-        <label className="ml-auto flex items-center gap-1.5">
-          Size
-          <input
-            type="number"
-            min={8}
-            max={16}
-            value={draft.fontSize}
-            onChange={(e) => set("fontSize", Number(e.target.value) || 11)}
-            className="h-7 w-12 rounded border bg-card px-1.5 text-center"
-          />
-        </label>
-      </div>
-
-      <div className="flex items-center gap-2 border-t pt-2">
-        {isBuiltin ? (
-          <Button size="sm" variant="primary" className="flex-1" onClick={saveAsNew}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Excel format editor"
+      description="Style the export like a spreadsheet — preview updates live, then save it as a reusable preset."
+      className="max-w-4xl"
+      footer={
+        <div className="flex w-full items-center gap-2">
+          {isStored && (
+            <Button size="sm" variant="danger" onClick={remove}>
+              <Trash2 className="size-4" />
+              Delete
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={duplicate}>
             <Copy className="size-4" />
-            Save as new
+            Duplicate
           </Button>
-        ) : (
-          <>
-            <Button size="sm" variant="primary" className="flex-1" onClick={save}>
-              <Check className="size-4" />
-              Save
+          <div className="ml-auto flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => onDownload(draft)} title={`${filename}.xlsx`}>
+              <FileSpreadsheet className="size-4" />
+              Download now
             </Button>
-            <Button size="sm" variant="outline" onClick={saveAsNew} title="Duplicate">
-              <Copy className="size-4" />
+            <Button size="sm" variant="primary" onClick={persist}>
+              <Save className="size-4" />
+              {isBuiltin ? "Save as new" : "Save preset"}
             </Button>
-            {templates.some((t) => t.id === draft.id) && (
-              <Button size="sm" variant="danger" onClick={remove} title="Delete">
-                <Trash2 className="size-4" />
-              </Button>
+          </div>
+        </div>
+      }
+    >
+      <div className="space-y-3">
+        {/* Preset bar */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground">Preset</span>
+          <select
+            value={templates.some((t) => t.id === draft.id) ? draft.id : ""}
+            onChange={(e) => loadInto(e.target.value)}
+            className="h-8 w-52 rounded-md border bg-card px-2 text-sm"
+          >
+            {!templates.some((t) => t.id === draft.id) && <option value="">{draft.name} (unsaved)</option>}
+            {templates.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+                {t.builtin ? " · built-in" : ""}
+              </option>
+            ))}
+          </select>
+          <Button size="sm" variant="outline" onClick={create}>
+            <Plus className="size-4" />
+            New
+          </Button>
+          <div className="ml-auto flex items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground">Name</span>
+            <Input
+              value={draft.name}
+              onChange={(e) => set("name", e.target.value)}
+              className="h-8 w-48 text-sm"
+            />
+          </div>
+        </div>
+
+        {/* Ribbon */}
+        <div className="flex items-stretch gap-0 overflow-x-auto rounded-lg border bg-muted/30 p-1.5">
+          {/* Contextual — edits whichever region is selected in the preview. */}
+          <RibbonGroup label={`Format · ${rs.label}`}>
+            <RibbonBtn
+              active={rs.boldKey ? !!draft[rs.boldKey] : true}
+              onClick={() => rs.boldKey && put(rs.boldKey, !draft[rs.boldKey])}
+              title={rs.boldKey ? "Bold" : "Title is always bold"}
+              className={!rs.boldKey ? "opacity-50" : undefined}
+            >
+              <Bold className="size-3.5" />
+            </RibbonBtn>
+            <RibbonBtn
+              active={rs.italicKey ? !!draft[rs.italicKey] : false}
+              onClick={() => rs.italicKey && put(rs.italicKey, !draft[rs.italicKey])}
+              title="Italic"
+              className={!rs.italicKey ? "opacity-50" : undefined}
+            >
+              <Italic className="size-3.5" />
+            </RibbonBtn>
+            <RibbonColor
+              title={`${rs.label} text colour`}
+              value={draft[rs.textKey] as string}
+              onChange={(v) => put(rs.textKey, v)}
+              icon={<Baseline className="size-3.5" />}
+            />
+            {fillColorKey && (
+              <RibbonColor
+                title={`${rs.label} fill`}
+                value={draft[fillColorKey] as string}
+                onChange={(v) => put(fillColorKey, v)}
+                icon={<PaintBucket className="size-3.5" />}
+              />
             )}
-          </>
+            {rs.fill.kind === "band" && (
+              <>
+                <RibbonBtn
+                  active={draft.bandColor !== null}
+                  onClick={() => set("bandColor", draft.bandColor === null ? "F5F3FF" : null)}
+                  title="Zebra fill"
+                  className="px-2 text-xs"
+                >
+                  Zebra
+                </RibbonBtn>
+                {draft.bandColor !== null && (
+                  <RibbonColor title="Stripe colour" value={draft.bandColor} onChange={(v) => set("bandColor", v)} icon={<PaintBucket className="size-3.5" />} />
+                )}
+              </>
+            )}
+            {rs.fill.kind === "none" && <span className="px-1 text-[10px] text-muted-foreground">no fill</span>}
+          </RibbonGroup>
+
+          <Divider />
+
+          <RibbonGroup label="Font">
+            <select
+              value={draft.fontName}
+              onChange={(e) => set("fontName", e.target.value)}
+              className="h-7 w-32 rounded border bg-card px-1.5 text-xs"
+              title="Font family (whole sheet)"
+            >
+              {FONTS.map((f) => (
+                <option key={f} value={f} style={{ fontFamily: f }}>
+                  {f}
+                </option>
+              ))}
+            </select>
+            <span className="ml-1 flex items-center rounded border bg-card">
+              <Type className="ml-1 size-3 text-muted-foreground" />
+              <input
+                type="number"
+                min={8}
+                max={20}
+                value={draft.fontSize}
+                onChange={(e) => set("fontSize", clamp(Number(e.target.value) || 11, 6, 28))}
+                className="h-7 w-10 bg-transparent px-1 text-center text-xs outline-none"
+                title="Font size (pt)"
+              />
+            </span>
+          </RibbonGroup>
+
+          <Divider />
+
+          <RibbonGroup label="Number">
+            <span className="flex items-center rounded border bg-card" title="Currency symbol">
+              <input
+                value={draft.currencySymbol}
+                onChange={(e) => set("currencySymbol", e.target.value.slice(0, 3))}
+                placeholder="₹"
+                className="h-7 w-10 bg-transparent px-1 text-center text-xs outline-none"
+              />
+            </span>
+            <RibbonBtn onClick={() => set("moneyDecimals", clamp(draft.moneyDecimals - 1, 0, 2))} title="Fewer decimals">
+              <Minus className="size-3.5" />
+            </RibbonBtn>
+            <span className="w-9 text-center text-xs tabular text-muted-foreground">
+              {draft.moneyDecimals === 0 ? "0" : draft.moneyDecimals === 1 ? "0.0" : "0.00"}
+            </span>
+            <RibbonBtn onClick={() => set("moneyDecimals", clamp(draft.moneyDecimals + 1, 0, 2))} title="More decimals">
+              <Plus className="size-3.5" />
+            </RibbonBtn>
+          </RibbonGroup>
+
+          <Divider />
+
+          <RibbonGroup label="Sheet">
+            <RibbonBtn active={draft.borders} onClick={() => set("borders", !draft.borders)} title="Cell borders">
+              <Grid2x2 className="size-3.5" />
+            </RibbonBtn>
+            <RibbonBtn active={draft.showTitleBlock} onClick={() => set("showTitleBlock", !draft.showTitleBlock)} title="Title block">
+              <Heading className="size-3.5" />
+            </RibbonBtn>
+          </RibbonGroup>
+        </div>
+
+        {/* Preview */}
+        <div>
+          <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="font-medium">Live preview</span>
+            <span>· click a region to select &amp; format it — now editing</span>
+            <span className="rounded bg-primary/15 px-1.5 py-0.5 font-medium text-primary">{rs.label}</span>
+            <span className="hidden sm:inline">({rs.hint})</span>
+          </div>
+          <Preview t={draft} region={region} onSelect={setRegion} />
+        </div>
+        {isBuiltin && (
+          <p className="text-[11px] text-muted-foreground">
+            <span className="font-medium">{draft.name}</span> is a built-in preset — your edits will be saved as a new
+            preset you can reuse on every export.
+          </p>
         )}
       </div>
-      {isBuiltin && (
-        <p className="px-1 text-[10px] text-muted-foreground">
-          Built-in templates can’t be overwritten — save a copy to customise.
-        </p>
-      )}
+    </Modal>
+  );
+}
+
+function RibbonGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex shrink-0 flex-col">
+      <div className="flex flex-1 items-center gap-1 px-2 py-1">{children}</div>
+      <div className="mt-1 border-t pt-0.5 text-center text-[10px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </div>
     </div>
   );
 }
 
-function normalizeForEdit(t: ExcelTemplate): ExcelTemplate {
-  return { ...t };
+function Divider() {
+  return <div className="mx-1 my-1 w-px self-stretch bg-border" />;
 }
 
-function ColorField({
-  label,
+function RibbonBtn({
+  active,
+  onClick,
+  title,
+  children,
+  className,
+}: {
+  active?: boolean;
+  onClick: () => void;
+  title: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={cn(
+        "flex h-7 min-w-7 items-center justify-center rounded border text-sm transition-colors",
+        active
+          ? "border-primary bg-primary/15 text-primary"
+          : "border-transparent hover:border-border hover:bg-accent",
+        className,
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+// Excel-style colour button — icon with a colour bar underneath; the whole tile
+// is a hidden <input type=color>.
+function RibbonColor({
+  title,
   value,
   onChange,
+  icon,
 }: {
-  label: string;
+  title: string;
   value: string;
   onChange: (hexNoHash: string) => void;
+  icon: React.ReactNode;
 }) {
   return (
-    <div>
-      <Label>{label}</Label>
-      <div className="mt-0.5 flex items-center gap-1.5">
-        <input
-          type="color"
-          value={hx(value)}
-          onChange={(e) => onChange(unhx(e.target.value))}
-          className="h-8 w-9 cursor-pointer rounded border bg-card"
-        />
-        <span className="font-mono text-[11px] text-muted-foreground">#{value}</span>
-      </div>
-    </div>
+    <label
+      title={title}
+      className="relative flex h-7 w-7 cursor-pointer flex-col items-center justify-center rounded border border-transparent hover:border-border hover:bg-accent"
+    >
+      <span className="leading-none">{icon}</span>
+      <span className="mt-0.5 h-1 w-4 rounded-sm border border-black/10" style={{ background: hx(value) }} />
+      <input
+        type="color"
+        value={hx(value)}
+        onChange={(e) => onChange(unhx(e.target.value))}
+        className="absolute inset-0 cursor-pointer opacity-0"
+      />
+    </label>
   );
 }
 
-function BandField({
-  draft,
-  set,
+function Preview({
+  t,
+  region,
+  onSelect,
 }: {
-  draft: ExcelTemplate;
-  set: <K extends keyof ExcelTemplate>(k: K, v: ExcelTemplate[K]) => void;
+  t: ExcelTemplate;
+  region: Region;
+  onSelect: (r: Region) => void;
 }) {
-  const on = draft.bandColor !== null;
-  return (
-    <div>
-      <Label>Zebra stripe</Label>
-      <div className="mt-0.5 flex items-center gap-1.5">
-        <input
-          type="checkbox"
-          checked={on}
-          onChange={(e) => set("bandColor", e.target.checked ? "F5F5F5" : null)}
-        />
-        <input
-          type="color"
-          disabled={!on}
-          value={hx(draft.bandColor ?? "F5F5F5")}
-          onChange={(e) => set("bandColor", unhx(e.target.value))}
-          className="h-8 w-9 cursor-pointer rounded border bg-card disabled:opacity-40"
-        />
-      </div>
-    </div>
+  const cellBorder = t.borders ? "border border-border/70" : "";
+  const cell = cn("px-2.5 py-1", cellBorder);
+  const headFont = cn(t.headerBold && "font-semibold", t.headerItalic && "italic");
+  const bodyFont = cn(t.bodyBold && "font-semibold", t.bodyItalic && "italic");
+  const totalFont = cn(t.totalBold && "font-bold", t.totalItalic && "italic");
+  const body: [string, number, string][] = [
+    ["Cost of Goods Sold", 8240000, "61.2%"],
+    ["Payroll & Benefits", 2110000, "15.7%"],
+    ["Freight & Logistics", 1180000, "8.8%"],
+  ];
+  // Row-header gutter cell that labels & selects a region (like an Excel header).
+  const Gut = ({ r, label, rowSpan }: { r: Region; label?: string; rowSpan?: number }) => (
+    <td
+      rowSpan={rowSpan}
+      onClick={() => onSelect(r)}
+      title={`Select ${REGION_STYLE[r].label}`}
+      className={cn(
+        "w-16 cursor-pointer select-none border-r px-1 py-0.5 text-center align-middle text-[8px] font-semibold uppercase tracking-wide",
+        region === r ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-accent",
+      )}
+    >
+      {label}
+    </td>
   );
-}
+  const ring = (r: Region) => region === r && "outline outline-2 -outline-offset-2 outline-[hsl(var(--primary))]";
 
-function Preview({ t }: { t: ExcelTemplate }) {
-  const cell = "px-2 py-1 text-[10px]";
   return (
-    <div className="overflow-hidden rounded-md border" style={{ fontSize: 10 }}>
+    <div
+      className="overflow-hidden rounded-md border bg-white text-[#1F2937]"
+      style={{ fontFamily: t.fontName, fontSize: Math.max(10, t.fontSize) }}
+    >
       {t.showTitleBlock && (
-        <div className="px-2 pt-1.5 pb-0.5">
-          <div className="font-bold" style={{ color: hx(t.titleColor) }}>
-            Cost Audit
+        <div
+          onClick={() => onSelect("title")}
+          className={cn("flex cursor-pointer items-start gap-1.5 px-1.5 py-1", ring("title"))}
+        >
+          <span
+            className={cn(
+              "mt-0.5 rounded px-1 py-0.5 text-[8px] font-semibold uppercase tracking-wide",
+              region === "title" ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground",
+            )}
+          >
+            Title
+          </span>
+          <div>
+            <div className="font-bold" style={{ color: hx(t.titleColor), fontSize: t.fontSize + 4 }}>
+              Cost Audit — Cost Heads
+            </div>
+            <div className="text-[11px] text-[#6B7280]">All entities · FY 25-26 · Accrual basis</div>
           </div>
-          <div className="text-[9px] text-muted-foreground">All entities · FY 25-26</div>
         </div>
       )}
-      <table className="w-full border-collapse">
+      <table className="w-full border-collapse text-[11px]">
         <thead>
-          <tr style={{ background: hx(t.accent), color: hx(t.headerText) }}>
-            <th className={cn(cell, "text-left font-semibold")}>Item</th>
-            <th className={cn(cell, "text-right font-semibold")}>Amount</th>
-            <th className={cn(cell, "text-right font-semibold")}>%</th>
+          <tr onClick={() => onSelect("header")} className="cursor-pointer">
+            <Gut r="header" label="Header" />
+            <th className={cn(cell, headFont, "text-left", ring("header"))} style={{ background: hx(t.accent), color: hx(t.headerText) }}>
+              Cost Head
+            </th>
+            <th className={cn(cell, headFont, "text-right", ring("header"))} style={{ background: hx(t.accent), color: hx(t.headerText) }}>
+              Amount
+            </th>
+            <th className={cn(cell, headFont, "text-right", ring("header"))} style={{ background: hx(t.accent), color: hx(t.headerText) }}>
+              % of Cost
+            </th>
           </tr>
         </thead>
         <tbody>
-          {[
-            ["COGS", `${t.currencySymbol}82,40,000`, "61.2%"],
-            ["Payroll", `${t.currencySymbol}21,10,000`, "15.7%"],
-          ].map((r, i) => (
-            <tr key={i} style={{ background: t.bandColor && i % 2 === 1 ? hx(t.bandColor) : "#fff" }}>
-              {r.map((c, j) => (
-                <td key={j} className={cn(cell, j === 0 ? "text-left" : "text-right")}>
-                  {c}
-                </td>
-              ))}
+          {body.map((r, i) => (
+            <tr
+              key={i}
+              onClick={() => onSelect("data")}
+              className="cursor-pointer"
+              style={{ background: t.bandColor && i % 2 === 1 ? hx(t.bandColor) : "#fff", color: hx(t.bodyText) }}
+            >
+              {i === 0 && <Gut r="data" label="Data" rowSpan={body.length} />}
+              <td className={cn(cell, bodyFont, "text-left", ring("data"))}>{r[0]}</td>
+              <td className={cn(cell, bodyFont, "text-right tabular", ring("data"))}>{fmtMoney(r[1], t)}</td>
+              <td className={cn(cell, bodyFont, "text-right tabular", ring("data"))}>{r[2]}</td>
             </tr>
           ))}
-          <tr style={{ background: hx(t.totalFill), color: hx(t.totalText) }} className="font-bold">
-            <td className={cell}>Total</td>
-            <td className={cn(cell, "text-right")}>{t.currencySymbol}1,34,60,000</td>
-            <td className={cn(cell, "text-right")}>100%</td>
+          <tr
+            onClick={() => onSelect("total")}
+            className={cn("cursor-pointer", totalFont)}
+            style={{ background: hx(t.totalFill), color: hx(t.totalText) }}
+          >
+            <Gut r="total" label="Total" />
+            <td className={cn(cell, "text-left", ring("total"))}>Total Cost</td>
+            <td className={cn(cell, "text-right tabular", ring("total"))}>{fmtMoney(13460000, t)}</td>
+            <td className={cn(cell, "text-right tabular", ring("total"))}>100%</td>
           </tr>
         </tbody>
       </table>

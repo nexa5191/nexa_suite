@@ -7,11 +7,14 @@ import type { Account } from "./types";
 export const CHART_OF_ACCOUNTS: Account[] = [
   // ---- Assets ----------------------------------------------------------
   { code: "1010", name: "Cash on Hand", type: "asset", subtype: "Cash & Bank", normal: "debit", cashFlow: "none", isCash: true },
+  { code: "1015", name: "Petty Cash", type: "asset", subtype: "Cash & Bank", normal: "debit", cashFlow: "none", isCash: true, description: "Imprest float for small day-to-day expenses" },
   { code: "1020", name: "Bank — Current Account", type: "asset", subtype: "Cash & Bank", normal: "debit", cashFlow: "none", isCash: true },
   { code: "1030", name: "Bank — EEFC (Forex)", type: "asset", subtype: "Cash & Bank", normal: "debit", cashFlow: "none", isCash: true },
   { code: "1100", name: "Accounts Receivable", type: "asset", subtype: "Current Assets", normal: "debit", cashFlow: "operating" },
   { code: "1200", name: "Inventory", type: "asset", subtype: "Current Assets", normal: "debit", cashFlow: "operating" },
   { code: "1300", name: "GST Input Credit", type: "asset", subtype: "Current Assets", normal: "debit", cashFlow: "operating" },
+  { code: "1310", name: "TDS Receivable", type: "asset", subtype: "Current Assets", normal: "debit", cashFlow: "operating", description: "TDS withheld by customers (Form 16A) — knocked off on certificate" },
+  { code: "1320", name: "Inter-company Receivable", type: "asset", subtype: "Current Assets", normal: "debit", cashFlow: "operating", description: "Amounts owed by group entities — eliminates on consolidation" },
   { code: "1400", name: "Prepaid Expenses", type: "asset", subtype: "Current Assets", normal: "debit", cashFlow: "operating" },
   { code: "1500", name: "Plant & Equipment", type: "asset", subtype: "Fixed Assets", normal: "debit", cashFlow: "investing" },
   { code: "1510", name: "Furniture & Fixtures", type: "asset", subtype: "Fixed Assets", normal: "debit", cashFlow: "investing" },
@@ -19,9 +22,12 @@ export const CHART_OF_ACCOUNTS: Account[] = [
 
   // ---- Liabilities -----------------------------------------------------
   { code: "2010", name: "Accounts Payable", type: "liability", subtype: "Current Liabilities", normal: "credit", cashFlow: "operating" },
+  { code: "2015", name: "Goods Received Not Invoiced (GRNI)", type: "liability", subtype: "Current Liabilities", normal: "credit", cashFlow: "operating", description: "3-way-match clearing — goods receipted (GRN) but the vendor bill is not yet booked" },
+  { code: "2020", name: "Inter-company Payable", type: "liability", subtype: "Current Liabilities", normal: "credit", cashFlow: "operating", description: "Amounts owed to group entities — eliminates on consolidation" },
   { code: "2100", name: "GST Output Payable", type: "liability", subtype: "Current Liabilities", normal: "credit", cashFlow: "operating" },
   { code: "2200", name: "TDS Payable", type: "liability", subtype: "Current Liabilities", normal: "credit", cashFlow: "operating" },
   { code: "2300", name: "Salaries Payable", type: "liability", subtype: "Current Liabilities", normal: "credit", cashFlow: "operating" },
+  { code: "2310", name: "Employee Reimbursements Payable", type: "liability", subtype: "Current Liabilities", normal: "credit", cashFlow: "operating", description: "Approved staff expense claims awaiting payout" },
   { code: "2400", name: "Unearned Revenue", type: "liability", subtype: "Current Liabilities", normal: "credit", cashFlow: "operating" },
   { code: "2700", name: "Long-term Loan", type: "liability", subtype: "Non-current Liabilities", normal: "credit", cashFlow: "financing" },
 
@@ -34,16 +40,21 @@ export const CHART_OF_ACCOUNTS: Account[] = [
   { code: "4010", name: "Product Sales", type: "income", subtype: "Revenue", normal: "credit", cashFlow: "none" },
   { code: "4020", name: "Service Revenue", type: "income", subtype: "Revenue", normal: "credit", cashFlow: "none" },
   { code: "4030", name: "Export Sales", type: "income", subtype: "Revenue", normal: "credit", cashFlow: "none" },
+  { code: "4040", name: "Sales Returns & Allowances", type: "income", subtype: "Revenue", normal: "debit", cashFlow: "none", description: "Contra-revenue — reduces sales (credit notes)" },
   { code: "4900", name: "Other Income", type: "income", subtype: "Other Income", normal: "credit", cashFlow: "none" },
 
   // ---- Cost of goods sold ---------------------------------------------
   { code: "5010", name: "Cost of Goods Sold", type: "expense", subtype: "Cost of Sales", normal: "debit", cashFlow: "none" },
   { code: "5020", name: "Freight Inward", type: "expense", subtype: "Cost of Sales", normal: "debit", cashFlow: "none" },
+  { code: "5030", name: "Purchase Returns", type: "expense", subtype: "Cost of Sales", normal: "credit", cashFlow: "none", description: "Contra-expense — reduces purchases (debit notes)" },
+  { code: "5040", name: "Loan Licence / Job-work Charges", type: "expense", subtype: "Cost of Sales", normal: "debit", cashFlow: "none", description: "Conversion charges paid to loan-licence manufacturers" },
+  { code: "5050", name: "Third-party FG Purchases", type: "expense", subtype: "Cost of Sales", normal: "debit", cashFlow: "none", description: "Finished goods bought from contract manufacturers" },
 
   // ---- Operating expenses ---------------------------------------------
   { code: "6010", name: "Salaries & Wages", type: "expense", subtype: "Operating Expenses", normal: "debit", cashFlow: "none" },
   { code: "6020", name: "Rent", type: "expense", subtype: "Operating Expenses", normal: "debit", cashFlow: "none" },
   { code: "6030", name: "Utilities", type: "expense", subtype: "Operating Expenses", normal: "debit", cashFlow: "none" },
+  { code: "6035", name: "Office & Admin Expenses", type: "expense", subtype: "Operating Expenses", normal: "debit", cashFlow: "none", description: "Printing, stationery, postage, refreshments & sundries" },
   { code: "6040", name: "Marketing & Advertising", type: "expense", subtype: "Operating Expenses", normal: "debit", cashFlow: "none" },
   { code: "6050", name: "Professional Fees", type: "expense", subtype: "Operating Expenses", normal: "debit", cashFlow: "none" },
   { code: "6060", name: "Software & Subscriptions", type: "expense", subtype: "Operating Expenses", normal: "debit", cashFlow: "none" },

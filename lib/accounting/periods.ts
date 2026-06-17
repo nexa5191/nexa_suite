@@ -43,3 +43,14 @@ export function periodPresets(ref: Date): Period[] {
 }
 
 export const DEFAULT_PERIOD_ID = "last12";
+
+// Selectable financial years (Apr–Mar) for the FY dropdown — current FY plus the
+// few preceding ones, newest first.
+export function financialYears(ref: Date, back = 3): Period[] {
+  const cur = fyStartYear(ref);
+  const out: Period[] = [];
+  for (let y = cur; y > cur - back; y--) {
+    out.push({ id: `fy-${y}`, label: fyLabel(y), from: `${y}-04-01`, to: `${y + 1}-03-31` });
+  }
+  return out;
+}

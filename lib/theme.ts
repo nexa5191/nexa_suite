@@ -125,6 +125,9 @@ export const THEME_BOOT_SCRIPT = `
     root.style.setProperty('--radius', (t.radius/100).toFixed(2) + 'rem');
     var prefs = JSON.parse(localStorage.getItem('nexa-prefs') || 'null');
     if (prefs && prefs.font) root.style.setProperty('--font-sans', prefs.font);
+    // Embed mode: when this document is a split-screen pane (in an iframe),
+    // tag the root pre-paint so CSS can strip the shell chrome with no flash.
+    if (window.self !== window.top) root.classList.add('embed');
   } catch (e) {}
 })();
 `;

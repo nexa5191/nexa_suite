@@ -20,7 +20,12 @@ import {
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { PrefsProvider } from "@/components/prefs/prefs-provider";
+import { JournalProvider } from "@/components/accounting/journal-provider";
+import { RecruitmentProvider } from "@/components/recruitment/recruitment-provider";
+import { AccessProvider } from "@/components/access/access-provider";
+import { ServicesProvider } from "@/components/services/services-provider";
 import { AppShell } from "@/components/shell/app-shell";
+import { SplitProvider } from "@/components/shell/split/split-provider";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
@@ -61,7 +66,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${fontVars} font-sans antialiased`}>
         <ThemeProvider>
           <PrefsProvider>
-            <AppShell>{children}</AppShell>
+            <AccessProvider>
+              <ServicesProvider>
+                <JournalProvider>
+                  <RecruitmentProvider>
+                    <SplitProvider>
+                      <AppShell>{children}</AppShell>
+                    </SplitProvider>
+                  </RecruitmentProvider>
+                </JournalProvider>
+              </ServicesProvider>
+            </AccessProvider>
           </PrefsProvider>
         </ThemeProvider>
       </body>

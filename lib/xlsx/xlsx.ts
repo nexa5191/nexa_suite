@@ -14,6 +14,7 @@ export interface XlsxStyle {
   italic?: boolean;
   fontColor?: string; // hex "1F2937" (no #)
   fontSize?: number;
+  fontName?: string; // font family (defaults to Calibri)
   fill?: string; // hex background fill
   numFmt?: string; // e.g. "#,##0", "0.0%", "₹#,##0"
   align?: "left" | "center" | "right";
@@ -113,9 +114,10 @@ class StyleRegistry {
   }
 
   private fontId(s: XlsxStyle): number {
-    const key = `${s.bold ? 1 : 0}|${s.italic ? 1 : 0}|${s.fontColor ?? ""}|${s.fontSize ?? 11}`;
+    const name = s.fontName || "Calibri";
+    const key = `${s.bold ? 1 : 0}|${s.italic ? 1 : 0}|${s.fontColor ?? ""}|${s.fontSize ?? 11}|${name}`;
     if (this.fonts.has(key)) return this.fonts.get(key)!;
-    const parts = [`<sz val="${s.fontSize ?? 11}"/>`, `<name val="Calibri"/>`];
+    const parts = [`<sz val="${s.fontSize ?? 11}"/>`, `<name val="${esc(name)}"/>`];
     if (s.bold) parts.unshift("<b/>");
     if (s.italic) parts.unshift("<i/>");
     if (s.fontColor) parts.push(`<color rgb="FF${s.fontColor}"/>`);

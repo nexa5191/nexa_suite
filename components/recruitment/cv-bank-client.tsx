@@ -1,21 +1,25 @@
 "use client";
 
 import * as React from "react";
-import { Search, FileText, Star, Users, Briefcase, MapPin, Mail, Phone, Calendar, Building2 } from "lucide-react";
+import { Search, FileText, Star, Users, Briefcase, MapPin, Mail, Phone, Calendar, Building2, Wallet } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input, Select } from "@/components/ui/input";
+import { Input, Select, Label } from "@/components/ui/input";
+import { Money } from "@/components/ui/money";
 import { cn, formatDate } from "@/lib/utils";
 import { locationById } from "@/lib/accounting/org";
 import { departmentName, employeeName } from "@/lib/hr/employees";
 import { Drawer } from "@/components/ui/modal";
+import { useRecruitment } from "@/components/recruitment/recruitment-provider";
 import {
-  CANDIDATES,
   OPENINGS,
+  AGENCIES,
   openingById,
-  candidatesForOpening,
+  agencyById,
+  commissionAmount,
+  STAGE_ORDER,
   type Candidate,
   type Opening,
   type CandidateStage,
@@ -38,16 +42,21 @@ const OPENING_TONE: Record<OpeningStatus, "success" | "warning" | "default"> = {
 };
 
 export function CvBankClient() {
-  const [tab, setTab] = React.useState<"candidates" | "openings">("candidates");
+  const { candidates, setStage: setCandidateStage } = useRecruitment();
+  const [tab, setTab] = React.useState<"candidates" | "openings" | "agencies">("candidates");
   const [q, setQ] = React.useState("");
   const [stage, setStage] = React.useState("all");
   const [opening, setOpening] = React.useState("all");
   const [minExp, setMinExp] = React.useState("0");
-  const [candidate, setCandidate] = React.useState<Candidate | null>(null);
+  const [candidateId, setCandidateId] = React.useState<string | null>(null);
   const [openingDetail, setOpeningDetail] = React.useState<Opening | null>(null);
 
+  const candidate = candidateId ? candidates.find((c) => c.id === candidateId) ?? null : null;
+  const setCandidate = (c: Candidate | null) => setCandidateId(c?.id ?? null);
+  const forOpening = (id: string) => candidates.filter((c) => c.openingId === id);
+
   const term = q.trim().toLowerCase();
-  const rows = CANDIDATES.filter((c) => {
+  const rows = candidates.filter((c) => {
     if (stage !== "all" && c.stage !== stage) return false;
     if (opening !== "all" && (opening === "pool" ? c.openingId !== null : c.openingId !== opening)) return false;
     if (c.experienceYears < Number(minExp)) return false;
@@ -68,13 +77,13 @@ export function CvBankClient() {
         subtitle="Talent pool and live openings — search résumés for current and future roles."
         actions={
           <Badge variant="primary" className="h-7 px-3">
-            <Users className="size-3.5" /> {CANDIDATES.length} candidates
+            <Users className="size-3.5" /> {candidates.length} candidates
           </Badge>
         }
       />
 
       <div className="mb-4 flex gap-1">
-        {(["candidates", "openings"] as const).map((t) => (
+        {(["candidates", "openings", "agencies"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -83,7 +92,11 @@ export function CvBankClient() {
               tab === t ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-accent",
             )}
           >
-            {t === "openings" ? `Openings (${OPENINGS.filter((o) => o.status === "open").length} open)` : "Candidates"}
+            {t === "openings"
+              ? `Openings (${OPENINGS.filter((o) => o.status === "open").length} open)`
+              : t === "agencies"
+                ? "Agencies & Commissions"
+                : "Candidates"}
           </button>
         ))}
       </div>
@@ -164,7 +177,10 @@ export function CvBankClient() {
                           </div>
                         </td>
                         <td className="px-5 py-3 text-right tabular">{c.experienceYears}y</td>
-                        <td className="px-5 py-3 capitalize text-muted-foreground">{c.source}</td>
+                        <td className="px-5 py-3 capitalize text-muted-foreground">
+                          {c.source}
+                          {c.agencyId && <span className="block text-[11px] normal-case">{agencyById(c.agencyId)?.name}</span>}
+                        </td>
                         <td className="px-5 py-3">
                           {op ? <span className="text-xs">{op.title}</span> : <Badge variant="outline">Talent pool</Badge>}
                         </td>
@@ -182,10 +198,10 @@ export function CvBankClient() {
             </div>
           </Card>
         </>
-      ) : (
+      ) : tab === "openings" ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {OPENINGS.map((o) => {
-            const count = candidatesForOpening(o.id).length;
+            const count = forOpening(o.id).length;
             return (
               <Card
                 key={o.id}
@@ -218,6 +234,8 @@ export function CvBankClient() {
             );
           })}
         </div>
+      ) : (
+        <AgenciesTab candidates={candidates} />
       )}
 
       {/* Candidate detail */}
@@ -242,6 +260,34 @@ export function CvBankClient() {
                 <Badge variant="outline">General talent pool</Badge>
               )}
               <Badge variant="default" className="capitalize">{candidate.source}</Badge>
+              {candidate.agencyId && <Badge variant="warning">{agencyById(candidate.agencyId)?.name}</Badge>}
+            </div>
+
+            {/* Move stage — drives agency commission on hire */}
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <Label htmlFor="cand-stage">Move to stage</Label>
+              <Select
+                id="cand-stage"
+                value={candidate.stage}
+                onChange={(e) => setCandidateStage(candidate.id, e.target.value as CandidateStage)}
+                className="mt-1"
+              >
+                {STAGE_ORDER.map((s) => (
+                  <option key={s} value={s} className="capitalize">{s}</option>
+                ))}
+              </Select>
+              {candidate.agencyId && (
+                <p className="mt-2 flex items-center gap-1.5 text-sm">
+                  <Wallet className="size-4 text-muted-foreground" />
+                  Agency commission{" "}
+                  <span className={cn("font-semibold", candidate.stage === "hired" ? "text-success" : "text-muted-foreground")}>
+                    <Money value={commissionAmount(candidate.expectedCtcLakh, agencyById(candidate.agencyId))} />
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {candidate.stage === "hired" ? "— payable (hired)" : "— on successful hire"}
+                  </span>
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -319,7 +365,7 @@ export function CvBankClient() {
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Matching candidates ({candidatesForOpening(openingDetail.id).length})
+                  Matching candidates ({forOpening(openingDetail.id).length})
                 </p>
                 <button
                   onClick={() => { viewOpening(openingDetail.id); setOpeningDetail(null); }}
@@ -329,10 +375,10 @@ export function CvBankClient() {
                 </button>
               </div>
               <div className="space-y-1.5">
-                {candidatesForOpening(openingDetail.id).length === 0 && (
+                {forOpening(openingDetail.id).length === 0 && (
                   <p className="text-muted-foreground">No candidates tagged to this opening yet.</p>
                 )}
-                {candidatesForOpening(openingDetail.id).map((c) => (
+                {forOpening(openingDetail.id).map((c) => (
                   <button
                     key={c.id}
                     onClick={() => { setCandidate(c); setOpeningDetail(null); }}
@@ -361,5 +407,69 @@ function Detail({ label, value }: { label: string; value: React.ReactNode }) {
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="mt-0.5 font-medium">{value}</p>
     </div>
+  );
+}
+
+function AgenciesTab({ candidates }: { candidates: Candidate[] }) {
+  const rows = AGENCIES.map((ag) => {
+    const subs = candidates.filter((c) => c.agencyId === ag.id);
+    const hired = subs.filter((c) => c.stage === "hired");
+    const active = subs.filter((c) => c.stage !== "hired" && c.stage !== "archived");
+    const earned = hired.reduce((s, c) => s + commissionAmount(c.expectedCtcLakh, ag), 0);
+    const pipeline = active.reduce((s, c) => s + commissionAmount(c.expectedCtcLakh, ag), 0);
+    return { ag, submitted: subs.length, hired: hired.length, earned, pipeline };
+  });
+  const totalEarned = rows.reduce((s, r) => s + r.earned, 0);
+  const totalPipeline = rows.reduce((s, r) => s + r.pipeline, 0);
+
+  return (
+    <>
+      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+        <Card className="p-4">
+          <p className="text-xs text-muted-foreground">Active agencies</p>
+          <p className="mt-0.5 text-lg font-bold">{AGENCIES.length}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="flex items-center gap-1 text-xs text-muted-foreground"><Wallet className="size-3.5" /> Commission earned (hired)</p>
+          <p className="mt-0.5 text-lg font-bold text-success tabular"><Money value={totalEarned} /></p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-xs text-muted-foreground">In pipeline (potential)</p>
+          <p className="mt-0.5 text-lg font-bold tabular"><Money value={totalPipeline} /></p>
+        </Card>
+      </div>
+
+      <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 z-10">
+            <tr className="border-b bg-muted text-left text-xs text-muted-foreground">
+              <th className="px-4 py-2.5 font-medium">Agency</th>
+              <th className="px-4 py-2.5 font-medium">SPOC</th>
+              <th className="px-4 py-2.5 text-right font-medium">Rate</th>
+              <th className="px-4 py-2.5 text-right font-medium">Submitted</th>
+              <th className="px-4 py-2.5 text-right font-medium">Hired</th>
+              <th className="px-4 py-2.5 text-right font-medium">Earned</th>
+              <th className="px-4 py-2.5 text-right font-medium">Pipeline</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(({ ag, submitted, hired, earned, pipeline }) => (
+              <tr key={ag.id} className="border-b border-border/40 last:border-0 hover:bg-accent/30">
+                <td className="px-4 py-2.5">
+                  <p className="font-medium">{ag.name}</p>
+                  <p className="text-xs text-muted-foreground">{ag.email}</p>
+                </td>
+                <td className="px-4 py-2.5 text-muted-foreground">{ag.spoc}</td>
+                <td className="px-4 py-2.5 text-right tabular">{ag.commissionPct}%</td>
+                <td className="px-4 py-2.5 text-right tabular">{submitted}</td>
+                <td className="px-4 py-2.5 text-right tabular">{hired}</td>
+                <td className="px-4 py-2.5 text-right tabular font-medium text-success"><Money value={earned} /></td>
+                <td className="px-4 py-2.5 text-right tabular text-muted-foreground"><Money value={pipeline} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

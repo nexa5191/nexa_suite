@@ -326,7 +326,7 @@ export function BusinessPlanClient() {
 // ---------------------------------------------------------------------------
 function Section({ icon: Icon, title, children }: { icon: typeof Rocket; title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-lg border bg-card p-5 shadow-sm">
+    <section className="rounded-lg border bg-card px-5 py-3 shadow-sm">
       <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold">
         <Icon className="size-4 text-primary" />
         {title}

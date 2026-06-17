@@ -1,5 +1,6 @@
 import type { BusinessEvent } from "./types";
 import { ENTITIES, LOCATIONS } from "./org";
+import { MODULE_REVENUE_EVENTS } from "./revenue-bridge";
 
 // Deterministic PRNG (mulberry32) so server and client render identical seed
 // data — no Math.random / Date.now anywhere in the data layer.
@@ -13,7 +14,7 @@ function mulberry32(seed: number) {
   };
 }
 
-const rnd = mulberry32(20260605);
+const rnd = mulberry32(20240601);
 const pick = <T,>(arr: T[]) => arr[Math.floor(rnd() * arr.length)];
 const between = (lo: number, hi: number) => Math.round(lo + rnd() * (hi - lo));
 
@@ -21,11 +22,12 @@ function iso(y: number, m: number, d: number) {
   return `${y}-${String(m).padStart(2, "0")}-${String(Math.min(d, 28)).padStart(2, "0")}`;
 }
 
-// Months covered: Apr 2025 → May 2026 (FY25-26 + current).
+// Months covered: Apr 2024 → Jun 2026 — two full financial years (FY24-25 +
+// FY25-26) plus the current year-to-date (FY26-27). 27 months in all.
 const MONTHS: Array<[number, number]> = [];
-for (let i = 0; i < 14; i++) {
+for (let i = 0; i < 27; i++) {
   const m = ((3 + i) % 12) + 1;
-  const y = 2025 + Math.floor((3 + i) / 12);
+  const y = 2024 + Math.floor((3 + i) / 12);
   MONTHS.push([y, m]);
 }
 
@@ -42,21 +44,21 @@ function opening(entityId: string, locationId: string, scale: number) {
   events.push({
     id: id(), kind: "transfer", category: "Capital", memo: "Share capital introduced",
     entityId, locationId, currency: "INR", amount: 5_000_000 * scale,
-    accrualDate: iso(2025, 4, 1), cashDate: iso(2025, 4, 1),
+    accrualDate: iso(2024, 4, 1), cashDate: iso(2024, 4, 1),
     incomeOrExpenseAccount: "", contraAccount: "", cashAccount: "1020",
     debitAccount: "1020", creditAccount: "3010",
   });
   events.push({
     id: id(), kind: "transfer", category: "Financing", memo: "Term loan drawdown",
     entityId, locationId, currency: "INR", amount: 3_000_000 * scale,
-    accrualDate: iso(2025, 4, 1), cashDate: iso(2025, 4, 1),
+    accrualDate: iso(2024, 4, 1), cashDate: iso(2024, 4, 1),
     incomeOrExpenseAccount: "", contraAccount: "", cashAccount: "1020",
     debitAccount: "1020", creditAccount: "2700",
   });
   events.push({
     id: id(), kind: "transfer", category: "Capex", memo: "Plant & equipment purchase",
     entityId, locationId, currency: "INR", amount: 4_200_000 * scale,
-    accrualDate: iso(2025, 4, 2), cashDate: iso(2025, 4, 2),
+    accrualDate: iso(2024, 4, 2), cashDate: iso(2024, 4, 2),
     incomeOrExpenseAccount: "", contraAccount: "", cashAccount: "1020",
     debitAccount: "1500", creditAccount: "1020",
   });
@@ -133,6 +135,27 @@ for (const ent of ENTITIES) {
       });
     }
 
+    // ---- Loan-licence job-work & third-party FG purchases (manufacturing
+    // entities only) — surface as Cost of Sales in P&L, cost audit & reports.
+    if (ent.id !== "ent-nexa-global") {
+      const day = 12;
+      const llPaid = iso(y, m, 22);
+      events.push({
+        id: id(), kind: "purchase", category: "Loan Licence",
+        memo: "Loan-licence job-work — Sunraj Oil Mills",
+        entityId: ent.id, locationId: base, currency: "INR", amount: 90_000 * scale,
+        accrualDate: iso(y, m, day), cashDate: llPaid,
+        incomeOrExpenseAccount: "5040", contraAccount: "2010", cashAccount: "1020",
+      });
+      events.push({
+        id: id(), kind: "purchase", category: "Third-party Purchase",
+        memo: "Third-party FG purchase — Annapurna Rice",
+        entityId: ent.id, locationId: base, currency: "INR", amount: 160_000 * scale,
+        accrualDate: iso(y, m, day), cashDate: iso(y, m, 24),
+        incomeOrExpenseAccount: "5050", contraAccount: "2010", cashAccount: "1020",
+      });
+    }
+
     // ---- Monthly depreciation (non-cash; accrual basis only) ----
     events.push({
       id: id(), kind: "transfer", category: "Depreciation", memo: "Monthly depreciation",
@@ -144,7 +167,12 @@ for (const ent of ENTITIES) {
   }
 }
 
-export const BUSINESS_EVENTS: BusinessEvent[] = events;
+// The generated backbone above (opening balances, wholesale sales, purchases,
+// payroll, overheads, depreciation) plus revenue derived from the operational
+// modules — Orders, Invoicing and Professional-services billing — so those
+// modules show up in the P&L, Balance Sheet, Cash Flow, General Ledger and GST
+// returns instead of living in a parallel universe. See revenue-bridge.ts.
+export const BUSINESS_EVENTS: BusinessEvent[] = events.concat(MODULE_REVENUE_EVENTS);
 
 // GST applies to domestic India flows only.
 export function gstRateFor(ev: BusinessEvent): number {

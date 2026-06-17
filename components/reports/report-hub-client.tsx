@@ -14,6 +14,17 @@ import { filteredPostings } from "@/lib/accounting/ledger";
 import { CHART_OF_ACCOUNTS } from "@/lib/accounting/chart-of-accounts";
 import { EMPLOYEES, departmentName, employeeName, employeeById } from "@/lib/hr/employees";
 import { DEFAULT_LEAVE_TYPES, LEAVE_REQUESTS, leaveTypeById, balancesFor } from "@/lib/hr/leave";
+import { outwardRows, inwardRows } from "@/lib/tax/tax-data";
+import { stateName } from "@/lib/tax/gst";
+import { ORDERS, byChannel } from "@/lib/orders";
+import { PURCHASE_ORDERS, vendorName, loadPoPayments } from "@/lib/vendors";
+import { loadP2P, p2pStage, STAGE_META } from "@/lib/p2p";
+import { allAssets, loadCreatedAssets } from "@/lib/assets/assets";
+import { accumulatedDepreciation, netBookValue } from "@/lib/assets/depreciation";
+
+// Tax datasets (deterministic, derived from the same events as GSTR filings).
+const OUTWARD = outwardRows();
+const INWARD = inwardRows();
 
 // ---------------------------------------------------------------------------
 // A single flexible report builder over BOTH accounting and HR data.
@@ -28,6 +39,9 @@ const accountType = (code: string) => CHART_OF_ACCOUNTS.find((a) => a.code === c
 const POSTINGS = filteredPostings({
   entityId: ALL, locationId: ALL, state: ALL, basis: "accrual", from: "", to: "",
 });
+
+const TODAY = new Date().toISOString().slice(0, 10);
+const money = (r: Row, key: string) => <Money value={(r[key] as number) || 0} />;
 
 interface Filters {
   from: string;
@@ -50,10 +64,11 @@ interface Column {
   align?: "right";
   cell: (r: Row) => React.ReactNode;
 }
+type ReportGroup = "Accounting" | "Tax" | "Sales" | "Procurement" | "Assets" | "People";
 interface ReportDef {
   key: string;
   label: string;
-  group: "Accounting" | "People";
+  group: ReportGroup;
   columns: Column[];
   build: (f: Filters) => Row[];
 }
@@ -216,6 +231,228 @@ const REPORTS: ReportDef[] = [
           }),
         ),
   },
+
+  // ---------------- Tax: GST ----------------
+  {
+    key: "gst-output",
+    label: "GST — Output (GSTR-1)",
+    group: "Tax",
+    columns: [
+      { key: "date", label: "Date", cell: (r) => formatDate(r.date as string) },
+      { key: "invoiceNo", label: "Invoice", cell: (r) => <span className="font-mono text-xs">{r.invoiceNo as string}</span> },
+      { key: "customer", label: "Customer", cell: (r) => r.customerName as string },
+      { key: "gstin", label: "GSTIN", cell: (r) => <span className="font-mono text-xs">{(r.customerGstin as string) || "B2C"}</span> },
+      { key: "place", label: "Place of supply", cell: (r) => stateName(r.placeOfSupply as string) },
+      { key: "nature", label: "Nature", cell: (r) => <Badge variant="outline" className="uppercase">{r.nature as string}</Badge> },
+      { key: "hsn", label: "HSN", cell: (r) => <span className="font-mono text-xs">{r.hsn as string}</span> },
+      { key: "rate", label: "Rate", align: "right", cell: (r) => `${r.rate as number}%` },
+      { key: "taxable", label: "Taxable", align: "right", cell: (r) => money(r, "taxable") },
+      { key: "cgst", label: "CGST", align: "right", cell: (r) => money(r, "cgst") },
+      { key: "sgst", label: "SGST/UTGST", align: "right", cell: (r) => money(r, "sgstUt") },
+      { key: "igst", label: "IGST", align: "right", cell: (r) => money(r, "igst") },
+      { key: "total", label: "Invoice total", align: "right", cell: (r) => <Money value={r.gross as number} className="font-semibold" /> },
+    ],
+    build: (f) =>
+      OUTWARD
+        .filter((r) => f.entity === ALL || r.entityId === f.entity)
+        .filter((r) => inDateRange(r.date, f.from, f.to))
+        .filter((r) => match(f.q, r.invoiceNo, r.customerName, r.hsn, r.nature, r.rate, r.customerGstin))
+        .map((r) => ({ ...r, sgstUt: r.sgst + r.utgst, _date: r.date, _amount: r.gross, _name: r.customerName })),
+  },
+  {
+    key: "gst-input",
+    label: "GST — Input / ITC",
+    group: "Tax",
+    columns: [
+      { key: "date", label: "Date", cell: (r) => formatDate(r.date as string) },
+      { key: "invoiceNo", label: "Bill", cell: (r) => <span className="font-mono text-xs">{r.invoiceNo as string}</span> },
+      { key: "vendor", label: "Vendor", cell: (r) => r.vendorName as string },
+      { key: "gstin", label: "GSTIN", cell: (r) => <span className="font-mono text-xs">{(r.vendorGstin as string) || "—"}</span> },
+      { key: "supplier", label: "Supplier state", cell: (r) => stateName(r.supplierState as string) },
+      { key: "nature", label: "Nature", cell: (r) => <Badge variant="outline" className="uppercase">{r.nature as string}</Badge> },
+      { key: "hsn", label: "HSN", cell: (r) => <span className="font-mono text-xs">{r.hsn as string}</span> },
+      { key: "rate", label: "Rate", align: "right", cell: (r) => `${r.rate as number}%` },
+      { key: "taxable", label: "Taxable", align: "right", cell: (r) => money(r, "taxable") },
+      { key: "cgst", label: "CGST", align: "right", cell: (r) => money(r, "cgst") },
+      { key: "sgst", label: "SGST/UTGST", align: "right", cell: (r) => money(r, "sgstUt") },
+      { key: "igst", label: "IGST", align: "right", cell: (r) => money(r, "igst") },
+      { key: "itc", label: "ITC", cell: (r) => (r.rcm ? <Badge variant="warning">RCM</Badge> : r.itcEligible ? <Badge variant="success">Eligible</Badge> : <Badge variant="danger">Blocked</Badge>) },
+    ],
+    build: (f) =>
+      INWARD
+        .filter((r) => f.entity === ALL || r.entityId === f.entity)
+        .filter((r) => inDateRange(r.date, f.from, f.to))
+        .filter((r) => match(f.q, r.invoiceNo, r.vendorName, r.hsn, r.nature, r.rate, r.vendorGstin))
+        .map((r) => ({ ...r, sgstUt: r.sgst + r.utgst, _date: r.date, _amount: r.gross, _name: r.vendorName })),
+  },
+  {
+    key: "gst-hsn",
+    label: "GST — HSN summary",
+    group: "Tax",
+    columns: [
+      { key: "hsn", label: "HSN/SAC", cell: (r) => <span className="font-mono text-xs">{r.hsn as string}</span> },
+      { key: "rate", label: "Rate", align: "right", cell: (r) => `${r.rate as number}%` },
+      { key: "count", label: "Invoices", align: "right", cell: (r) => <span className="tabular">{r.count as number}</span> },
+      { key: "taxable", label: "Taxable", align: "right", cell: (r) => money(r, "taxable") },
+      { key: "tax", label: "Total GST", align: "right", cell: (r) => money(r, "tax") },
+      { key: "total", label: "Value", align: "right", cell: (r) => <Money value={r.total as number} className="font-semibold" /> },
+    ],
+    build: (f) => {
+      const m = new Map<string, { hsn: string; rate: number; count: number; taxable: number; tax: number; total: number }>();
+      OUTWARD
+        .filter((r) => f.entity === ALL || r.entityId === f.entity)
+        .filter((r) => inDateRange(r.date, f.from, f.to))
+        .filter((r) => match(f.q, r.hsn, r.rate))
+        .forEach((r) => {
+          const k = `${r.hsn}|${r.rate}`;
+          const e = m.get(k) ?? { hsn: r.hsn, rate: r.rate, count: 0, taxable: 0, tax: 0, total: 0 };
+          e.count += 1;
+          e.taxable += r.taxable;
+          e.tax += r.tax;
+          e.total += r.gross;
+          m.set(k, e);
+        });
+      return Array.from(m.values()).map((r) => ({ ...r, _date: "", _amount: r.total, _name: r.hsn }));
+    },
+  },
+
+  // ---------------- Tax: TDS ----------------
+  {
+    key: "tds-deducted",
+    label: "TDS — Deducted (payable)",
+    group: "Tax",
+    columns: [
+      { key: "date", label: "Date", cell: (r) => formatDate(r.date as string) },
+      { key: "vendor", label: "Deductee (vendor)", cell: (r) => r.vendorName as string },
+      { key: "pan", label: "PAN", cell: (r) => <span className="font-mono text-xs">{r.vendorPan as string}</span> },
+      { key: "section", label: "Section", cell: (r) => <Badge variant="primary">{r.tdsSection as string}</Badge> },
+      { key: "baseRate", label: "Std rate", align: "right", cell: (r) => `${r.tdsBaseRate as number}%` },
+      { key: "rate", label: "Applied", align: "right", cell: (r) => `${r.tdsRate as number}%` },
+      { key: "ldc", label: "197 LDC", cell: (r) => (r.ldc ? <Badge variant="warning">{r.ldcCertNo as string}</Badge> : <span className="text-muted-foreground">—</span>) },
+      { key: "taxable", label: "Base amount", align: "right", cell: (r) => money(r, "taxable") },
+      { key: "tds", label: "TDS", align: "right", cell: (r) => <Money value={r.tds as number} className="font-semibold" /> },
+      { key: "net", label: "Net payable", align: "right", cell: (r) => money(r, "netPayable") },
+    ],
+    build: (f) =>
+      INWARD
+        .filter((r) => (r.tds as number) > 0)
+        .filter((r) => f.entity === ALL || r.entityId === f.entity)
+        .filter((r) => inDateRange(r.date, f.from, f.to))
+        .filter((r) => match(f.q, r.vendorName, r.tdsSection, r.vendorPan, r.ldcCertNo))
+        .map((r) => ({ ...r, _date: r.date, _amount: r.tds, _name: r.vendorName })),
+  },
+  {
+    key: "tds-receivable",
+    label: "TDS — Receivable (on our bills)",
+    group: "Tax",
+    columns: [
+      { key: "date", label: "Date", cell: (r) => formatDate(r.date as string) },
+      { key: "invoiceNo", label: "Invoice", cell: (r) => <span className="font-mono text-xs">{r.invoiceNo as string}</span> },
+      { key: "customer", label: "Customer (deductor)", cell: (r) => r.customerName as string },
+      { key: "gstin", label: "GSTIN", cell: (r) => <span className="font-mono text-xs">{r.customerGstin as string}</span> },
+      { key: "taxable", label: "Fee amount", align: "right", cell: (r) => money(r, "taxable") },
+      { key: "tds", label: "TDS withheld (194J)", align: "right", cell: (r) => <Money value={r.tdsReceivable as number} className="font-semibold" /> },
+    ],
+    build: (f) =>
+      OUTWARD
+        .filter((r) => (r.tdsReceivable as number) > 0)
+        .filter((r) => f.entity === ALL || r.entityId === f.entity)
+        .filter((r) => inDateRange(r.date, f.from, f.to))
+        .filter((r) => match(f.q, r.invoiceNo, r.customerName, r.customerGstin))
+        .map((r) => ({ ...r, _date: r.date, _amount: r.tdsReceivable, _name: r.customerName })),
+  },
+
+  // ---------------- Sales ----------------
+  {
+    key: "sales-orders",
+    label: "Sales Orders",
+    group: "Sales",
+    columns: [
+      { key: "date", label: "Date", cell: (r) => formatDate(r.date as string) },
+      { key: "orderNo", label: "Order", cell: (r) => <span className="font-mono text-xs">{r.orderNo as string}</span> },
+      { key: "channel", label: "Channel", cell: (r) => r.channel as string },
+      { key: "customer", label: "Customer", cell: (r) => r.customer as string },
+      { key: "state", label: "State", cell: (r) => r.state as string },
+      { key: "qty", label: "Qty", align: "right", cell: (r) => <span className="tabular">{r.qty as number}</span> },
+      { key: "amount", label: "Amount", align: "right", cell: (r) => <Money value={r.amount as number} className="font-semibold" /> },
+      { key: "status", label: "Status", cell: (r) => <Badge variant="outline" className="capitalize">{r.status as string}</Badge> },
+      { key: "payment", label: "Payment", cell: (r) => <Badge variant={r.payment === "Prepaid" ? "success" : "warning"}>{r.payment as string}</Badge> },
+    ],
+    build: (f) =>
+      ORDERS
+        .filter((o) => f.entity === ALL || o.entityId === f.entity)
+        .filter((o) => inDateRange(o.date, f.from, f.to))
+        .filter((o) => match(f.q, o.orderNo, o.customer, o.channel, o.state, o.status))
+        .map((o) => ({ ...o, _date: o.date, _amount: o.amount, _name: o.customer })),
+  },
+  {
+    key: "sales-by-channel",
+    label: "Sales by Channel",
+    group: "Sales",
+    columns: [
+      { key: "channel", label: "Channel", cell: (r) => <span className="font-medium">{r.channel as string}</span> },
+      { key: "orders", label: "Orders", align: "right", cell: (r) => <span className="tabular">{r.orders as number}</span> },
+      { key: "gmv", label: "GMV", align: "right", cell: (r) => <Money value={r.gmv as number} className="font-semibold" /> },
+    ],
+    build: (f) => {
+      const rows = ORDERS
+        .filter((o) => f.entity === ALL || o.entityId === f.entity)
+        .filter((o) => inDateRange(o.date, f.from, f.to));
+      return byChannel(rows)
+        .filter((c) => match(f.q, c.channel))
+        .map((c) => ({ ...c, _date: "", _amount: c.gmv, _name: c.channel }));
+    },
+  },
+
+  // ---------------- Procurement ----------------
+  {
+    key: "p2p-status",
+    label: "Purchase Orders (P2P)",
+    group: "Procurement",
+    columns: [
+      { key: "date", label: "Raised", cell: (r) => formatDate(r.date as string) },
+      { key: "po", label: "PO", cell: (r) => <span className="font-mono text-xs">{r.id as string}</span> },
+      { key: "vendor", label: "Vendor", cell: (r) => vendorName(r.vendorId as string) },
+      { key: "title", label: "Description", cell: (r) => r.title as string },
+      { key: "entity", label: "Entity", cell: (r) => entityById(r.entityId as string)?.name ?? "—" },
+      { key: "total", label: "PO value", align: "right", cell: (r) => <Money value={r.total as number} className="font-semibold" /> },
+      { key: "stage", label: "P2P stage", cell: (r) => <Badge variant={r.stage === "paid" ? "success" : r.stage === "ordered" ? "default" : "primary"}>{STAGE_META[r.stage as keyof typeof STAGE_META]?.label ?? (r.stage as string)}</Badge> },
+    ],
+    build: (f) => {
+      const p2p = loadP2P();
+      const pays = loadPoPayments();
+      return PURCHASE_ORDERS
+        .filter((po) => f.entity === ALL || po.entityId === f.entity)
+        .filter((po) => inDateRange(po.date, f.from, f.to))
+        .filter((po) => match(f.q, po.id, vendorName(po.vendorId), po.title))
+        .map((po) => ({ ...po, stage: p2pStage(po, p2p[po.id], pays[po.id] ?? 0), _date: po.date, _amount: po.total, _name: vendorName(po.vendorId) }));
+    },
+  },
+
+  // ---------------- Assets ----------------
+  {
+    key: "asset-register",
+    label: "Fixed Asset Register",
+    group: "Assets",
+    columns: [
+      { key: "tag", label: "Tag", cell: (r) => <span className="font-mono text-xs">{r.tag as string}</span> },
+      { key: "name", label: "Asset", cell: (r) => r.name as string },
+      { key: "category", label: "Category", cell: (r) => <Badge variant="outline">{r.category as string}</Badge> },
+      { key: "entity", label: "Entity", cell: (r) => entityById(r.entityId as string)?.name ?? "—" },
+      { key: "location", label: "Location", cell: (r) => locationById(r.locationId as string)?.name ?? "—" },
+      { key: "acquired", label: "Acquired", cell: (r) => formatDate(r.acquisitionDate as string) },
+      { key: "cost", label: "Cost", align: "right", cell: (r) => money(r, "cost") },
+      { key: "accum", label: "Accum. dep", align: "right", cell: (r) => <Money value={r.accum as number} /> },
+      { key: "nbv", label: "Net book value", align: "right", cell: (r) => <Money value={r.nbv as number} className="font-semibold" /> },
+      { key: "method", label: "Method", cell: (r) => <Badge variant={r.method === "WDV" ? "primary" : "default"}>{r.method as string}</Badge> },
+    ],
+    build: (f) =>
+      allAssets(loadCreatedAssets())
+        .filter((a) => f.entity === ALL || a.entityId === f.entity)
+        .filter((a) => inDateRange(a.acquisitionDate, f.from, f.to))
+        .filter((a) => match(f.q, a.name, a.tag, a.category, a.supplier))
+        .map((a) => ({ ...a, accum: accumulatedDepreciation(a, TODAY), nbv: netBookValue(a, TODAY), _date: a.acquisitionDate, _amount: a.cost, _name: a.name })),
+  },
 ];
 
 function sortRows(rows: Row[], f: Filters): Row[] {
@@ -308,7 +545,7 @@ export function ReportHubClient() {
     win.print();
   }
 
-  const groups = ["Accounting", "People"] as const;
+  const groups = ["Accounting", "Tax", "Sales", "Procurement", "Assets", "People"] as const;
 
   return (
     <>

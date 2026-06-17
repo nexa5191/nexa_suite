@@ -1,141 +1,186 @@
 "use client";
 
 import * as React from "react";
-import { CalendarDays, MapPin } from "lucide-react";
+import { CalendarDays, MapPin, Check } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select } from "@/components/ui/input";
 import { Drawer } from "@/components/ui/modal";
-import { Collapsible } from "@/components/ui/collapsible";
 import { cn, formatDate } from "@/lib/utils";
 import { LOCATIONS, locationById, ALL } from "@/lib/accounting/org";
 import { HOLIDAYS, type Holiday } from "@/lib/hr/holidays";
 import { TODAY } from "@/lib/calendar";
+import { usePrefs } from "@/components/prefs/prefs-provider";
 
 function weekday(date: string) {
   return new Date(`${date}T00:00:00Z`).toLocaleDateString("en-IN", { weekday: "long" });
 }
-
+function weekdayShort(date: string) {
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString("en-IN", { weekday: "short" });
+}
 function monthKey(date: string) {
   return date.slice(0, 7); // YYYY-MM
 }
-
 function monthLabel(key: string) {
   return new Date(`${key}-01T00:00:00Z`).toLocaleDateString("en-IN", { month: "long", year: "numeric" });
 }
 
 export function HolidaysClient() {
-  const [location, setLocation] = React.useState(ALL);
+  const prefs = usePrefs();
   const [selected, setSelected] = React.useState<Holiday | null>(null);
 
-  const rows = HOLIDAYS.filter((h) => location === ALL || h.locationIds.includes(location)).sort((a, b) =>
-    a.date.localeCompare(b.date),
+  // The user's own location sits in the extreme-left column. When the scope is
+  // "all locations", fall back to the first location so there's always a "home"
+  // column to anchor on.
+  const userLocId = prefs.locationId !== ALL ? prefs.locationId : LOCATIONS[0]?.id;
+
+  // Column order: user's location first, the rest in their natural order.
+  const columns = React.useMemo(() => {
+    const mine = LOCATIONS.find((l) => l.id === userLocId);
+    const rest = LOCATIONS.filter((l) => l.id !== userLocId);
+    return mine ? [mine, ...rest] : LOCATIONS;
+  }, [userLocId]);
+
+  const rows = React.useMemo(
+    () => [...HOLIDAYS].sort((a, b) => a.date.localeCompare(b.date)),
+    [],
   );
-  const upcoming = HOLIDAYS.filter((h) => h.date >= TODAY).sort((a, b) => a.date.localeCompare(b.date))[0];
+  const upcoming = rows.find((h) => h.date >= TODAY);
 
-  // Group filtered rows into month sections, preserving date order.
-  const months = React.useMemo(() => {
-    const map = new Map<string, Holiday[]>();
-    for (const h of rows) {
-      const k = monthKey(h.date);
-      const arr = map.get(k);
-      if (arr) arr.push(h);
-      else map.set(k, [h]);
-    }
-    return Array.from(map.entries());
-  }, [rows]);
+  const observes = (h: Holiday, locId: string) => h.national || h.locationIds.includes(locId);
 
-  // Default-open the nearest month that still has an upcoming holiday.
-  const openMonth = upcoming ? monthKey(upcoming.date) : months[0]?.[0];
+  // Count this location's working-day holidays (for the column subhead).
+  const countFor = (locId: string) => rows.filter((h) => observes(h, locId)).length;
 
   return (
     <>
       <PageHeader
         title="Holidays"
-        subtitle="Holiday calendar 2026 across all locations."
-        actions={
-          <Select value={location} onChange={(e) => setLocation(e.target.value)} className="h-9 w-52">
-            <option value={ALL}>All locations</option>
-            {LOCATIONS.map((l) => (
-              <option key={l.id} value={l.id}>{l.name}</option>
-            ))}
-          </Select>
-        }
+        subtitle="Holiday calendar 2026 — each location's observed days at a glance."
       />
 
       {upcoming && (
         <Card className="mb-4 flex items-center gap-3 border-primary/30 bg-primary/5 p-4">
           <CalendarDays className="size-5 text-primary" />
           <p className="text-sm">
-            Next holiday: <span className="font-semibold">{upcoming.name}</span> on {formatDate(upcoming.date)} ({weekday(upcoming.date)})
+            Next holiday: <span className="font-semibold">{upcoming.name}</span> on{" "}
+            {formatDate(upcoming.date)} ({weekday(upcoming.date)})
+            {!observes(upcoming, userLocId) && (
+              <span className="ml-1 text-muted-foreground">
+                — not observed at {locationById(userLocId)?.name}
+              </span>
+            )}
           </p>
         </Card>
       )}
 
-      <div className="space-y-3">
-        {months.map(([key, items]) => {
-          const upcomingCount = items.filter((h) => h.date >= TODAY).length;
-          return (
-            <Card key={key} className="overflow-hidden">
-              <Collapsible
-                defaultOpen={key === openMonth}
-                headerClassName="bg-muted/40 px-5 py-3 hover:bg-muted/60"
-                header={
-                  <span className="flex items-center justify-between">
-                    <span className="text-sm font-semibold">{monthLabel(key)}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {items.length} holiday{items.length === 1 ? "" : "s"}
-                      {upcomingCount > 0 && <span className="ml-2 text-primary">· {upcomingCount} upcoming</span>}
-                    </span>
-                  </span>
-                }
-              >
-                <table className="w-full text-sm">
-                  <tbody>
-                    {items.map((h) => {
-                      const past = h.date < TODAY;
-                      return (
-                        <tr
-                          key={h.id}
-                          onClick={() => setSelected(h)}
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full border-separate border-spacing-0 text-sm">
+            <thead>
+              <tr className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+                <th className="sticky left-0 z-10 bg-muted/40 px-4 py-3 text-left font-medium">Holiday</th>
+                {columns.map((l, i) => (
+                  <th
+                    key={l.id}
+                    className={cn(
+                      "min-w-[7.5rem] px-3 py-3 text-center font-medium",
+                      i === 0 && "bg-primary/10 text-primary",
+                    )}
+                  >
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className="normal-case">{l.name}</span>
+                      {i === 0 ? (
+                        <span className="rounded-full bg-primary/15 px-1.5 py-px text-[9px] font-semibold text-primary">
+                          Your location
+                        </span>
+                      ) : (
+                        <span className="text-[10px] normal-case opacity-70">{l.state}</span>
+                      )}
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((h, idx) => {
+                const past = h.date < TODAY;
+                const isNext = upcoming?.id === h.id;
+                const newMonth = idx === 0 || monthKey(rows[idx - 1].date) !== monthKey(h.date);
+                return (
+                  <React.Fragment key={h.id}>
+                    {newMonth && (
+                      <tr>
+                        <td
+                          colSpan={columns.length + 1}
+                          className="sticky left-0 bg-muted/20 px-4 py-1.5 text-xs font-semibold text-muted-foreground"
+                        >
+                          {monthLabel(monthKey(h.date))}
+                        </td>
+                      </tr>
+                    )}
+                    <tr
+                      onClick={() => setSelected(h)}
+                      className={cn(
+                        "cursor-pointer transition-colors hover:bg-accent/50",
+                        past && "opacity-45",
+                        isNext && "bg-primary/5",
+                      )}
+                    >
+                      <td className="sticky left-0 z-10 border-t bg-card px-4 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-12 shrink-0 text-center">
+                            <div className="text-xs text-muted-foreground">{weekdayShort(h.date)}</div>
+                            <div className="font-semibold tabular">{h.date.slice(8, 10)}</div>
+                          </div>
+                          <div className="min-w-0">
+                            <div className="truncate font-medium">
+                              {h.name}
+                              {h.optional && (
+                                <span className="ml-1.5 text-[11px] text-muted-foreground">(optional)</span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {h.national ? "National" : "Regional"} · {formatDate(h.date)}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      {columns.map((l, i) => (
+                        <td
+                          key={l.id}
                           className={cn(
-                            "cursor-pointer border-t transition-colors hover:bg-accent/50",
-                            past && "opacity-50",
+                            "border-t px-3 py-2.5 text-center",
+                            i === 0 && "bg-primary/5",
                           )}
                         >
-                          <td className="w-28 px-5 py-3 font-medium">{formatDate(h.date)}</td>
-                          <td className="w-28 px-5 py-3 text-muted-foreground">{weekday(h.date)}</td>
-                          <td className="px-5 py-3">
-                            {h.name}
-                            {h.optional && <span className="ml-2 text-[11px] text-muted-foreground">(optional)</span>}
-                          </td>
-                          <td className="px-5 py-3">
-                            <Badge variant={h.national ? "primary" : "warning"}>{h.national ? "National" : "Regional"}</Badge>
-                          </td>
-                          <td className="px-5 py-3">
-                            {h.national ? (
-                              <span className="text-xs text-muted-foreground">All locations</span>
-                            ) : (
-                              <div className="flex flex-wrap gap-1">
-                                {h.locationIds.map((lid) => (
-                                  <span key={lid} className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-                                    {locationById(lid)?.name}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </Collapsible>
-            </Card>
-          );
-        })}
-      </div>
+                          {observes(h, l.id) ? (
+                            <Check
+                              className={cn("mx-auto size-4", i === 0 ? "text-primary" : "text-emerald-500")}
+                            />
+                          ) : (
+                            <span className="text-muted-foreground/25">—</span>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr className="bg-muted/30 text-xs text-muted-foreground">
+                <td className="sticky left-0 z-10 bg-muted/30 px-4 py-2.5 font-medium">Total observed</td>
+                {columns.map((l, i) => (
+                  <td key={l.id} className={cn("px-3 py-2.5 text-center font-semibold", i === 0 && "text-primary")}>
+                    {countFor(l.id)}
+                  </td>
+                ))}
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </Card>
 
       <Drawer
         open={selected !== null}

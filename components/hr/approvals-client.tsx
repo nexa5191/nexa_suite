@@ -153,23 +153,63 @@ export function ApprovalsClient({ approvals }: { approvals: Approval[] }) {
         </div>
       )}
 
-      {/* List */}
-      <div className="space-y-2">
-        {visible.length === 0 && (
-          <Card className="py-16 text-center text-sm text-muted-foreground">Nothing here — queue is clear.</Card>
-        )}
-        {visible.map((a) => (
-          <ApprovalRow
-            key={a.id}
-            approval={a}
-            status={statusOf(a)}
-            selected={selected.has(a.id)}
-            onToggleSelect={toggleSelect}
-            onDecide={decide}
-            onUndo={undo}
-          />
-        ))}
-      </div>
+      {/* Grouped by type — Leave, Invoices & POs, Documents & others — so each
+          queue is easy to scan and action on its own. */}
+      {visible.length === 0 ? (
+        <Card className="py-16 text-center text-sm text-muted-foreground">Nothing here — queue is clear.</Card>
+      ) : (
+        <div className="space-y-6">
+          {KINDS.map((k) => {
+            const items = visible.filter((a) => a.kind === k);
+            if (items.length === 0) return null;
+            const meta = KIND_META[k];
+            const sectionPendingIds = items.filter((a) => statusOf(a) === "pending").map((a) => a.id);
+            return (
+              <section key={k}>
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <span
+                    className={cn(
+                      "flex size-7 items-center justify-center rounded-md",
+                      meta.tone === "primary" && "bg-primary/10 text-primary",
+                      meta.tone === "warning" && "bg-warning/15 text-warning",
+                      meta.tone === "default" && "bg-secondary text-secondary-foreground",
+                    )}
+                  >
+                    <meta.Icon className="size-4" />
+                  </span>
+                  <h2 className="text-sm font-semibold">{meta.label}</h2>
+                  <Badge variant="outline">
+                    {sectionPendingIds.length} pending
+                  </Badge>
+                  {sectionPendingIds.length > 0 && (
+                    <div className="ml-auto flex items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={() => decideMany(sectionPendingIds, "rejected")}>
+                        <X className="size-3.5" /> Reject all
+                      </Button>
+                      <Button size="sm" onClick={() => decideMany(sectionPendingIds, "approved")}>
+                        <CheckSquare className="size-3.5" /> Approve all
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  {items.map((a) => (
+                    <ApprovalRow
+                      key={a.id}
+                      approval={a}
+                      status={statusOf(a)}
+                      selected={selected.has(a.id)}
+                      onToggleSelect={toggleSelect}
+                      onDecide={decide}
+                      onUndo={undo}
+                    />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
     </>
   );
 }
@@ -191,7 +231,7 @@ function SummaryCard({
     <button
       onClick={onClick}
       className={cn(
-        "rounded-lg border bg-card p-4 text-left shadow-sm transition-colors hover:bg-accent/40",
+        "rounded-lg border bg-card px-4 py-2.5 text-left shadow-sm transition-colors hover:bg-accent/40",
         active && "border-primary/40 ring-1 ring-primary/30",
       )}
     >

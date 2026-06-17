@@ -5,13 +5,15 @@ import { usePathname } from "next/navigation";
 import { FLAT_NAV, SECONDARY_NAV, isNavActive } from "./nav-items";
 import { Logo } from "./logo";
 import { cn } from "@/lib/utils";
+import { useAccess } from "@/components/access/access-provider";
 
 // Top navigation layout — horizontal scrolling ribbon under the topbar.
 export function Ribbon() {
   const pathname = usePathname();
-  const items = [...FLAT_NAV, ...SECONDARY_NAV];
+  const { can } = useAccess();
+  const items = [...FLAT_NAV, ...SECONDARY_NAV].filter((i) => can(i.key));
   return (
-    <div className="sticky top-0 z-30 hidden border-b bg-card/95 backdrop-blur md:block">
+    <div data-chrome className="sticky top-0 z-30 hidden border-b bg-card/95 backdrop-blur md:block">
       <div className="flex h-14 items-center gap-4 px-4">
         <Logo />
         <nav className="flex flex-1 items-center gap-1 overflow-x-auto no-scrollbar">

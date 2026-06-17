@@ -12,14 +12,17 @@ import {
   Tooltip,
   Cell,
 } from "recharts";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useReport } from "@/components/reports/use-report";
 import { ReportControls } from "@/components/reports/report-controls";
 import { PageHeader } from "@/components/shell/page-header";
 import { usePrefs } from "@/components/prefs/prefs-provider";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Plus } from "lucide-react";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { NewJournalEntry } from "@/components/accounting/new-journal-entry";
 import { KpiStrip } from "@/components/accounting/kpi-strip";
 import { ApprovalsWidget } from "@/components/hr/approvals-widget";
 import { Money } from "@/components/ui/money";
@@ -31,6 +34,7 @@ export function DashboardClient() {
   const ctl = useReport();
   const router = useRouter();
   const { currency, setEntity } = usePrefs();
+  const [showNew, setShowNew] = useState(false);
   const pnl = buildPnL(ctl.filters);
   const trend = monthlyTrend(ctl.filters);
   const entities = entityBreakdown(ctl.filters.basis, ctl.filters.from, ctl.filters.to);
@@ -44,7 +48,14 @@ export function DashboardClient() {
       <PageHeader
         title="Dashboard"
         subtitle="Financial overview across all entities — adjust scope, basis and currency from the top bar."
+        actions={
+          <Button onClick={() => setShowNew(true)}>
+            <Plus className="size-4" /> New entry
+          </Button>
+        }
       />
+
+      <NewJournalEntry open={showNew} onClose={() => setShowNew(false)} />
 
       <KpiStrip
         items={[

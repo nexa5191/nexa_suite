@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Factory, ArrowLeftRight, AlertTriangle, PackageX, Boxes, ListTree, ChevronRight } from "lucide-react";
+import { Factory, ArrowLeftRight, AlertTriangle, PackageX, Boxes, ListTree, ChevronRight, Pencil, Check, X } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/input";
 import { Money } from "@/components/ui/money";
 import { Drawer } from "@/components/ui/modal";
+import { VoucherButton } from "@/components/accounting/voucher-button";
 import { KpiStrip, type Kpi } from "@/components/accounting/kpi-strip";
 import { cn } from "@/lib/utils";
 import { LOCATIONS, locationById, ALL } from "@/lib/accounting/org";
@@ -17,10 +18,17 @@ import {
   ITEMS,
   CATEGORY_META,
   CATEGORY_ORDER,
+  OWNERSHIP_META,
   itemsByCategory,
   hasBom,
   bomUnitCost,
+  altUomOf,
+  packLabel,
+  loadUomOverrides,
+  saveUomOverrides,
+  type AltUom,
 } from "@/lib/inventory/items";
+import { Input } from "@/components/ui/input";
 import {
   loadAddedMovements,
   buildStockIndex,
@@ -47,10 +55,18 @@ export function InventoryClient() {
   const [tab, setTab] = React.useState<ItemCategory | "all">("all");
   const [loc, setLoc] = React.useState<string>(ALL);
   const [selected, setSelected] = React.useState<Item | null>(null);
+  const [uomOverrides, setUomOverrides] = React.useState<Record<string, AltUom | null>>({});
 
   React.useEffect(() => {
     setIdx(buildStockIndex(allMovements(loadAddedMovements())));
+    setUomOverrides(loadUomOverrides());
   }, []);
+
+  function saveOverride(itemId: string, alt: AltUom | null) {
+    const next = { ...uomOverrides, [itemId]: alt };
+    setUomOverrides(next);
+    saveUomOverrides(next);
+  }
 
   const totalValue = totalStockValue(idx);
   const low = lowStockItems(idx);
@@ -94,10 +110,11 @@ export function InventoryClient() {
               </Button>
             </Link>
             <Link href="/inventory/production">
-              <Button>
+              <Button variant="outline">
                 <Factory className="size-4" /> Production
               </Button>
             </Link>
+            <VoucherButton type="stock" label="Stock journal" />
           </div>
         }
       />
@@ -205,11 +222,26 @@ export function InventoryClient() {
                       <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">{it.code} · HSN {it.hsn}</p>
                     </td>
                     <td className="px-5 py-3">
-                      <Badge variant={meta.variant} className="text-[10px]">{meta.short}</Badge>
+                      <div className="flex flex-col items-start gap-1">
+                        <Badge variant={meta.variant} className="text-[10px]">{meta.short}</Badge>
+                        {it.ownership && (it.category === "finished" || it.category === "semi-finished") && (
+                          <Badge variant={OWNERSHIP_META[it.ownership].variant} className="text-[10px]">
+                            {OWNERSHIP_META[it.ownership].short}
+                          </Badge>
+                        )}
+                      </div>
                     </td>
                     <td className="px-5 py-3 text-right tabular-nums">
                       <span className={cn("font-semibold", isLow && "text-warning")}>{fmtQty(onHand)}</span>
                       <span className="ml-1 text-xs text-muted-foreground">{it.uom}</span>
+                      {(() => {
+                        const alt = altUomOf(it, uomOverrides);
+                        return alt ? (
+                          <div className="text-[11px] text-muted-foreground">
+                            1 {alt.unit} = {fmtQty(alt.pack)} {it.uom}
+                          </div>
+                        ) : null;
+                      })()}
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex flex-wrap gap-1">
@@ -253,12 +285,30 @@ export function InventoryClient() {
         </div>
       </Card>
 
-      <ItemDrawer item={selected} idx={idx} onClose={() => setSelected(null)} />
+      <ItemDrawer
+        item={selected}
+        idx={idx}
+        alt={selected ? altUomOf(selected, uomOverrides) : null}
+        onSaveAlt={saveOverride}
+        onClose={() => setSelected(null)}
+      />
     </>
   );
 }
 
-function ItemDrawer({ item, idx, onClose }: { item: Item | null; idx: StockIndex; onClose: () => void }) {
+function ItemDrawer({
+  item,
+  idx,
+  alt,
+  onSaveAlt,
+  onClose,
+}: {
+  item: Item | null;
+  idx: StockIndex;
+  alt: AltUom | null;
+  onSaveAlt: (itemId: string, alt: AltUom | null) => void;
+  onClose: () => void;
+}) {
   if (!item) return null;
   const meta = CATEGORY_META[item.category];
   const onHand = stockTotal(idx, item.id);
@@ -296,7 +346,7 @@ function ItemDrawer({ item, idx, onClose }: { item: Item | null; idx: StockIndex
 
         <dl className="grid grid-cols-2 gap-3">
           <Field label="Category / stage" value={meta.label} />
-          <Field label="UOM" value={item.uom} />
+          <Field label="Base UoM (BUoM)" value={item.uom} />
           <Field label="Unit cost (rate)">
             <Money value={item.rate} className="font-semibold" />
           </Field>
@@ -308,12 +358,30 @@ function ItemDrawer({ item, idx, onClose }: { item: Item | null; idx: StockIndex
           {item.shelfLifeDays !== undefined && (
             <Field label="Shelf life" value={`${item.shelfLifeDays} days`} />
           )}
+          {item.ownership && (
+            <Field label="Sourcing model">
+              <Badge variant={OWNERSHIP_META[item.ownership].variant}>{OWNERSHIP_META[item.ownership].label}</Badge>
+            </Field>
+          )}
+          {item.manufacturer && <Field label="Manufacturer" value={item.manufacturer} />}
+          {item.ownership === "loan-license" && item.conversionRate !== undefined && (
+            <Field label="Job-work charge">
+              <Money value={item.conversionRate} className="font-semibold" /> <span className="text-xs text-muted-foreground">/{item.uom}</span>
+            </Field>
+          )}
+          {item.ownership === "third-party" && item.buyRate !== undefined && (
+            <Field label="Purchase rate">
+              <Money value={item.buyRate} className="font-semibold" /> <span className="text-xs text-muted-foreground">/{item.uom}</span>
+            </Field>
+          )}
           {bom && (
             <Field label="Standard BOM cost">
               <Money value={bomUnitCost(item.id)} className="font-semibold" />
             </Field>
           )}
         </dl>
+
+        <UomEditor item={item} alt={alt} onSave={onSaveAlt} />
 
         <div>
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">On-hand by location</p>
@@ -342,6 +410,97 @@ function ItemDrawer({ item, idx, onClose }: { item: Item | null; idx: StockIndex
         )}
       </div>
     </Drawer>
+  );
+}
+
+// Add / edit / clear an item's alternative (case) unit of measure. The base UoM
+// is fixed; the case is optional and can be defined here at any time.
+function UomEditor({
+  item,
+  alt,
+  onSave,
+}: {
+  item: Item;
+  alt: AltUom | null;
+  onSave: (itemId: string, alt: AltUom | null) => void;
+}) {
+  const [editing, setEditing] = React.useState(false);
+  const [unit, setUnit] = React.useState(alt?.unit ?? "case");
+  const [pack, setPack] = React.useState(String(alt?.pack ?? ""));
+
+  React.useEffect(() => {
+    setEditing(false);
+    setUnit(alt?.unit ?? "case");
+    setPack(String(alt?.pack ?? ""));
+  }, [item.id, alt]);
+
+  const packNum = Number(pack);
+  const valid = unit.trim().length > 0 && packNum > 0;
+
+  return (
+    <div className="rounded-lg border bg-muted/20 p-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Alternative unit (case)</p>
+        {!editing && (
+          <button onClick={() => setEditing(true)} className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+            <Pencil className="size-3" /> {alt ? "Edit" : "Add"}
+          </button>
+        )}
+      </div>
+
+      {!editing ? (
+        alt ? (
+          <p className="mt-1 text-sm">
+            <span className="font-semibold">1 {alt.unit}</span> = {fmtQty(alt.pack)} {item.uom}
+            <span className="ml-1 text-xs text-muted-foreground">({packLabel(item, alt)})</span>
+          </p>
+        ) : (
+          <p className="mt-1 text-sm text-muted-foreground">No case defined — add one to receive / sell in cases.</p>
+        )
+      ) : (
+        <div className="mt-2 space-y-2">
+          <div className="flex items-end gap-2">
+            <label className="block flex-1">
+              <span className="mb-1 block text-[11px] font-medium text-muted-foreground">Unit name</span>
+              <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="case / bag / carton" className="h-8" />
+            </label>
+            <span className="pb-2 text-xs text-muted-foreground">=</span>
+            <label className="block w-24">
+              <span className="mb-1 block text-[11px] font-medium text-muted-foreground">{item.uom} / unit</span>
+              <Input type="number" min={1} value={pack} onChange={(e) => setPack(e.target.value)} placeholder="12" className="h-8 text-right tabular" />
+            </label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              disabled={!valid}
+              onClick={() => {
+                onSave(item.id, { unit: unit.trim(), pack: packNum });
+                setEditing(false);
+              }}
+            >
+              <Check className="size-3.5" /> Save
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+            {alt && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="ml-auto text-danger"
+                onClick={() => {
+                  onSave(item.id, null);
+                  setEditing(false);
+                }}
+              >
+                <X className="size-3.5" /> Remove
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

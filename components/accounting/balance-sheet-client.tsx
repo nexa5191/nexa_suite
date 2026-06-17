@@ -5,12 +5,17 @@ import { ReportControls } from "@/components/reports/report-controls";
 import { StatementView, type StatementRow } from "@/components/reports/statement-view";
 import { PageHeader } from "@/components/shell/page-header";
 import { Badge } from "@/components/ui/badge";
-import { buildBalanceSheet, type Section } from "@/lib/accounting/reports";
+import { Card } from "@/components/ui/card";
+import { Money } from "@/components/ui/money";
+import { Info } from "lucide-react";
+import { buildBalanceSheet, outstandingControl, type Section } from "@/lib/accounting/reports";
 import { KpiStrip } from "./kpi-strip";
 
 export function BalanceSheetClient() {
   const ctl = useReport();
   const bs = buildBalanceSheet(ctl.filters);
+  const isCash = ctl.filters.basis === "cash";
+  const outstanding = outstandingControl(ctl.filters);
 
   const rows: StatementRow[] = [];
   const push = (r: StatementRow) => rows.push(r);
@@ -84,6 +89,24 @@ export function BalanceSheetClient() {
         ]}
       />
       <ReportControls ctl={ctl} asOf />
+      {isCash && (outstanding.receivables !== 0 || outstanding.payables !== 0) && (
+        <Card className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 border-dashed bg-muted/30 p-4 text-sm">
+          <span className="flex items-center gap-2 font-medium">
+            <Info className="size-4 text-muted-foreground" />
+            Memo — not part of the cash-basis books
+          </span>
+          <span className="text-muted-foreground">
+            Cash basis carries no receivables or payables. Under accrual, outstanding as at{" "}
+            {ctl.period.to}:
+          </span>
+          <span className="flex items-center gap-1.5">
+            Receivables <Money value={outstanding.receivables} className="font-semibold" />
+          </span>
+          <span className="flex items-center gap-1.5">
+            Payables <Money value={outstanding.payables} className="font-semibold" />
+          </span>
+        </Card>
+      )}
       <StatementView
         title="Balance Sheet"
         subtitle={`As at ${ctl.period.to}`}

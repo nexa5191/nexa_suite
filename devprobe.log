@@ -1,0 +1,1036 @@
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3013
+
+ ✓ Starting...
+ ✓ Ready in 2s
+ ○ Compiling / ...
+ ✓ Compiled / in 2.9s (1823 modules)
+ GET / 200 in 3305ms
+ GET / 200 in 45ms
+ ○ Compiling /chart-of-accounts ...
+ ✓ Compiled /chart-of-accounts in 951ms (1836 modules)
+ GET /chart-of-accounts 200 in 1166ms
+ ✓ Compiled /journal in 347ms (1847 modules)
+ GET /journal 200 in 568ms
+ ✓ Compiled /journal-entries in 286ms (1856 modules)
+ GET /journal-entries 200 in 404ms
+ ○ Compiling /reports/profit-loss ...
+ ✓ Compiled /reports/profit-loss in 504ms (1887 modules)
+ GET /reports/profit-loss 200 in 720ms
+ ✓ Compiled /reports/balance-sheet in 299ms (1894 modules)
+ GET /reports/balance-sheet 200 in 423ms
+ ✓ Compiled /reports/cash-flow in 374ms (1901 modules)
+ GET /reports/cash-flow 200 in 527ms
+ ○ Compiling /reports/explorer ...
+ ✓ Compiled /reports/explorer in 677ms (1918 modules)
+ GET /reports/explorer 200 in 3819ms
+ GET / 200 in 516ms
+ ○ Compiling /settings ...
+ ✓ Compiled /settings in 1822ms (1947 modules)
+ GET /settings 200 in 2533ms
+ ○ Compiling /help ...
+ ✓ Compiled /help in 1743ms (1956 modules)
+ GET /help 200 in 1882ms
+ ○ Compiling /people ...
+ ✓ Compiled /people in 1388ms (1971 modules)
+ GET /people 200 in 1508ms
+ ○ Compiling /leave ...
+ ✓ Compiled /leave in 633ms (1980 modules)
+ GET /leave 200 in 754ms
+ ○ Compiling /leave/config ...
+ ✓ Compiled /leave/config in 682ms (1993 modules)
+ GET /leave/config 200 in 789ms
+ ✓ Compiled /approvals in 503ms (2011 modules)
+ GET /approvals 200 in 632ms
+ ○ Compiling /documents ...
+ ✓ Compiled /documents in 602ms (2036 modules)
+ GET /documents 200 in 712ms
+ ○ Compiling /vendors ...
+ ✓ Compiled /vendors in 641ms (2053 modules)
+ GET /vendors 200 in 745ms
+ ○ Compiling /cv-bank ...
+ ✓ Compiled /cv-bank in 602ms (2064 modules)
+ GET /cv-bank 200 in 715ms
+ ○ Compiling /agency-portal ...
+ ✓ Compiled /agency-portal in 569ms (2077 modules)
+ GET /agency-portal 200 in 681ms
+ ○ Compiling /tasks ...
+ ✓ Compiled /tasks in 667ms (2092 modules)
+ GET /tasks 200 in 789ms
+ ○ Compiling /calendar ...
+ ✓ Compiled /calendar in 626ms (2105 modules)
+ GET /calendar 200 in 731ms
+ ○ Compiling /hr ...
+ ✓ Compiled /hr in 2.5s (2134 modules)
+ GET /hr 200 in 2608ms
+ ○ Compiling /hr/attendance ...
+ ✓ Compiled /hr/attendance in 3.3s (2127 modules)
+ GET /hr/attendance 200 in 3244ms
+ ○ Compiling /hr/holidays ...
+ ✓ Compiled /hr/holidays in 1366ms (2140 modules)
+ GET /hr/holidays 200 in 1482ms
+ ○ Compiling /hr/payroll ...
+ ✓ Compiled /hr/payroll in 804ms (2151 modules)
+ GET /hr/payroll 200 in 954ms
+ ○ Compiling /portal ...
+ ✓ Compiled /portal in 815ms (2174 modules)
+ GET /portal 200 in 923ms
+ ○ Compiling /invoicing ...
+ ✓ Compiled /invoicing in 819ms (2187 modules)
+ GET /invoicing 200 in 932ms
+ ○ Compiling /invoicing/new ...
+ ✓ Compiled /invoicing/new in 1033ms (2202 modules)
+ GET /invoicing/new 200 in 1153ms
+ ○ Compiling /crm ...
+ ✓ Compiled /crm in 830ms (2221 modules)
+ GET /crm 200 in 962ms
+ ○ Compiling /inventory ...
+ ✓ Compiled /inventory in 751ms (2234 modules)
+ GET /inventory 200 in 885ms
+ ○ Compiling /inventory/production ...
+ ✓ Compiled /inventory/production in 748ms (2243 modules)
+ GET /inventory/production 200 in 857ms
+ ○ Compiling /inventory/movements ...
+ ✓ Compiled /inventory/movements in 662ms (2254 modules)
+ GET /inventory/movements 200 in 808ms
+ ○ Compiling /inventory/bom ...
+ ✓ Compiled /inventory/bom in 663ms (2265 modules)
+ GET /inventory/bom 200 in 791ms
+ ○ Compiling /tax ...
+ ✓ Compiled /tax in 945ms (2292 modules)
+ GET /tax 200 in 1098ms
+ ○ Compiling /assets ...
+ ✓ Compiled /assets in 914ms (2305 modules)
+ GET /assets 200 in 1041ms
+ ○ Compiling /assets/[id] ...
+ ✓ Compiled /assets/[id] in 730ms (2315 modules)
+ GET /assets/asset-001 200 in 1217ms
+ ○ Compiling /group ...
+ ✓ Compiled /group in 762ms (2328 modules)
+ GET /group 200 in 859ms
+ ○ Compiling /group/intercompany ...
+ ✓ Compiled /group/intercompany in 684ms (2337 modules)
+ GET /group/intercompany 200 in 763ms
+ ○ Compiling /banking ...
+ ✓ Compiled /banking in 714ms (2356 modules)
+ GET /banking 200 in 839ms
+ ○ Compiling /analysis/cost-audit ...
+ ✓ Compiled /analysis/cost-audit in 806ms (2369 modules)
+ GET /analysis/cost-audit 200 in 945ms
+ ○ Compiling /planning/budget ...
+ ✓ Compiled /planning/budget in 860ms (2386 modules)
+ GET /planning/budget 200 in 1058ms
+ ○ Compiling /planning/business-plan ...
+ ✓ Compiled /planning/business-plan in 968ms (2407 modules)
+ GET /planning/business-plan 200 in 1161ms
+ ○ Compiling /planning/decisions ...
+ ✓ Compiled /planning/decisions in 1943ms (2418 modules)
+ GET /planning/decisions 200 in 2194ms
+ GET / 200 in 193ms
+ ✓ Compiled in 1000ms (1162 modules)
+ ✓ Compiled in 279ms (1162 modules)
+ ✓ Compiled in 494ms (1162 modules)
+ ✓ Compiled in 306ms (1162 modules)
+ ✓ Compiled in 955ms (2094 modules)
+ ✓ Compiled in 1310ms (2094 modules)
+ ✓ Compiled in 1158ms (2095 modules)
+ ✓ Compiled in 872ms (2095 modules)
+ ✓ Compiled in 362ms (1162 modules)
+ ○ Compiling /connections ...
+ ✓ Compiled /connections in 978ms (2113 modules)
+ GET /connections 200 in 1111ms
+ GET / 200 in 203ms
+ ✓ Compiled /journal in 316ms (953 modules)
+ GET /journal 200 in 569ms
+ ✓ Compiled /inventory in 368ms (965 modules)
+ GET /inventory 200 in 519ms
+ ✓ Compiled in 967ms (2113 modules)
+ ✓ Compiled in 994ms (2113 modules)
+ ✓ Compiled in 640ms (2113 modules)
+ ✓ Compiled in 793ms (2113 modules)
+ ✓ Compiled in 740ms (2113 modules)
+ ✓ Compiled in 1501ms (2113 modules)
+ ✓ Compiled in 790ms (2113 modules)
+ ✓ Compiled in 693ms (2113 modules)
+ ✓ Compiled in 897ms (2113 modules)
+ GET /connections 200 in 177ms
+ GET / 200 in 208ms
+ ✓ Compiled /journal in 396ms (953 modules)
+ GET /journal 200 in 626ms
+ GET /connections 200 in 119ms
+ GET / 200 in 299ms
+ ○ Compiling /help ...
+ ✓ Compiled /help in 1194ms (953 modules)
+ ○ Compiling /settings ...
+ ✓ Compiled /settings in 1150ms (969 modules)
+ GET /settings 200 in 273ms
+ ✓ Compiled in 1037ms (1168 modules)
+ ✓ Compiled in 625ms (1168 modules)
+ ✓ Compiled in 426ms (1168 modules)
+ ✓ Compiled in 292ms (1168 modules)
+ ○ Compiling /chart-of-accounts ...
+ ✓ Compiled /chart-of-accounts in 866ms (969 modules)
+ ✓ Compiled /journal in 367ms (976 modules)
+ ✓ Compiled in 1850ms (2126 modules)
+ ✓ Compiled in 4.9s (2128 modules)
+ ✓ Compiled in 879ms (2121 modules)
+ ○ Compiling /orders ...
+ ✓ Compiled /orders in 956ms (2134 modules)
+ GET /orders 200 in 1196ms
+ GET /connections 200 in 71ms
+ GET / 200 in 149ms
+ GET /journal 200 in 155ms
+ GET /settings 200 in 114ms
+ GET /settings 200 in 111ms
+ ○ Compiling /analysis/cost-audit ...
+ ✓ Compiled /analysis/cost-audit in 544ms (977 modules)
+ ✓ Compiled in 2.3s (2143 modules)
+ ✓ Compiled in 1706ms (2143 modules)
+ GET / 200 in 302ms
+ GET /orders 200 in 180ms
+ ✓ Compiled in 989ms (2126 modules)
+ GET / 200 in 572ms
+ ○ Compiling /calendar ...
+ ✓ Compiled /calendar in 1592ms (968 modules)
+ ○ Compiling /tasks ...
+ ✓ Compiled /tasks in 543ms (976 modules)
+ ○ Compiling /connections ...
+ ✓ Compiled /connections in 570ms (987 modules)
+ ○ Compiling /chart-of-accounts ...
+ ✓ Compiled /chart-of-accounts in 1150ms (963 modules)
+ ○ Compiling /journal-entries ...
+ ✓ Compiled /journal-entries in 519ms (969 modules)
+ ✓ Compiled /assets in 433ms (973 modules)
+ ○ Compiling /group ...
+ ✓ Compiled /group in 1441ms (966 modules)
+ ○ Compiling /group/intercompany ...
+ ✓ Compiled /group/intercompany in 661ms (973 modules)
+ ○ Compiling /banking ...
+ ✓ Compiled /banking in 650ms (979 modules)
+ ○ Compiling /crm ...
+ ✓ Compiled /crm in 1263ms (972 modules)
+ ○ Compiling /invoicing ...
+ ✓ Compiled /invoicing in 813ms (966 modules)
+ ○ Compiling /invoicing/new ...
+ ✓ Compiled /invoicing/new in 1159ms (978 modules)
+ ○ Compiling /planning/decisions ...
+ ✓ Compiled /planning/decisions in 887ms (973 modules)
+ ○ Compiling /planning/budget ...
+ ✓ Compiled /planning/budget in 1181ms (973 modules)
+ ○ Compiling /planning/business-plan ...
+ ✓ Compiled /planning/business-plan in 1575ms (981 modules)
+ ○ Compiling /reports/explorer ...
+ ✓ Compiled /reports/explorer in 1255ms (966 modules)
+ ○ Compiling /reports/profit-loss ...
+ ✓ Compiled /reports/profit-loss in 656ms (975 modules)
+ ○ Compiling /reports/balance-sheet ...
+ ✓ Compiled /reports/balance-sheet in 633ms (980 modules)
+ ✓ Compiled /reports/cash-flow in 435ms (985 modules)
+ ○ Compiling /hr ...
+ ✓ Compiled /hr in 989ms (980 modules)
+ ○ Compiling /hr/payroll ...
+ ✓ Compiled /hr/payroll in 844ms (987 modules)
+ ○ Compiling /hr/attendance ...
+ ✓ Compiled /hr/attendance in 1051ms (978 modules)
+ ○ Compiling /people ...
+ ✓ Compiled /people in 985ms (987 modules)
+ ○ Compiling /leave ...
+ ✓ Compiled /leave in 699ms (993 modules)
+ ○ Compiling /leave/config ...
+ ✓ Compiled /leave/config in 659ms (1001 modules)
+ ○ Compiling /hr/holidays ...
+ ✓ Compiled /hr/holidays in 506ms (1004 modules)
+ ○ Compiling /cv-bank ...
+ ✓ Compiled /cv-bank in 654ms (985 modules)
+ ○ Compiling /agency-portal ...
+ ✓ Compiled /agency-portal in 940ms (974 modules)
+ ○ Compiling /approvals ...
+ ✓ Compiled /approvals in 1147ms (990 modules)
+ ○ Compiling /inventory ...
+ ✓ Compiled /inventory in 773ms (993 modules)
+ ✓ Compiled /vendors in 497ms (1001 modules)
+ ○ Compiling /documents ...
+ ✓ Compiled /documents in 616ms (989 modules)
+ ○ Compiling /tax ...
+ ✓ Compiled /tax in 719ms (989 modules)
+ ○ Compiling /vendors ...
+ ✓ Compiled /vendors in 586ms (966 modules)
+ GET /vendors 200 in 486ms
+ GET / 200 in 514ms
+ GET / 200 in 105ms
+ ○ Compiling /tasks ...
+ ✓ Compiled /tasks in 746ms (960 modules)
+ ○ Compiling /chart-of-accounts ...
+ ✓ Compiled /chart-of-accounts in 917ms (966 modules)
+ ○ Compiling /calendar ...
+ ✓ Compiled /calendar in 579ms (976 modules)
+ ○ Compiling /connections ...
+ ✓ Compiled /connections in 541ms (987 modules)
+ ○ Compiling /journal-entries ...
+ ✓ Compiled /journal-entries in 895ms (957 modules)
+ ✓ Compiled /chart-of-accounts in 320ms (963 modules)
+ ✓ Compiled /assets in 488ms (971 modules)
+ ○ Compiling /assets/[id] ...
+ ✓ Compiled /assets/[id] in 811ms (967 modules)
+ ○ Compiling /tax ...
+ ✓ Compiled /tax in 1118ms (969 modules)
+ ○ Compiling /group ...
+ ✓ Compiled /group in 973ms (960 modules)
+ ✓ Compiled /group/intercompany in 413ms (967 modules)
+ ✓ Compiled /banking in 469ms (979 modules)
+ ○ Compiling /crm ...
+ ✓ Compiled /crm in 692ms (966 modules)
+ ○ Compiling /invoicing/new ...
+ ✓ Compiled /invoicing/new in 975ms (977 modules)
+ ✓ Compiled /invoicing in 384ms (969 modules)
+ ○ Compiling /planning/decisions ...
+ ✓ Compiled /planning/decisions in 743ms (957 modules)
+ ○ Compiling /planning/budget ...
+ ✓ Compiled /planning/budget in 752ms (967 modules)
+ ○ Compiling /planning/business-plan ...
+ ✓ Compiled /planning/business-plan in 622ms (975 modules)
+ ○ Compiling /reports/profit-loss ...
+ ✓ Compiled /reports/profit-loss in 1053ms (959 modules)
+ ○ Compiling /reports/balance-sheet ...
+ ✓ Compiled /reports/balance-sheet in 519ms (964 modules)
+ ✓ Compiled /reports/cash-flow in 403ms (969 modules)
+ ○ Compiling /reports/explorer ...
+ ✓ Compiled /reports/explorer in 532ms (979 modules)
+ ○ Compiling /hr ...
+ ✓ Compiled /hr in 1249ms (989 modules)
+ ○ Compiling /portal ...
+ ✓ Compiled /portal in 770ms (1005 modules)
+ ○ Compiling /cv-bank ...
+ ✓ Compiled /cv-bank in 970ms (983 modules)
+ ○ Compiling /agency-portal ...
+ ✓ Compiled /agency-portal in 685ms (982 modules)
+ ○ Compiling /hr/payroll ...
+ ✓ Compiled /hr/payroll in 660ms (989 modules)
+ ○ Compiling /hr/attendance ...
+ ✓ Compiled /hr/attendance in 595ms (983 modules)
+ ○ Compiling /people ...
+ ✓ Compiled /people in 553ms (990 modules)
+ ○ Compiling /documents ...
+ ✓ Compiled /documents in 637ms (1004 modules)
+ ○ Compiling /inventory ...
+ ✓ Compiled /inventory in 1170ms (1013 modules)
+ ○ Compiling /inventory/movements ...
+ ✓ Compiled /inventory/movements in 589ms (1014 modules)
+ ✓ Compiled /inventory/production in 451ms (1020 modules)
+ ✓ Compiled /inventory/bom in 423ms (1027 modules)
+ ○ Compiling /portal ...
+ ✓ Compiled /portal in 714ms (1032 modules)
+ ○ Compiling /settings ...
+ ✓ Compiled /settings in 598ms (1041 modules)
+ ○ Compiling /help ...
+ ✓ Compiled /help in 601ms (999 modules)
+ ○ Compiling /invoicing ...
+ ✓ Compiled /invoicing in 1964ms (958 modules)
+ ✓ Compiled in 963ms (1170 modules)
+ ✓ Compiled in 723ms (1170 modules)
+ ✓ Compiled in 958ms (1170 modules)
+ ✓ Compiled in 655ms (1170 modules)
+ ✓ Compiled in 1404ms (1170 modules)
+ ✓ Compiled in 766ms (1170 modules)
+ ✓ Compiled in 641ms (1170 modules)
+ ✓ Compiled in 847ms (1170 modules)
+ ✓ Compiled in 3.9s (2120 modules)
+ ✓ Compiled in 1978ms (2120 modules)
+ ✓ Compiled in 3.1s (2121 modules)
+ ✓ Compiled in 721ms (1170 modules)
+ ✓ Compiled in 568ms (1170 modules)
+ ✓ Compiled in 602ms (1170 modules)
+ ✓ Compiled in 532ms (1170 modules)
+ ✓ Compiled in 788ms (1170 modules)
+ ✓ Compiled in 684ms (1170 modules)
+ ✓ Compiled in 601ms (1170 modules)
+ ✓ Compiled in 670ms (1170 modules)
+ ✓ Compiled in 588ms (1170 modules)
+ ✓ Compiled in 481ms (1170 modules)
+ ✓ Compiled in 695ms (1170 modules)
+ ✓ Compiled in 702ms (1170 modules)
+ ✓ Compiled in 608ms (1170 modules)
+ ✓ Compiled in 595ms (1170 modules)
+ ✓ Compiled in 2.3s (2121 modules)
+ ✓ Compiled in 2.1s (2128 modules)
+ ✓ Compiled in 2.9s (2128 modules)
+ ✓ Compiled in 1925ms (2128 modules)
+ ✓ Compiled in 1736ms (2128 modules)
+ ✓ Compiled in 1609ms (2128 modules)
+ ✓ Compiled in 1701ms (2128 modules)
+ ✓ Compiled in 767ms (1173 modules)
+ ✓ Compiled in 716ms (1173 modules)
+ ✓ Compiled in 909ms (1173 modules)
+ ✓ Compiled in 620ms (1173 modules)
+ ✓ Compiled in 4s (2139 modules)
+ ✓ Compiled in 701ms (1178 modules)
+ ✓ Compiled in 1539ms (2125 modules)
+ ✓ Compiled in 527ms (1178 modules)
+ ✓ Compiled in 521ms (1178 modules)
+ ✓ Compiled in 478ms (1178 modules)
+ ✓ Compiled in 413ms (1178 modules)
+ ✓ Compiled in 1766ms (2139 modules)
+ ✓ Compiled in 1373ms (2143 modules)
+ ✓ Compiled in 454ms (1180 modules)
+ ✓ Compiled in 543ms (1180 modules)
+ ✓ Compiled in 501ms (1180 modules)
+ ✓ Compiled in 442ms (1180 modules)
+ ○ Compiling /settings ...
+ ✓ Compiled /settings in 1197ms (979 modules)
+ GET /settings 200 in 266ms
+ ○ Compiling /portal ...
+ ✓ Compiled /portal in 657ms (996 modules)
+ ○ Compiling /setup ...
+ ✓ Compiled /setup in 2.6s (2188 modules)
+ ✓ Compiled in 2.4s (2153 modules)
+ ✓ Compiled in 1295ms (2153 modules)
+ ✓ Compiled in 2.1s (2153 modules)
+ GET /setup 200 in 354ms
+ GET /setup 200 in 120ms
+ ✓ Compiled / in 464ms (981 modules)
+ ✓ Compiled in 825ms (1183 modules)
+ ✓ Compiled in 456ms (1183 modules)
+ ✓ Compiled in 492ms (1183 modules)
+ ✓ Compiled in 501ms (1183 modules)
+ ✓ Compiled in 496ms (1183 modules)
+ ✓ Compiled in 435ms (1183 modules)
+ ✓ Compiled in 512ms (1183 modules)
+ ✓ Compiled in 429ms (1183 modules)
+ ✓ Compiled in 515ms (1183 modules)
+ ✓ Compiled in 550ms (1183 modules)
+ GET /setup 200 in 313ms
+ ✓ Compiled in 677ms (1183 modules)
+ ✓ Compiled in 505ms (1183 modules)
+ ✓ Compiled in 510ms (1183 modules)
+ ✓ Compiled in 583ms (1183 modules)
+ ✓ Compiled in 516ms (1183 modules)
+ ✓ Compiled in 492ms (1183 modules)
+ ✓ Compiled in 417ms (1183 modules)
+ ✓ Compiled in 594ms (1183 modules)
+ ✓ Compiled in 2s (2147 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /setup 200 in 261ms
+ ✓ Compiled in 2.2s (2150 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /setup 200 in 225ms
+ ✓ Compiled in 1827ms (2150 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /setup 200 in 202ms
+ ✓ Compiled in 1330ms (2150 modules)
+ ✓ Compiled in 2.2s (2165 modules)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /setup 200 in 361ms
+ ✓ Compiled in 761ms (1190 modules)
+ ✓ Compiled in 557ms (1190 modules)
+ ✓ Compiled in 504ms (1190 modules)
+ ✓ Compiled in 604ms (1190 modules)
+ GET /setup 200 in 150ms
+ ✓ Compiled in 550ms (1190 modules)
+ ✓ Compiled in 592ms (1190 modules)
+ ✓ Compiled in 1636ms (2165 modules)
+ ✓ Compiled in 1229ms (2165 modules)
+ ✓ Compiled in 485ms (1190 modules)
+ ✓ Compiled in 1405ms (1190 modules)
+ ✓ Compiled in 673ms (1190 modules)
+ ✓ Compiled in 1614ms (1193 modules)
+ ✓ Compiled in 2.1s (2168 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /setup 200 in 288ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled in 1566ms (2168 modules)
+ GET /setup 200 in 1311ms
+ GET /setup 200 in 117ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1473ms (2157 modules)
+ GET /_next/static/css/app/layout.css?v=1780983056669 404 in 1914ms
+ GET /_next/static/chunks/webpack.js?v=1780983056669 404 in 1927ms
+ GET /_next/static/chunks/main-app.js?v=1780983056669 404 in 139ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 139ms
+ GET /_next/static/chunks/app/setup/page.js 404 in 138ms
+ GET /_next/static/chunks/app/layout.js 404 in 136ms
+ ⨯ Error: Cannot find module './5870.js'
+Require stack:
+- C:\Users\Administrator\NEXA\.next\server\webpack-runtime.js
+- C:\Users\Administrator\NEXA\.next\server\app\_not-found\page.js
+- C:\Users\Administrator\NEXA\node_modules\next\dist\server\require.js
+- C:\Users\Administrator\NEXA\node_modules\next\dist\server\load-components.js
+- C:\Users\Administrator\NEXA\node_modules\next\dist\build\utils.js
+- C:\Users\Administrator\NEXA\node_modules\next\dist\server\dev\hot-middleware.js
+- C:\Users\Administrator\NEXA\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- C:\Users\Administrator\NEXA\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- C:\Users\Administrator\NEXA\node_modules\next\dist\server\lib\router-server.js
+- C:\Users\Administrator\NEXA\node_modules\next\dist\server\lib\start-server.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1500:15)
+    at C:\Users\Administrator\NEXA\node_modules\next\dist\server\require-hook.js:55:36
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1116:12)
+    at Module._load (node:internal/modules/cjs/loader:1285:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1600:12)
+    at mod.require (C:\Users\Administrator\NEXA\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at __webpack_require__.f.require (C:\Users\Administrator\NEXA\.next\server\webpack-runtime.js:198:28)
+    at C:\Users\Administrator\NEXA\.next\server\webpack-runtime.js:111:40
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (C:\Users\Administrator\NEXA\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (C:\Users\Administrator\NEXA\.next\server\webpack-runtime.js:162:22)
+    at C:\Users\Administrator\NEXA\.next\server\app\setup\page.js:1:12104
+    at Object.<anonymous> (C:\Users\Administrator\NEXA\.next\server\app\setup\page.js:1:12152)
+    at Module._compile (node:internal/modules/cjs/loader:1854:14)
+    at Object..js (node:internal/modules/cjs/loader:1985:10)
+    at Module.load (node:internal/modules/cjs/loader:1577:32)
+    at Module._load (node:internal/modules/cjs/loader:1379:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1600:12)
+    at mod.require (C:\Users\Administrator\NEXA\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at requirePage (C:\Users\Administrator\NEXA\node_modules\next\dist\server\require.js:109:84)
+    at C:\Users\Administrator\NEXA\node_modules\next\dist\server\load-components.js:103:84
+    at async loadComponentsImpl (C:\Users\Administrator\NEXA\node_modules\next\dist\server\load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (C:\Users\Administrator\NEXA\node_modules\next\dist\server\next-server.js:714:36)
+    at async DevServer.findPageComponents (C:\Users\Administrator\NEXA\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (C:\Users\Administrator\NEXA\node_modules\next\dist\server\base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (C:\Users\Administrator\NEXA\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (C:\Users\Administrator\NEXA\node_modules\next\dist\server\base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\Users\Administrator\NEXA\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (C:\Users\Administrator\NEXA\node_modules\next\dist\server\base-server.js:818:17)
+    at async C:\Users\Administrator\NEXA\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (C:\Users\Administrator\NEXA\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (C:\Users\Administrator\NEXA\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (C:\Users\Administrator\NEXA\node_modules\next\dist\server\lib\router-server.js:179:21)
+    at async handleRequest (C:\Users\Administrator\NEXA\node_modules\next\dist\server\lib\router-server.js:359:24)
+    at async requestHandlerImpl (C:\Users\Administrator\NEXA\node_modules\next\dist\server\lib\router-server.js:383:13)
+    at async Server.requestListener (C:\Users\Administrator\NEXA\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\Administrator\\NEXA\\.next\\server\\webpack-runtime.js',
+    'C:\\Users\\Administrator\\NEXA\\.next\\server\\app\\_not-found\\page.js',
+    'C:\\Users\\Administrator\\NEXA\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\Administrator\\NEXA\\node_modules\\next\\dist\\server\\load-components.js',
+    'C:\\Users\\Administrator\\NEXA\\node_modules\\next\\dist\\build\\utils.js',
+    'C:\\Users\\Administrator\\NEXA\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'C:\\Users\\Administrator\\NEXA\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'C:\\Users\\Administrator\\NEXA\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'C:\\Users\\Administrator\\NEXA\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'C:\\Users\\Administrator\\NEXA\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/setup'
+}
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 2.7s (2384 modules)
+ GET /setup 500 in 3124ms
+ GET /setup 200 in 460ms
+ ○ Compiling /projects ...
+ ✓ Compiled /projects in 3s (2397 modules)
+ ○ Compiling /timesheets ...
+ ✓ Compiled /timesheets in 1192ms (2407 modules)
+ ✓ Compiled /invoicing in 290ms (1043 modules)
+ ○ Compiling /assets ...
+ ✓ Compiled /assets in 3.4s (1025 modules)
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1848ms (2416 modules)
+ GET /_next/static/chunks/app/assets/page.js 404 in 2203ms
+ ✓ Compiled in 2.9s (2404 modules)
+ ✓ Compiled in 1111ms (2404 modules)
+ ✓ Compiled in 1127ms (2404 modules)
+ ✓ Compiled in 1270ms (2404 modules)
+ ⨯ ./lib/accounting/events.ts:3:1
+Module not found: Can't resolve './revenue-bridge'
+[0m [90m 1 |[39m [36mimport[39m type { [33mBusinessEvent[39m } [36mfrom[39m [32m"./types"[39m[33m;[39m[0m
+[0m [90m 2 |[39m [36mimport[39m { [33mENTITIES[39m[33m,[39m [33mLOCATIONS[39m } [36mfrom[39m [32m"./org"[39m[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m { [33mMODULE_REVENUE_EVENTS[39m } [36mfrom[39m [32m"./revenue-bridge"[39m[33m;[39m[0m
+[0m [90m   |[39m [31m[1m^[22m[39m[0m
+[0m [90m 4 |[39m[0m
+[0m [90m 5 |[39m [90m// Deterministic PRNG (mulberry32) so server and client render identical seed[39m[0m
+[0m [90m 6 |[39m [90m// data — no Math.random / Date.now anywhere in the data layer.[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./lib/accounting/ledger.ts
+./components/accounting/journal-provider.tsx
+ ⨯ ./lib/accounting/events.ts:3:1
+Module not found: Can't resolve './revenue-bridge'
+[0m [90m 1 |[39m [36mimport[39m type { [33mBusinessEvent[39m } [36mfrom[39m [32m"./types"[39m[33m;[39m[0m
+[0m [90m 2 |[39m [36mimport[39m { [33mENTITIES[39m[33m,[39m [33mLOCATIONS[39m } [36mfrom[39m [32m"./org"[39m[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m { [33mMODULE_REVENUE_EVENTS[39m } [36mfrom[39m [32m"./revenue-bridge"[39m[33m;[39m[0m
+[0m [90m   |[39m [31m[1m^[22m[39m[0m
+[0m [90m 4 |[39m[0m
+[0m [90m 5 |[39m [90m// Deterministic PRNG (mulberry32) so server and client render identical seed[39m[0m
+[0m [90m 6 |[39m [90m// data — no Math.random / Date.now anywhere in the data layer.[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./lib/accounting/ledger.ts
+./components/accounting/journal-provider.tsx
+ ⨯ ./lib/accounting/events.ts:3:1
+Module not found: Can't resolve './revenue-bridge'
+[0m [90m 1 |[39m [36mimport[39m type { [33mBusinessEvent[39m } [36mfrom[39m [32m"./types"[39m[33m;[39m[0m
+[0m [90m 2 |[39m [36mimport[39m { [33mENTITIES[39m[33m,[39m [33mLOCATIONS[39m } [36mfrom[39m [32m"./org"[39m[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m { [33mMODULE_REVENUE_EVENTS[39m } [36mfrom[39m [32m"./revenue-bridge"[39m[33m;[39m[0m
+[0m [90m   |[39m [31m[1m^[22m[39m[0m
+[0m [90m 4 |[39m[0m
+[0m [90m 5 |[39m [90m// Deterministic PRNG (mulberry32) so server and client render identical seed[39m[0m
+[0m [90m 6 |[39m [90m// data — no Math.random / Date.now anywhere in the data layer.[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./lib/accounting/ledger.ts
+./components/accounting/journal-provider.tsx
+ ⨯ ./lib/accounting/events.ts:3:1
+Module not found: Can't resolve './revenue-bridge'
+[0m [90m 1 |[39m [36mimport[39m type { [33mBusinessEvent[39m } [36mfrom[39m [32m"./types"[39m[33m;[39m[0m
+[0m [90m 2 |[39m [36mimport[39m { [33mENTITIES[39m[33m,[39m [33mLOCATIONS[39m } [36mfrom[39m [32m"./org"[39m[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m { [33mMODULE_REVENUE_EVENTS[39m } [36mfrom[39m [32m"./revenue-bridge"[39m[33m;[39m[0m
+[0m [90m   |[39m [31m[1m^[22m[39m[0m
+[0m [90m 4 |[39m[0m
+[0m [90m 5 |[39m [90m// Deterministic PRNG (mulberry32) so server and client render identical seed[39m[0m
+[0m [90m 6 |[39m [90m// data — no Math.random / Date.now anywhere in the data layer.[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./lib/accounting/ledger.ts
+./components/accounting/journal-provider.tsx
+ ⨯ ./lib/accounting/events.ts:3:1
+Module not found: Can't resolve './revenue-bridge'
+[0m [90m 1 |[39m [36mimport[39m type { [33mBusinessEvent[39m } [36mfrom[39m [32m"./types"[39m[33m;[39m[0m
+[0m [90m 2 |[39m [36mimport[39m { [33mENTITIES[39m[33m,[39m [33mLOCATIONS[39m } [36mfrom[39m [32m"./org"[39m[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m { [33mMODULE_REVENUE_EVENTS[39m } [36mfrom[39m [32m"./revenue-bridge"[39m[33m;[39m[0m
+[0m [90m   |[39m [31m[1m^[22m[39m[0m
+[0m [90m 4 |[39m[0m
+[0m [90m 5 |[39m [90m// Deterministic PRNG (mulberry32) so server and client render identical seed[39m[0m
+[0m [90m 6 |[39m [90m// data — no Math.random / Date.now anywhere in the data layer.[39m[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./lib/accounting/ledger.ts
+./components/accounting/journal-provider.tsx
+ ⚠ ./lib/accounting/revenue-bridge.ts
+Attempted import error: 'SEED_TIME_INVOICES' is not exported from '@/lib/services/time-invoice' (imported as 'SEED_TIME_INVOICES').
+
+Import trace for requested module:
+./lib/accounting/revenue-bridge.ts
+./lib/accounting/events.ts
+./lib/accounting/ledger.ts
+./components/accounting/journal-provider.tsx
+
+./lib/accounting/revenue-bridge.ts
+Attempted import error: 'SEED_TIME_INVOICES' is not exported from '@/lib/services/time-invoice' (imported as 'SEED_TIME_INVOICES').
+
+Import trace for requested module:
+./lib/accounting/revenue-bridge.ts
+./lib/accounting/events.ts
+./lib/accounting/ledger.ts
+./components/accounting/journal-provider.tsx
+ ✓ Compiled in 1767ms (2406 modules)
+ ✓ Compiled in 1754ms (2406 modules)
+ ✓ Compiled in 1705ms (2406 modules)
+ ✓ Compiled in 1644ms (2406 modules)
+ ✓ Compiled in 1476ms (2406 modules)
+ ✓ Compiled in 1552ms (2406 modules)
+ ✓ Compiled in 1604ms (2406 modules)
+ ⚠ Found a change in next.config.mjs. Restarting the server to apply the changes...
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3013
+
+ ✓ Starting...
+ ✓ Ready in 2.4s
+ ○ Compiling / ...
+ ✓ Compiled / in 18.4s (2035 modules)
+ GET / 200 in 19603ms
+ ○ Compiling /approvals ...
+ ✓ Compiled /approvals in 1828ms (1912 modules)
+ ✓ Compiled in 1184ms (1912 modules)
+ ✓ Compiled in 220ms (962 modules)
+ ✓ Compiled in 247ms (962 modules)
+ ✓ Compiled in 304ms (962 modules)
+ ✓ Compiled in 200ms (962 modules)
+ ✓ Compiled in 202ms (962 modules)
+ ✓ Compiled in 186ms (962 modules)
+ ✓ Compiled in 239ms (962 modules)
+ ✓ Compiled in 176ms (962 modules)
+ ✓ Compiled in 179ms (962 modules)
+ ✓ Compiled in 333ms (962 modules)
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 856ms (1915 modules)
+ GET /_next/static/css/app/layout.css?v=1781022219426 404 in 893ms
+ ⨯ Error: Cannot find module './6122.js'
+Require stack:
+- C:\Users\Administrator\NEXA\.next\server\webpack-runtime.js
+- C:\Users\Administrator\NEXA\.next\server\app\_not-found\page.js
+- C:\Users\Administrator\NEXA\node_modules\next\dist\server\require.js
+- C:\Users\Administrator\NEXA\node_modules\next\dist\server\load-components.js
+- C:\Users\Administrator\NEXA\node_modules\next\dist\build\utils.js
+- C:\Users\Administrator\NEXA\node_modules\next\dist\server\dev\hot-middleware.js
+- C:\Users\Administrator\NEXA\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- C:\Users\Administrator\NEXA\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- C:\Users\Administrator\NEXA\node_modules\next\dist\server\lib\router-server.js
+- C:\Users\Administrator\NEXA\node_modules\next\dist\server\lib\start-server.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1500:15)
+    at C:\Users\Administrator\NEXA\node_modules\next\dist\server\require-hook.js:55:36
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1116:12)
+    at Module._load (node:internal/modules/cjs/loader:1285:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1600:12)
+    at mod.require (C:\Users\Administrator\NEXA\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at __webpack_require__.f.require (C:\Users\Administrator\NEXA\.next\server\webpack-runtime.js:198:28)
+    at C:\Users\Administrator\NEXA\.next\server\webpack-runtime.js:111:40
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (C:\Users\Administrator\NEXA\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (C:\Users\Administrator\NEXA\.next\server\webpack-runtime.js:162:22)
+    at C:\Users\Administrator\NEXA\.next\server\app\approvals\page.js:1:28314
+    at Object.<anonymous> (C:\Users\Administrator\NEXA\.next\server\app\approvals\page.js:1:28365)
+    at Module._compile (node:internal/modules/cjs/loader:1854:14)
+    at Object..js (node:internal/modules/cjs/loader:1985:10)
+    at Module.load (node:internal/modules/cjs/loader:1577:32)
+    at Module._load (node:internal/modules/cjs/loader:1379:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1600:12)
+    at mod.require (C:\Users\Administrator\NEXA\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at requirePage (C:\Users\Administrator\NEXA\node_modules\next\dist\server\require.js:109:84)
+    at C:\Users\Administrator\NEXA\node_modules\next\dist\server\load-components.js:103:84
+    at async loadComponentsImpl (C:\Users\Administrator\NEXA\node_modules\next\dist\server\load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (C:\Users\Administrator\NEXA\node_modules\next\dist\server\next-server.js:714:36)
+    at async DevServer.findPageComponents (C:\Users\Administrator\NEXA\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (C:\Users\Administrator\NEXA\node_modules\next\dist\server\base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (C:\Users\Administrator\NEXA\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (C:\Users\Administrator\NEXA\node_modules\next\dist\server\base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\Users\Administrator\NEXA\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (C:\Users\Administrator\NEXA\node_modules\next\dist\server\base-server.js:818:17)
+    at async C:\Users\Administrator\NEXA\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (C:\Users\Administrator\NEXA\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (C:\Users\Administrator\NEXA\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (C:\Users\Administrator\NEXA\node_modules\next\dist\server\lib\router-server.js:179:21)
+    at async handleRequest (C:\Users\Administrator\NEXA\node_modules\next\dist\server\lib\router-server.js:359:24)
+    at async requestHandlerImpl (C:\Users\Administrator\NEXA\node_modules\next\dist\server\lib\router-server.js:383:13)
+    at async Server.requestListener (C:\Users\Administrator\NEXA\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\Administrator\\NEXA\\.next\\server\\webpack-runtime.js',
+    'C:\\Users\\Administrator\\NEXA\\.next\\server\\app\\_not-found\\page.js',
+    'C:\\Users\\Administrator\\NEXA\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\Administrator\\NEXA\\node_modules\\next\\dist\\server\\load-components.js',
+    'C:\\Users\\Administrator\\NEXA\\node_modules\\next\\dist\\build\\utils.js',
+    'C:\\Users\\Administrator\\NEXA\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'C:\\Users\\Administrator\\NEXA\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'C:\\Users\\Administrator\\NEXA\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'C:\\Users\\Administrator\\NEXA\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'C:\\Users\\Administrator\\NEXA\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/approvals'
+}
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 1336ms (2128 modules)
+ GET /approvals 200 in 177ms
+ GET /_next/static/css/app/layout.css?v=1781022221989 404 in 102ms
+ GET /_next/static/chunks/main-app.js?v=1781022221989 404 in 93ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 57ms
+ GET /_next/static/chunks/app/approvals/page.js 404 in 55ms
+ ✓ Compiled in 279ms (1150 modules)
+ ✓ Compiled in 198ms (1150 modules)
+ ✓ Compiled in 227ms (1150 modules)
+ ✓ Compiled in 172ms (1150 modules)
+ ✓ Compiled in 215ms (1150 modules)
+ ✓ Compiled in 172ms (1150 modules)
+ ✓ Compiled in 204ms (1150 modules)
+ ✓ Compiled in 183ms (1150 modules)
+ ✓ Compiled in 231ms (1150 modules)
+ ✓ Compiled in 175ms (1150 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, lstat 'C:\Users\Administrator\NEXA\.next\server\vendor-chunks\clsx.js'
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving './vendor-chunks/clsx' in C:\Users\Administrator\NEXA\.next\server for build dependencies doesn't lead to expected result 'C:\Users\Administrator\NEXA\.next\server\vendor-chunks\clsx.js', but to 'Error: Can't resolve './vendor-chunks/clsx' in 'C:\Users\Administrator\NEXA\.next\server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ./vendor-chunks/clsx (expected C:\Users\Administrator\NEXA\.next\server\vendor-chunks\clsx.js)
+<w>  at file dependencies C:\Users\Administrator\NEXA\.next\server\webpack-runtime.js
+<w>  at file C:\Users\Administrator\NEXA\.next\server\webpack-runtime.js
+<w>  at file dependencies C:\Users\Administrator\NEXA\.next\server\app\_not-found\page.js
+<w>  at file C:\Users\Administrator\NEXA\.next\server\app\_not-found\page.js
+<w>  at file dependencies C:\Users\Administrator\NEXA\node_modules\next\dist\server\require.js
+<w>  at file C:\Users\Administrator\NEXA\node_modules\next\dist\server\require.js
+<w>  at file dependencies C:\Users\Administrator\NEXA\node_modules\next\dist\server\load-components.js
+<w>  at file C:\Users\Administrator\NEXA\node_modules\next\dist\server\load-components.js
+<w>  at file dependencies C:\Users\Administrator\NEXA\node_modules\next\dist\build\utils.js
+<w>  at file C:\Users\Administrator\NEXA\node_modules\next\dist\build\utils.js
+<w>  at file dependencies C:\Users\Administrator\NEXA\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at file C:\Users\Administrator\NEXA\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at resolve commonjs C:\Users\Administrator\NEXA\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving './vendor-chunks/class-variance-authority' in C:\Users\Administrator\NEXA\.next\server for build dependencies doesn't lead to expected result 'C:\Users\Administrator\NEXA\.next\server\vendor-chunks\class-variance-authority.js', but to 'Error: Can't resolve './vendor-chunks/class-variance-authority' in 'C:\Users\Administrator\NEXA\.next\server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ./vendor-chunks/class-variance-authority (expected C:\Users\Administrator\NEXA\.next\server\vendor-chunks\class-variance-authority.js)
+<w>  at file dependencies C:\Users\Administrator\NEXA\.next\server\webpack-runtime.js
+<w>  at file C:\Users\Administrator\NEXA\.next\server\webpack-runtime.js
+<w>  at file dependencies C:\Users\Administrator\NEXA\.next\server\app\_not-found\page.js
+<w>  at file C:\Users\Administrator\NEXA\.next\server\app\_not-found\page.js
+<w>  at file dependencies C:\Users\Administrator\NEXA\node_modules\next\dist\server\require.js
+<w>  at file C:\Users\Administrator\NEXA\node_modules\next\dist\server\require.js
+<w>  at file dependencies C:\Users\Administrator\NEXA\node_modules\next\dist\server\load-components.js
+<w>  at file C:\Users\Administrator\NEXA\node_modules\next\dist\server\load-components.js
+<w>  at file dependencies C:\Users\Administrator\NEXA\node_modules\next\dist\build\utils.js
+<w>  at file C:\Users\Administrator\NEXA\node_modules\next\dist\build\utils.js
+<w>  at file dependencies C:\Users\Administrator\NEXA\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at file C:\Users\Administrator\NEXA\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at resolve commonjs C:\Users\Administrator\NEXA\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving './vendor-chunks/lucide-react' in C:\Users\Administrator\NEXA\.next\server for build dependencies doesn't lead to expected result 'C:\Users\Administrator\NEXA\.next\server\vendor-chunks\lucide-react.js', but to 'Error: Can't resolve './vendor-chunks/lucide-react' in 'C:\Users\Administrator\NEXA\.next\server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ./vendor-chunks/lucide-react (expected C:\Users\Administrator\NEXA\.next\server\vendor-chunks\lucide-react.js)
+<w>  at file dependencies C:\Users\Administrator\NEXA\.next\server\webpack-runtime.js
+<w>  at file C:\Users\Administrator\NEXA\.next\server\webpack-runtime.js
+<w>  at file dependencies C:\Users\Administrator\NEXA\.next\server\app\_not-found\page.js
+<w>  at file C:\Users\Administrator\NEXA\.next\server\app\_not-found\page.js
+<w>  at file dependencies C:\Users\Administrator\NEXA\node_modules\next\dist\server\require.js
+<w>  at file C:\Users\Administrator\NEXA\node_modules\next\dist\server\require.js
+<w>  at file dependencies C:\Users\Administrator\NEXA\node_modules\next\dist\server\load-components.js
+<w>  at file C:\Users\Administrator\NEXA\node_modules\next\dist\server\load-components.js
+<w>  at file dependencies C:\Users\Administrator\NEXA\node_modules\next\dist\build\utils.js
+<w>  at file C:\Users\Administrator\NEXA\node_modules\next\dist\build\utils.js
+<w>  at file dependencies C:\Users\Administrator\NEXA\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at file C:\Users\Administrator\NEXA\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+<w>  at resolve commonjs C:\Users\Administrator\NEXA\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js
+ GET /approvals 200 in 78ms
+ GET /_next/static/css/app/layout.css?v=1781022293095 404 in 56ms
+ GET /_next/static/chunks/main-app.js?v=1781022293095 404 in 120ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 67ms
+ GET /_next/static/chunks/app/approvals/page.js 404 in 67ms
+ GET / 200 in 202ms
+ GET /_next/static/css/app/layout.css?v=1781022300286 404 in 76ms
+ GET /_next/static/chunks/main-app.js?v=1781022300286 404 in 81ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 52ms
+ GET /_next/static/chunks/app/page.js 404 in 51ms
+ GET / 200 in 95ms
+ GET /_next/static/css/app/layout.css?v=1781022380269 404 in 47ms
+ GET /_next/static/chunks/webpack.js?v=1781022380269 404 in 117ms
+ GET /_next/static/chunks/main-app.js?v=1781022380269 404 in 90ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 90ms
+ GET /_next/static/chunks/app/page.js 404 in 89ms
+ GET /_next/static/chunks/app/layout.js 404 in 89ms
+ ✓ Compiled in 1756ms (1147 modules)
+ ✓ Compiled in 614ms (1147 modules)
+ ✓ Compiled in 583ms (1147 modules)
+ ✓ Compiled in 482ms (1147 modules)
+ ✓ Compiled in 678ms (1147 modules)
+ ✓ Compiled in 530ms (1147 modules)
+ ✓ Compiled in 518ms (1147 modules)
+ ✓ Compiled in 530ms (1147 modules)
+ ✓ Compiled in 782ms (1147 modules)
+ ✓ Compiled in 414ms (1147 modules)
+ ✓ Compiled in 528ms (1147 modules)
+ ✓ Compiled in 490ms (1147 modules)
+ ✓ Compiled in 546ms (1147 modules)
+ ✓ Compiled in 475ms (1147 modules)
+ ✓ Compiled in 602ms (1147 modules)
+ ✓ Compiled in 486ms (1147 modules)
+ ✓ Compiled in 674ms (1147 modules)
+ ✓ Compiled in 635ms (1147 modules)
+ ✓ Compiled in 553ms (1147 modules)
+ ✓ Compiled in 528ms (1147 modules)
+ ✓ Compiled in 561ms (1147 modules)
+ ✓ Compiled in 451ms (1147 modules)
+ ✓ Compiled in 480ms (1147 modules)
+ ✓ Compiled in 629ms (1147 modules)
+ ✓ Compiled in 528ms (1147 modules)
+ ✓ Compiled in 418ms (1147 modules)
+ ✓ Compiled in 612ms (1147 modules)
+ ✓ Compiled in 443ms (1147 modules)
+ ✓ Compiled in 1735ms (2137 modules)
+ ✓ Compiled in 2.3s (2137 modules)
+ ✓ Compiled in 1801ms (2139 modules)
+ ✓ Compiled in 1399ms (2143 modules)
+ ✓ Compiled in 1202ms (2143 modules)
+ ✓ Compiled in 916ms (1150 modules)
+ ✓ Compiled in 535ms (1150 modules)
+ ✓ Compiled in 2.7s (2143 modules)
+ ✓ Compiled in 1420ms (2143 modules)
+ ✓ Compiled in 849ms (1150 modules)
+ ✓ Compiled in 578ms (1150 modules)
+ ✓ Compiled in 552ms (1150 modules)
+ ✓ Compiled in 638ms (1150 modules)
+ ✓ Compiled in 1912ms (2143 modules)
+ ✓ Compiled in 1482ms (2143 modules)
+ ✓ Compiled in 537ms (1150 modules)
+ ✓ Compiled in 559ms (1150 modules)
+ ✓ Compiled in 499ms (1150 modules)
+ ✓ Compiled in 570ms (1150 modules)
+ ✓ Compiled in 1665ms (2143 modules)
+ ✓ Compiled in 1859ms (2143 modules)
+ ✓ Compiled in 1440ms (2143 modules)
+ ✓ Compiled in 433ms (1150 modules)
+ ✓ Compiled in 608ms (1150 modules)
+ ✓ Compiled in 538ms (1150 modules)
+ ✓ Compiled in 452ms (1150 modules)
+ ✓ Compiled in 541ms (1150 modules)
+ ✓ Compiled in 608ms (1150 modules)
+ ✓ Compiled in 480ms (1150 modules)
+ ✓ Compiled in 440ms (1150 modules)
+ ✓ Compiled in 439ms (1150 modules)
+ ✓ Compiled in 382ms (1150 modules)
+ ✓ Compiled in 434ms (1150 modules)
+ ✓ Compiled in 389ms (1150 modules)
+ ✓ Compiled in 458ms (1150 modules)
+ ✓ Compiled in 423ms (1150 modules)
+ ✓ Compiled in 603ms (1150 modules)
+ ✓ Compiled in 493ms (1150 modules)
+ ✓ Compiled in 612ms (1150 modules)
+ ✓ Compiled in 639ms (1150 modules)
+ ✓ Compiled in 610ms (1150 modules)
+ ✓ Compiled in 486ms (1150 modules)
+ ✓ Compiled in 544ms (1150 modules)
+ ✓ Compiled in 444ms (1150 modules)
+ ✓ Compiled in 615ms (1150 modules)
+ ✓ Compiled in 588ms (1150 modules)
+ ✓ Compiled in 591ms (1150 modules)
+ ✓ Compiled in 638ms (1150 modules)
+ ✓ Compiled in 614ms (1150 modules)
+ ✓ Compiled in 513ms (1150 modules)
+ ✓ Compiled in 569ms (1150 modules)
+ ✓ Compiled in 496ms (1150 modules)
+ ✓ Compiled in 586ms (1150 modules)
+ ✓ Compiled in 487ms (1150 modules)
+ ✓ Compiled in 499ms (1150 modules)
+ ✓ Compiled in 472ms (1150 modules)
+ ✓ Compiled in 497ms (1150 modules)
+ ✓ Compiled in 629ms (1150 modules)
+ ✓ Compiled in 567ms (1150 modules)
+ ✓ Compiled in 505ms (1150 modules)
+ ✓ Compiled in 790ms (1150 modules)
+ ✓ Compiled in 506ms (1150 modules)
+ ✓ Compiled in 424ms (1150 modules)
+ ✓ Compiled in 541ms (1150 modules)
+ ✓ Compiled in 448ms (1150 modules)
+ ✓ Compiled in 561ms (1150 modules)
+ ✓ Compiled in 527ms (1150 modules)
+ ✓ Compiled in 624ms (1150 modules)
+ ✓ Compiled in 472ms (1150 modules)
+ ✓ Compiled in 506ms (1150 modules)
+ ✓ Compiled in 596ms (1150 modules)
+ ✓ Compiled in 721ms (1150 modules)
+ ✓ Compiled in 432ms (1150 modules)
+ ✓ Compiled in 470ms (1150 modules)
+ ✓ Compiled in 459ms (1150 modules)
+ ✓ Compiled in 558ms (1150 modules)
+ ✓ Compiled in 386ms (1150 modules)
+ ✓ Compiled in 462ms (1150 modules)
+ ✓ Compiled in 508ms (1150 modules)
+ ✓ Compiled in 432ms (1150 modules)
+ ✓ Compiled in 464ms (1150 modules)
+ ✓ Compiled in 557ms (1150 modules)
+ ✓ Compiled in 481ms (1150 modules)
+ ✓ Compiled in 405ms (1150 modules)
+ ✓ Compiled in 362ms (1150 modules)
+ ✓ Compiled in 480ms (1150 modules)
+ ✓ Compiled in 551ms (1150 modules)
+ ✓ Compiled in 582ms (1150 modules)
+ ✓ Compiled in 471ms (1150 modules)
+ ✓ Compiled in 449ms (1150 modules)
+ ✓ Compiled in 393ms (1150 modules)
+ ✓ Compiled in 673ms (1150 modules)
+ ✓ Compiled in 416ms (1150 modules)
+ ✓ Compiled in 566ms (1150 modules)
+ ✓ Compiled in 710ms (1150 modules)
+ ✓ Compiled in 579ms (1150 modules)
+ ✓ Compiled in 543ms (1150 modules)
+ ✓ Compiled in 459ms (1150 modules)
+ ✓ Compiled in 1249ms (1150 modules)
+ ✓ Compiled in 632ms (1150 modules)
+ ✓ Compiled in 603ms (1150 modules)
+ ✓ Compiled in 633ms (1150 modules)
+ ✓ Compiled in 641ms (1150 modules)
+ ✓ Compiled in 567ms (1150 modules)
+ ✓ Compiled in 838ms (1150 modules)
+ ✓ Compiled in 436ms (1150 modules)
+ ✓ Compiled in 508ms (1150 modules)
+ ✓ Compiled in 367ms (1150 modules)
+ ✓ Compiled in 600ms (1150 modules)
+ ✓ Compiled in 493ms (1150 modules)
+ ✓ Compiled in 421ms (1150 modules)
+ ✓ Compiled in 478ms (1150 modules)
+ ✓ Compiled in 608ms (1150 modules)
+ ✓ Compiled in 491ms (1150 modules)
+ ✓ Compiled in 431ms (1150 modules)
+ ✓ Compiled in 431ms (1150 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: EPERM: operation not permitted, rename 'C:\Users\Administrator\NEXA\.next\cache\webpack\client-development\5.pack.gz_' -> 'C:\Users\Administrator\NEXA\.next\cache\webpack\client-development\5.pack.gz'
+ ✓ Compiled in 2.5s (2143 modules)
+ ✓ Compiled in 700ms (1150 modules)
+ ✓ Compiled in 412ms (1150 modules)
+ ✓ Compiled in 489ms (1150 modules)
+ ✓ Compiled in 524ms (1150 modules)
+ ✓ Compiled in 381ms (1150 modules)
+ ✓ Compiled in 448ms (1150 modules)
+ ✓ Compiled in 386ms (1150 modules)
+ ✓ Compiled in 430ms (1150 modules)
+ ✓ Compiled in 541ms (1150 modules)
+ ✓ Compiled in 404ms (1150 modules)
+ ✓ Compiled in 375ms (1150 modules)
+ ✓ Compiled in 305ms (1150 modules)
+ ✓ Compiled in 415ms (1150 modules)
+ ✓ Compiled in 309ms (1150 modules)
+ ✓ Compiled in 390ms (1150 modules)
+ ✓ Compiled in 293ms (1150 modules)
+ ✓ Compiled in 340ms (1150 modules)
+ ✓ Compiled in 330ms (1150 modules)
+ ✓ Compiled in 452ms (1150 modules)
+ ✓ Compiled in 349ms (1150 modules)
+ ✓ Compiled in 526ms (1150 modules)
+ ✓ Compiled in 649ms (1150 modules)
+ ✓ Compiled in 392ms (1150 modules)
+ ✓ Compiled in 378ms (1150 modules)
+ ✓ Compiled in 388ms (1150 modules)
+ ✓ Compiled in 296ms (1150 modules)
+ ✓ Compiled in 406ms (1150 modules)
+ ✓ Compiled in 454ms (1150 modules)
+ ✓ Compiled in 415ms (1150 modules)
+ ✓ Compiled in 328ms (1150 modules)
+ ✓ Compiled in 414ms (1150 modules)
+ ✓ Compiled in 467ms (1150 modules)
+ ✓ Compiled in 417ms (1150 modules)
+ ✓ Compiled in 439ms (1150 modules)
+ ✓ Compiled in 1416ms (2143 modules)
+ ✓ Compiled in 1131ms (2143 modules)
+ ✓ Compiled in 472ms (1150 modules)
+ ✓ Compiled in 465ms (1150 modules)
+ ✓ Compiled in 596ms (1150 modules)
+ ✓ Compiled in 582ms (1150 modules)
+ ✓ Compiled in 417ms (1150 modules)
+ ✓ Compiled in 379ms (1150 modules)
+ ✓ Compiled in 392ms (1150 modules)
+ ✓ Compiled in 483ms (1150 modules)
+ ✓ Compiled in 461ms (1150 modules)
+ ✓ Compiled in 378ms (1150 modules)
+ ✓ Compiled in 503ms (1150 modules)
+ ✓ Compiled in 454ms (1150 modules)
+ ✓ Compiled in 478ms (1150 modules)
+ ✓ Compiled in 397ms (1150 modules)
+ ✓ Compiled in 529ms (1150 modules)
+ ✓ Compiled in 607ms (1150 modules)
+ ✓ Compiled in 453ms (1150 modules)
+ ✓ Compiled in 384ms (1150 modules)
+ ✓ Compiled in 415ms (1150 modules)
+ ✓ Compiled in 378ms (1150 modules)
+ ✓ Compiled in 461ms (1150 modules)
+ ✓ Compiled in 428ms (1150 modules)
+ ✓ Compiled in 443ms (1150 modules)
+ ✓ Compiled in 389ms (1150 modules)
+ ✓ Compiled in 571ms (1150 modules)
+ ✓ Compiled in 487ms (1150 modules)
+ ✓ Compiled in 440ms (1150 modules)
+ ✓ Compiled in 370ms (1150 modules)
+ ✓ Compiled in 11.1s (2143 modules)
+ ✓ Compiled in 938ms (2143 modules)
+ ✓ Compiled in 961ms (2143 modules)
+ ✓ Compiled in 914ms (2143 modules)
+ ✓ Compiled in 838ms (1150 modules)
+ ✓ Compiled in 508ms (1150 modules)
+ ✓ Compiled in 579ms (1150 modules)
+ ✓ Compiled in 1723ms (2143 modules)
+ ✓ Compiled in 1586ms (2146 modules)
+ ✓ Compiled in 1298ms (2146 modules)
+ ✓ Compiled in 1616ms (2152 modules)
+ ✓ Compiled in 2.2s (2160 modules)
+ ✓ Compiled in 4.9s (2162 modules)

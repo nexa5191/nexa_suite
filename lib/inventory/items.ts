@@ -1,4 +1,4 @@
-import type { Item, ItemCategory, BomComponent, Uom } from "./types";
+import type { Item, ItemCategory, BomComponent, Uom, OwnershipModel } from "./types";
 
 // ---------------------------------------------------------------------------
 // Item master + bill of materials.
@@ -25,7 +25,7 @@ const PLANT = "loc-mys"; // Mysuru Plant
 
 export const ITEMS: Item[] = [
   // ---- Raw materials ----
-  { id: "rm-wheat", code: "RM-WHT", name: "Wheat grain", category: "raw", uom: "kg", rate: 32, hsn: "1001", reorderLevel: 80000, primaryLocationId: PLANT },
+  { id: "rm-wheat", code: "RM-WHT", name: "Wheat grain", category: "raw", uom: "kg", rate: 32, hsn: "1001", reorderLevel: 80000, primaryLocationId: PLANT, altUom: "bag", altPack: 50 },
   { id: "rm-sunseed", code: "RM-SUN", name: "Sunflower seed", category: "raw", uom: "kg", rate: 75, hsn: "1206", reorderLevel: 35000, primaryLocationId: PLANT },
   { id: "rm-paddy", code: "RM-PDY", name: "Basmati paddy", category: "raw", uom: "kg", rate: 40, hsn: "1006", reorderLevel: 60000, primaryLocationId: PLANT },
   { id: "rm-durum", code: "RM-DUR", name: "Durum wheat", category: "raw", uom: "kg", rate: 38, hsn: "1001", reorderLevel: 30000, primaryLocationId: PLANT },
@@ -35,25 +35,39 @@ export const ITEMS: Item[] = [
   { id: "pm-bag25", code: "PM-B25", name: "Woven bag — 25kg", category: "packing", uom: "pcs", rate: 22, hsn: "6305", reorderLevel: 2000, primaryLocationId: PLANT },
   { id: "pm-bag10", code: "PM-B10", name: "Woven bag — 10kg", category: "packing", uom: "pcs", rate: 14, hsn: "6305", reorderLevel: 2000, primaryLocationId: PLANT },
   { id: "pm-tin15", code: "PM-T15", name: "Oil tin — 15L", category: "packing", uom: "pcs", rate: 95, hsn: "7310", reorderLevel: 3000, primaryLocationId: PLANT },
-  { id: "pm-pouch1", code: "PM-P01", name: "Laminated pouch — 1kg", category: "packing", uom: "pcs", rate: 6, hsn: "3923", reorderLevel: 15000, primaryLocationId: PLANT },
-  { id: "pm-carton", code: "PM-CTN", name: "Carton box (12s)", category: "packing", uom: "pcs", rate: 42, hsn: "4819", reorderLevel: 2000, primaryLocationId: PLANT },
-  { id: "pm-label", code: "PM-LBL", name: "Barcode label", category: "packing", uom: "pcs", rate: 4, hsn: "4821", reorderLevel: 20000, primaryLocationId: PLANT },
+  { id: "pm-pouch1", code: "PM-P01", name: "Laminated pouch — 1kg", category: "packing", uom: "pcs", rate: 6, hsn: "3923", reorderLevel: 15000, primaryLocationId: PLANT, altUom: "case", altPack: 1000 },
+  { id: "pm-carton", code: "PM-CTN", name: "Carton box (12s)", category: "packing", uom: "pcs", rate: 42, hsn: "4819", reorderLevel: 2000, primaryLocationId: PLANT, altUom: "bundle", altPack: 25 },
+  { id: "pm-label", code: "PM-LBL", name: "Barcode label", category: "packing", uom: "pcs", rate: 4, hsn: "4821", reorderLevel: 20000, primaryLocationId: PLANT, altUom: "roll", altPack: 1000 },
 
   // ---- Semi-finished (WIP) ----
-  { id: "sfg-flour", code: "SF-FLR", name: "Refined wheat flour (bulk)", category: "semi-finished", uom: "kg", rate: 36, hsn: "1101", reorderLevel: 15000, primaryLocationId: PLANT, shelfLifeDays: 180 },
-  { id: "sfg-oil", code: "SF-OIL", name: "Refined sunflower oil (bulk)", category: "semi-finished", uom: "L", rate: 165, hsn: "1512", reorderLevel: 5000, primaryLocationId: PLANT, shelfLifeDays: 365 },
-  { id: "sfg-rice", code: "SF-RCE", name: "Milled basmati rice (bulk)", category: "semi-finished", uom: "kg", rate: 95, hsn: "1006", reorderLevel: 12000, primaryLocationId: PLANT, shelfLifeDays: 540 },
-  { id: "sfg-semolina", code: "SF-SEM", name: "Durum semolina (bulk)", category: "semi-finished", uom: "kg", rate: 40, hsn: "1103", reorderLevel: 5000, primaryLocationId: PLANT, shelfLifeDays: 180 },
+  { id: "sfg-flour", code: "SF-FLR", name: "Refined wheat flour (bulk)", category: "semi-finished", uom: "kg", rate: 36, hsn: "1101", reorderLevel: 15000, primaryLocationId: PLANT, shelfLifeDays: 180, ownership: "own", conversionRate: 2 },
+  { id: "sfg-oil", code: "SF-OIL", name: "Refined sunflower oil (bulk)", category: "semi-finished", uom: "L", rate: 165, hsn: "1512", reorderLevel: 5000, primaryLocationId: PLANT, shelfLifeDays: 365, ownership: "loan-license", conversionRate: 9, manufacturer: "Sunraj Oil Mills (Loan Licence)" },
+  { id: "sfg-rice", code: "SF-RCE", name: "Milled basmati rice (bulk)", category: "semi-finished", uom: "kg", rate: 95, hsn: "1006", reorderLevel: 12000, primaryLocationId: PLANT, shelfLifeDays: 540, ownership: "third-party", buyRate: 92, manufacturer: "Annapurna Rice Industries" },
+  { id: "sfg-semolina", code: "SF-SEM", name: "Durum semolina (bulk)", category: "semi-finished", uom: "kg", rate: 40, hsn: "1103", reorderLevel: 5000, primaryLocationId: PLANT, shelfLifeDays: 180, ownership: "own", conversionRate: 2.5 },
 
   // ---- Finished goods (packed SKUs — match the invoicing catalogue) ----
-  { id: "fg-flour50", code: "FG-FL50", name: "Wheat flour (50kg bag)", category: "finished", uom: "pcs", rate: 1850, hsn: "1101", reorderLevel: 300, primaryLocationId: PLANT, shelfLifeDays: 150 },
-  { id: "fg-rice25", code: "FG-RC25", name: "Basmati rice (25kg)", category: "finished", uom: "pcs", rate: 2400, hsn: "1006", reorderLevel: 200, primaryLocationId: PLANT, shelfLifeDays: 540 },
-  { id: "fg-oil15", code: "FG-OL15", name: "Sunflower oil (15L tin)", category: "finished", uom: "pcs", rate: 1650, hsn: "1512", reorderLevel: 250, primaryLocationId: PLANT, shelfLifeDays: 365 },
-  { id: "fg-flour00", code: "FG-F025", name: "Specialty 00 flour (25kg)", category: "finished", uom: "pcs", rate: 2200, hsn: "1101", reorderLevel: 200, primaryLocationId: PLANT, shelfLifeDays: 150 },
-  { id: "fg-semolina25", code: "FG-SM25", name: "Durum semolina (25kg)", category: "finished", uom: "pcs", rate: 1900, hsn: "1103", reorderLevel: 120, primaryLocationId: PLANT, shelfLifeDays: 150 },
-  { id: "fg-atta10", code: "FG-AT10", name: "Atta (10kg)", category: "finished", uom: "pcs", rate: 360, hsn: "1101", reorderLevel: 600, primaryLocationId: PLANT, shelfLifeDays: 120 },
-  { id: "fg-atta1", code: "FG-AT01", name: "Atta pouch (1kg)", category: "finished", uom: "pcs", rate: 48, hsn: "1101", reorderLevel: 5000, primaryLocationId: PLANT, shelfLifeDays: 120 },
+  { id: "fg-flour50", code: "FG-FL50", name: "Wheat flour (50kg bag)", category: "finished", uom: "pcs", rate: 1850, hsn: "1101", reorderLevel: 300, primaryLocationId: PLANT, shelfLifeDays: 150, ownership: "own", conversionRate: 15, altUom: "pallet", altPack: 20 },
+  { id: "fg-rice25", code: "FG-RC25", name: "Basmati rice (25kg)", category: "finished", uom: "pcs", rate: 2400, hsn: "1006", reorderLevel: 200, primaryLocationId: PLANT, shelfLifeDays: 540, ownership: "third-party", buyRate: 2280, manufacturer: "Annapurna Rice Industries", altUom: "pallet", altPack: 10 },
+  { id: "fg-oil15", code: "FG-OL15", name: "Sunflower oil (15L tin)", category: "finished", uom: "pcs", rate: 1650, hsn: "1512", reorderLevel: 250, primaryLocationId: PLANT, shelfLifeDays: 365, ownership: "loan-license", conversionRate: 25, manufacturer: "Sunraj Oil Mills (Loan Licence)", altUom: "case", altPack: 4 },
+  { id: "fg-flour00", code: "FG-F025", name: "Specialty 00 flour (25kg)", category: "finished", uom: "pcs", rate: 2200, hsn: "1101", reorderLevel: 200, primaryLocationId: PLANT, shelfLifeDays: 150, ownership: "own", conversionRate: 14 },
+  { id: "fg-semolina25", code: "FG-SM25", name: "Durum semolina (25kg)", category: "finished", uom: "pcs", rate: 1900, hsn: "1103", reorderLevel: 120, primaryLocationId: PLANT, shelfLifeDays: 150, ownership: "own", conversionRate: 12 },
+  { id: "fg-atta10", code: "FG-AT10", name: "Atta (10kg)", category: "finished", uom: "pcs", rate: 360, hsn: "1101", reorderLevel: 600, primaryLocationId: PLANT, shelfLifeDays: 120, ownership: "own", conversionRate: 5 },
+  { id: "fg-atta1", code: "FG-AT01", name: "Atta pouch (1kg)", category: "finished", uom: "pcs", rate: 48, hsn: "1101", reorderLevel: 5000, primaryLocationId: PLANT, shelfLifeDays: 120, ownership: "own", conversionRate: 1.5, altUom: "case", altPack: 12 },
 ];
+
+// ---- Ownership / sourcing model metadata --------------------------------
+export const OWNERSHIP_META: Record<
+  OwnershipModel,
+  { label: string; short: string; variant: "default" | "primary" | "warning" | "success"; account: string }
+> = {
+  own: { label: "Own manufacturing", short: "Own", variant: "success", account: "5010" },
+  "loan-license": { label: "Loan licence", short: "Loan Lic.", variant: "warning", account: "5040" },
+  "third-party": { label: "Third-party", short: "3rd-party", variant: "primary", account: "5050" },
+};
+
+export function ownershipOf(itemId: string): OwnershipModel {
+  return itemById(itemId)?.ownership ?? "own";
+}
 
 // ---- Bill of materials: output item → components consumed per unit ----
 // Component qty includes process loss (e.g. milling), so it can exceed output.
@@ -77,6 +91,53 @@ export const BOM: Record<string, BomComponent[]> = {
     { itemId: "pm-label", qtyPerUnit: 1 },
   ],
 };
+
+// ---------------------------------------------------------------------------
+// Alternative unit of measure (Case / pack) — base unit is `item.uom`; the
+// alternative unit holds `pack` base units. Seeded on some items and addable
+// later via a localStorage override (so a buyer can define a case any time).
+// ---------------------------------------------------------------------------
+export interface AltUom {
+  unit: string; // label, e.g. "case", "bag", "carton"
+  pack: number; // base units per alternative unit
+}
+
+const UOM_KEY = "nexa-uom-overrides";
+
+/** Per-item alt-UoM overrides. `null` explicitly clears a seeded pack. */
+export function loadUomOverrides(): Record<string, AltUom | null> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(UOM_KEY);
+    if (raw) return JSON.parse(raw) as Record<string, AltUom | null>;
+  } catch {
+    /* ignore */
+  }
+  return {};
+}
+export function saveUomOverrides(o: Record<string, AltUom | null>) {
+  try {
+    localStorage.setItem(UOM_KEY, JSON.stringify(o));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Effective alt UoM for an item: an override wins over the seeded pack. */
+export function altUomOf(item: Item, overrides?: Record<string, AltUom | null>): AltUom | null {
+  if (overrides && item.id in overrides) return overrides[item.id]; // may be null = cleared
+  return item.altUom && item.altPack ? { unit: item.altUom, pack: item.altPack } : null;
+}
+
+/** Convert a quantity entered in the chosen basis to base units. */
+export function toBaseQty(qty: number, basis: "base" | "alt", alt: AltUom | null): number {
+  return basis === "alt" && alt ? qty * alt.pack : qty;
+}
+
+/** "12 pcs / case" style descriptor for an alt UoM. */
+export function packLabel(item: Item, alt: AltUom | null): string {
+  return alt ? `${alt.pack} ${item.uom} / ${alt.unit}` : "";
+}
 
 // ---- lookups ----
 export function itemById(id: string) {
@@ -141,4 +202,46 @@ export function explodeBom(itemId: string, qty = 1): ExplodedComponent[] {
 /** Fully-exploded standard cost (down to raw + packing) to make one unit. */
 export function explodedUnitCost(itemId: string): number {
   return explodeBom(itemId, 1).reduce((s, c) => s + c.cost, 0);
+}
+
+/** Exploded cost of one unit restricted to a leaf category (raw or packing). */
+function leafCostByCategory(itemId: string, category: ItemCategory): number {
+  return explodeBom(itemId, 1)
+    .filter((c) => itemById(c.itemId)?.category === category)
+    .reduce((s, c) => s + c.cost, 0);
+}
+export const materialUnitCost = (itemId: string) => leafCostByCategory(itemId, "raw");
+export const packingUnitCost = (itemId: string) => leafCostByCategory(itemId, "packing");
+
+/** Recursive conversion / job-work cost per unit (own + loan-licence stages). */
+export function conversionUnitCost(itemId: string, qty = 1): number {
+  const it = itemById(itemId);
+  if (!it) return 0;
+  let c = (it.conversionRate ?? 0) * qty;
+  for (const comp of bomFor(itemId)) c += conversionUnitCost(comp.itemId, qty * comp.qtyPerUnit);
+  return c;
+}
+
+/**
+ * Standard per-unit works cost of a finished good, split for the cost sheet.
+ * Third-party goods are bought finished, so their works cost is the buy rate.
+ */
+export interface UnitWorksCost {
+  ownership: OwnershipModel;
+  material: number;
+  packing: number;
+  conversion: number; // own conversion + loan-licence job-work
+  thirdParty: number; // landed purchase for bought-in goods
+  works: number; // sum of the above
+}
+export function unitWorksCost(itemId: string): UnitWorksCost {
+  const ownership = ownershipOf(itemId);
+  if (ownership === "third-party") {
+    const buy = itemById(itemId)?.buyRate ?? explodedUnitCost(itemId);
+    return { ownership, material: 0, packing: 0, conversion: 0, thirdParty: buy, works: buy };
+  }
+  const material = materialUnitCost(itemId);
+  const packing = packingUnitCost(itemId);
+  const conversion = conversionUnitCost(itemId);
+  return { ownership, material, packing, conversion, thirdParty: 0, works: material + packing + conversion };
 }

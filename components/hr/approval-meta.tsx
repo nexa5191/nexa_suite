@@ -8,6 +8,6 @@ export const KIND_META: Record<
   { label: string; Icon: LucideIcon; tone: "primary" | "warning" | "default" }
 > = {
   leave: { label: "Leave", Icon: CalendarDays, tone: "primary" },
-  financial: { label: "Finance", Icon: Banknote, tone: "warning" },
-  document: { label: "Document", Icon: FileText, tone: "default" },
+  financial: { label: "Invoices & POs", Icon: Banknote, tone: "warning" },
+  document: { label: "Documents & others", Icon: FileText, tone: "default" },
 };

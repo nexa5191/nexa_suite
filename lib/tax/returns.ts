@@ -29,7 +29,9 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 
 function heads(rows: Array<OutwardRow | InwardRow>): HeadAmounts {
   const s = sumHeads(rows);
-  return { igst: r2(s.igst), cgst: r2(s.cgst), sgst: r2(s.sgst) };
+  // UTGST is the Union-Territory equivalent of SGST and sets off identically,
+  // so it is reported in the state (SGST/UTGST) head of GSTR-3B.
+  return { igst: r2(s.igst), cgst: r2(s.cgst), sgst: r2(s.sgst + s.utgst) };
 }
 const addHeads = (a: HeadAmounts, b: HeadAmounts): HeadAmounts => ({
   igst: r2(a.igst + b.igst),
@@ -110,7 +112,7 @@ export function gstr9For(scope: TaxScope, fy: string): {
   const byRate = (rate: number) => {
     const rs = outward.filter((r) => r.rate === rate);
     const h = sumHeads(rs);
-    return { label: `Outward @ ${rate}%`, taxable: r2(h.taxable), igst: r2(h.igst), cgst: r2(h.cgst), sgst: r2(h.sgst) };
+    return { label: `Outward @ ${rate}%`, taxable: r2(h.taxable), igst: r2(h.igst), cgst: r2(h.cgst), sgst: r2(h.sgst + h.utgst) };
   };
 
   const exempt = outward.filter((r) => r.rate === 0);
@@ -123,7 +125,7 @@ export function gstr9For(scope: TaxScope, fy: string): {
     byRate(5),
     byRate(12),
     { label: "Exempt / zero-rated", taxable: r2(exemptH.taxable), igst: 0, cgst: 0, sgst: 0 },
-    { label: "Total ITC availed", taxable: r2(itcH.taxable), igst: r2(itcH.igst), cgst: r2(itcH.cgst), sgst: r2(itcH.sgst) },
+    { label: "Total ITC availed", taxable: r2(itcH.taxable), igst: r2(itcH.igst), cgst: r2(itcH.cgst), sgst: r2(itcH.sgst + itcH.utgst) },
   ];
 
   const outputTax = r2(outH.tax);

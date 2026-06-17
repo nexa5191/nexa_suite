@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   Plus, X, Tag as TagIcon, StickyNote, Phone, Users, Mail, Handshake,
   GitBranch, Receipt, Building2, Globe, PhoneCall, Check,
-  ChevronRight, FileDown,
+  ChevronRight, FileDown, Search,
 } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card } from "@/components/ui/card";
@@ -39,6 +39,7 @@ import {
   type JourneyEvent,
   type EventType,
   type PipelineStage,
+  type CrmAccount,
 } from "@/lib/crm";
 
 const EVENT_ICON: Record<EventType, React.ComponentType<{ className?: string }>> = {
@@ -56,6 +57,7 @@ export function CrmClient() {
   const [tagOverrides, setTagOverrides] = React.useState<Record<string, string[]>>({});
   const [stageOverrides, setStageOverrides] = React.useState<Record<string, PipelineStage>>({});
   const [selectedId, setSelectedId] = React.useState(ACCOUNTS[0].id);
+  const [query, setQuery] = React.useState("");
   const [seq, setSeq] = React.useState(1); // deterministic id counter for new events
 
   React.useEffect(() => {
@@ -71,6 +73,24 @@ export function CrmClient() {
 
   // ---- pipeline summary ----
   const accountsWithStage = ACCOUNTS.map((a) => ({ a, stage: effectiveStage(a, stageOverrides) }));
+
+  // ---- client search (name, legal name, industry, owner, entity, contacts,
+  // email / phone / website / GSTIN) — all terms must match (AND). ----
+  const matchesQuery = (a: CrmAccount, st: PipelineStage) => {
+    const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (terms.length === 0) return true;
+    const contacts = contactsForAccount(a.id)
+      .map((c) => `${c.name} ${c.title} ${c.email}`)
+      .join(" ");
+    const hay = [
+      a.name, a.legalName, a.industry, a.email, a.phone, a.website, a.gstin,
+      employeeName(a.ownerId), entityById(a.entityId)?.name ?? "", stageMeta(st).label, contacts,
+    ]
+      .join(" ")
+      .toLowerCase();
+    return terms.every((t) => hay.includes(t));
+  };
+  const filteredAccounts = accountsWithStage.filter(({ a, stage: st }) => matchesQuery(a, st));
   const openValue = accountsWithStage
     .filter((x) => OPEN_STAGES.includes(x.stage))
     .reduce((s, x) => s + x.a.dealValue, 0);
@@ -164,9 +184,34 @@ export function CrmClient() {
       </Card>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[320px_1fr]">
-        {/* LEFT — account list */}
+        {/* LEFT — searchable account list */}
         <div className="space-y-2">
-          {accountsWithStage.map(({ a, stage: st }) => (
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search clients…"
+              aria-label="Search clients"
+              className="pl-8 pr-8"
+            />
+            {query && (
+              <button
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+                className="absolute right-2 top-1/2 grid size-5 -translate-y-1/2 place-items-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
+          {query && (
+            <p className="px-1 text-xs text-muted-foreground">
+              {filteredAccounts.length} of {ACCOUNTS.length} clients
+            </p>
+          )}
+
+          {filteredAccounts.map(({ a, stage: st }) => (
             <button
               key={a.id}
               onClick={() => setSelectedId(a.id)}
@@ -190,6 +235,12 @@ export function CrmClient() {
               </div>
             </button>
           ))}
+
+          {filteredAccounts.length === 0 && (
+            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+              No clients match “{query}”.
+            </div>
+          )}
         </div>
 
         {/* RIGHT — account detail + journey */}
