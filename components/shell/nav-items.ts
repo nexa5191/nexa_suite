@@ -43,6 +43,18 @@ import {
   LifeBuoy,
   Briefcase,
   Timer,
+  ScanLine,
+  GitCompareArrows,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Send,
+  Globe,
+  Gauge,
+  UserPlus,
+  PiggyBank,
+  ShieldCheck,
+  ClipboardList,
+  FileClock,
   type LucideIcon,
 } from "lucide-react";
 
@@ -88,6 +100,8 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { key: "gst-tds", href: "/tax", label: "GST & TDS", icon: Landmark },
       { key: "gst-registers", href: "/tax/registers", label: "GST Registers", icon: FileSpreadsheet },
+      { key: "e-invoicing", href: "/invoicing/e-invoicing", label: "e-Invoicing", icon: ScanLine },
+      { key: "gstr2b-recon", href: "/tax/gstr2b", label: "GSTR-2B Match", icon: GitCompareArrows },
     ],
   },
   {
@@ -96,6 +110,14 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "group-reporting", href: "/group", label: "Group Reporting", icon: Layers },
       { key: "intercompany", href: "/group/intercompany", label: "Inter-company", icon: ArrowLeftRight },
       { key: "bank-recon", href: "/banking", label: "Bank Reconciliation", icon: Repeat },
+    ],
+  },
+  {
+    label: "Receivables & Payments",
+    items: [
+      { key: "receivables", href: "/receivables", label: "Receivables", icon: ArrowDownToLine },
+      { key: "payables", href: "/payables", label: "Payables", icon: ArrowUpFromLine },
+      { key: "payment-runs", href: "/payments", label: "Payment Runs", icon: Send },
     ],
   },
   {
@@ -129,6 +151,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "balance-sheet", href: "/reports/balance-sheet", label: "Balance Sheet", icon: Scale },
       { key: "cash-flow", href: "/reports/cash-flow", label: "Cash Flow", icon: Wallet },
       { key: "report-explorer", href: "/reports/explorer", label: "Report Explorer", icon: Table2 },
+      { key: "fx-revaluation", href: "/reports/fx-revaluation", label: "FX Revaluation", icon: Globe },
     ],
   },
   {
@@ -139,6 +162,10 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "attendance", href: "/hr/attendance", label: "Attendance", icon: Clock },
       { key: "leave", href: "/leave", label: "Leave", icon: CalendarDays },
       { key: "payroll", href: "/hr/payroll", label: "Payroll", icon: Banknote },
+      { key: "payroll-statutory", href: "/hr/payroll/statutory", label: "Payroll Statutory", icon: ShieldCheck },
+      { key: "loans", href: "/hr/loans", label: "Loans & Advances", icon: PiggyBank },
+      { key: "performance", href: "/hr/performance", label: "Performance & OKRs", icon: Gauge },
+      { key: "onboarding", href: "/hr/onboarding", label: "Onboarding", icon: UserPlus },
       { key: "holidays", href: "/hr/holidays", label: "Holidays", icon: Palmtree },
       { key: "cv-bank", href: "/cv-bank", label: "CV Bank", icon: Contact },
       { key: "agency-portal", href: "/agency-portal", label: "Agency Portal", icon: Handshake },
@@ -157,6 +184,9 @@ export const NAV_GROUPS: NavGroup[] = [
 
 export const SECONDARY_NAV: NavItem[] = [
   { key: "portal", href: "/portal", label: "My Portal", icon: UserCircle },
+  { key: "tax-calculator", href: "/portal/tax-calculator", label: "Tax Calculator", icon: Calculator },
+  { key: "tax-declaration", href: "/portal/tax-declaration", label: "Tax Declaration", icon: ClipboardList },
+  { key: "audit-trail", href: "/audit-trail", label: "Audit Trail", icon: FileClock },
   { key: "setup", href: "/setup", label: "Access & Setup", icon: SlidersHorizontal },
   { key: "settings", href: "/settings", label: "Settings", icon: Settings },
   { key: "help", href: "/help", label: "Help", icon: LifeBuoy },
@@ -172,5 +202,12 @@ export function isNavActive(pathname: string, href: string) {
   if (href === "/journal") return pathname === "/journal";
   // /tax must not stay active on /tax/registers (separate page).
   if (href === "/tax") return pathname === "/tax";
+  // /portal must not stay active on /portal/tax-calculator (separate page).
+  if (href === "/portal") return pathname === "/portal";
+  // /hr/payroll must not stay active on /hr/payroll/statutory (separate page).
+  if (href === "/hr/payroll") return pathname === "/hr/payroll";
+  // /invoicing must not stay active on /invoicing/e-invoicing (separate page);
+  // it stays active for the new-invoice builder.
+  if (href === "/invoicing") return pathname === "/invoicing" || pathname.startsWith("/invoicing/new");
   return pathname.startsWith(href);
 }
