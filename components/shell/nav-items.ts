@@ -57,6 +57,10 @@ import {
   ShieldCheck,
   ScrollText,
   Gavel,
+  Lock,
+  Building,
+  BookCopy,
+  CalendarRange,
   type LucideIcon,
 } from "lucide-react";
 
@@ -95,6 +99,9 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "petty-cash", href: "/petty-cash", label: "Petty Cash Book", icon: Coins },
       { key: "reimbursements", href: "/reimbursements", label: "Reimbursements", icon: ReceiptText },
       { key: "fixed-assets", href: "/assets", label: "Fixed Assets", icon: Building2 },
+      { key: "lease-accounting", href: "/leases", label: "Lease Accounting", icon: Building },
+      { key: "multi-book", href: "/multi-book", label: "Multi-Book Ledger", icon: BookCopy },
+      { key: "financial-close", href: "/financial-close", label: "Financial Close", icon: Lock },
     ],
   },
   {
@@ -122,6 +129,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "crm", href: "/crm", label: "CRM", icon: HeartHandshake },
       { key: "orders", href: "/orders", label: "Orders", icon: ShoppingCart },
       { key: "invoicing", href: "/invoicing", label: "Invoicing", icon: Receipt },
+      { key: "revenue-recognition", href: "/revenue-recognition", label: "Revenue Recognition", icon: CalendarRange },
     ],
   },
   {
@@ -137,6 +145,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "cost-audit", href: "/analysis/cost-audit", label: "Cost Audit", icon: PieChart },
       { key: "capital-decisions", href: "/planning/decisions", label: "Capital Decisions", icon: Calculator },
       { key: "budget", href: "/planning/budget", label: "Budget & Forecast", icon: Target },
+      { key: "budget-control", href: "/planning/budget-control", label: "Budgetary Control", icon: ShoppingCart },
       { key: "business-plan", href: "/planning/business-plan", label: "Business Plan", icon: FileText },
     ],
   },
@@ -149,6 +158,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "cashflow-forecast", href: "/reports/cashflow-forecast", label: "Projected Cash Flow", icon: LineChart },
       { key: "report-explorer", href: "/reports/explorer", label: "Report Explorer", icon: Table2 },
       { key: "party-ledger", href: "/reports/ledgers", label: "Party Ledger", icon: BookUser },
+      { key: "segment-pnl", href: "/reports/segments", label: "P&L by Segment", icon: PieChart },
       { key: "receivables", href: "/receivables", label: "Receivables", icon: ArrowDownToLine },
       { key: "payables", href: "/payables", label: "Payables", icon: ArrowUpFromLine },
       { key: "fx-revaluation", href: "/reports/fx-revaluation", label: "FX Revaluation", icon: Globe },
