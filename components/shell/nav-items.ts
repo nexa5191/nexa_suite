@@ -61,6 +61,7 @@ import {
   Building,
   BookCopy,
   CalendarRange,
+  FileSignature,
   type LucideIcon,
 } from "lucide-react";
 
@@ -98,6 +99,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "journal-entries", href: "/journal-entries", label: "Journal Entries", icon: NotebookPen },
       { key: "petty-cash", href: "/petty-cash", label: "Petty Cash Book", icon: Coins },
       { key: "reimbursements", href: "/reimbursements", label: "Reimbursements", icon: ReceiptText },
+      { key: "contracts", href: "/contracts", label: "Contracts & AMCs", icon: FileSignature },
       { key: "fixed-assets", href: "/assets", label: "Fixed Assets", icon: Building2 },
       { key: "lease-accounting", href: "/leases", label: "Lease Accounting", icon: Building },
       { key: "multi-book", href: "/multi-book", label: "Multi-Book Ledger", icon: BookCopy },

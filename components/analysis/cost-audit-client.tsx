@@ -757,19 +757,31 @@ function dimSheet(
   rows: AllocRow[],
   heads: CostHead[],
   withUnits = false,
+  drivers?: Record<string, string>,
 ): ReportSheet {
   const firstHead = heads[0]?.code ?? "name";
   const lastHead = heads[heads.length - 1]?.code ?? "name";
+  // On the driver-absorbed (product) sheet, each head cell is a live allocation
+  // formula — pool × driver share — so the reader sees exactly how it was spread.
+  const allocate = !!drivers && withUnits;
 
   const columns: ReportColumn[] = [
     { header: dimLabel, key: "name", type: "text", width: 30, totalText: "Total" },
-    ...heads.map<ReportColumn>((h) => ({
-      header: h.name,
-      key: h.code,
-      type: "money",
-      width: 14,
-      total: "sum",
-    })),
+    ...heads.map<ReportColumn>((h) => {
+      const col: ReportColumn = { header: h.name, key: h.code, type: "money", width: 14, total: "sum" };
+      if (allocate) {
+        const driver = drivers![h.code];
+        const pool = Math.round(h.total);
+        col.formula = (c) => {
+          if (driver === "revenue") return `${c.colOf("revenue")}${c.row}/${c.colOf("revenue")}$${c.lastRow + 1}*${pool}`;
+          if (driver === "volume") return `${c.colOf("units")}${c.row}/${c.colOf("units")}$${c.lastRow + 1}*${pool}`;
+          if (driver === "equal") return `${pool}/${c.lastRow - c.firstRow + 1}`;
+          const w = Number((c.data as Record<string, unknown>)[`${h.code}_w`]) || 0; // bom / fallback weight
+          return `${pool}*${w}`;
+        };
+      }
+      return col;
+    }),
     {
       header: "Total Cost",
       key: "totalCost",
@@ -832,7 +844,10 @@ function dimSheet(
 
   const dataRows = rows.map((r) => {
     const o: Record<string, number | string> = { name: r.name };
-    for (const h of heads) o[h.code] = Math.round(r.costByHead[h.code] ?? 0);
+    for (const h of heads) {
+      o[h.code] = Math.round(r.costByHead[h.code] ?? 0);
+      if (allocate) o[`${h.code}_w`] = h.total ? (r.costByHead[h.code] ?? 0) / h.total : 0;
+    }
     o.totalCost = Math.round(r.totalCost);
     if (withUnits) {
       o.units = Math.round(r.units ?? 0);
@@ -846,7 +861,13 @@ function dimSheet(
     return o;
   });
 
-  return { name, title: `Cost Audit — ${dimLabel}`, subtitle, meta, columns, rows: dataRows, totals: true };
+  const notes = allocate
+    ? [
+        "Each overhead head is absorbed as (driver share) × (cost pool). E.g. Freight per product = product revenue ÷ total revenue × total freight — shown as a live formula, so editing a revenue or a pool recomputes the allocation.",
+        "Direct heads spread on bill-of-materials cost; the cell carries pool × the BOM weight.",
+      ]
+    : undefined;
+  return { name, title: `Cost Audit — ${dimLabel}`, subtitle, meta, columns, rows: dataRows, totals: true, notes };
 }
 
 function buildSheets(audit: CostAudit, ctl: ReturnType<typeof useReport>): ReportSheet[] {
@@ -967,7 +988,7 @@ function buildSheets(audit: CostAudit, ctl: ReturnType<typeof useReport>): Repor
     summary,
     dimSheet("By Entity", "Entity", sub, meta, audit.byEntity, audit.heads),
     dimSheet("By Location", "Location", sub, meta, audit.byLocation, audit.heads),
-    dimSheet("By Product", "Product", `${sub} Per-head drivers — see Summary.`, meta, audit.byProduct, audit.heads, true),
+    dimSheet("By Product", "Product", `${sub} Per-head drivers — see Summary.`, meta, audit.byProduct, audit.heads, true, audit.drivers),
     dimSheet("By Sourcing", "Sourcing model", sub, meta, audit.byOwnership, audit.heads),
     movementSheet,
     costSheet,
