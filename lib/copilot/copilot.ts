@@ -103,11 +103,10 @@ function deltaLabel(current: number, prior: number, period = "last quarter"): st
 // ---------------------------------------------------------------------------
 
 const SUGGESTIONS = [
-  "Overdue receivables over 60 days for Nexa Trading vs last quarter",
+  "Receivables outstanding for Nexa Global vs last quarter",
   "Top customers by outstanding",
-  "MSME payables at risk",
   "GST input tax credit at risk this period",
-  "Total payables overdue",
+  "Top vendors by payable",
 ];
 
 export function suggestions(): string[] {
@@ -119,8 +118,10 @@ export function answer(query: string): CopilotResult {
   const entity = matchEntity(text);
   const days = extractDays(text);
   const compare = wantsCompare(text);
+  // "overdue"/"past due"/an age threshold ⇒ overdue-only; otherwise show all open items.
+  const overdueOnly = /overdue|past due|aging|ageing|due/.test(text) || days !== null;
 
-  const isAr = /receivable|overdue.*(customer|invoice)|debtor|collect|owe(s|d)? (us|me)|\bar\b|outstanding/.test(text);
+  const isAr = /receivable|debtor|collect|owe(s|d)? (us|me)|\bar\b|outstanding|customer/.test(text);
   const isAp = /payable|vendor|creditor|\bap\b|bill(s)? (due|overdue)|msme|pay (the )?vendor/.test(text);
   const isGst = /\bgst\b|\bitc\b|input tax|2b|gstr|credit at risk/.test(text);
   const isTopCust = /top|biggest|largest|who owes/.test(text) && !isAp;
@@ -129,8 +130,8 @@ export function answer(query: string): CopilotResult {
   if (isGst) return gstReport(entity);
   if (isTopVend) return topVendors();
   if (isTopCust && isAr) return topCustomers();
-  if (isAp) return payablesReport(entity, days, compare);
-  if (isAr || days !== null) return receivablesReport(entity, days, compare);
+  if (isAp) return payablesReport(entity, days, compare, overdueOnly);
+  if (isAr || days !== null) return receivablesReport(entity, days, compare, overdueOnly);
   if (isTopCust) return topCustomers();
 
   // Fallback — explain what the copilot can do.
@@ -151,8 +152,9 @@ function receivablesReport(
   entity: { id: string; name: string } | null,
   days: number | null,
   compare: boolean,
+  overdueOnly: boolean,
 ): CopilotResult {
-  const threshold = days ?? 0;
+  const threshold = overdueOnly ? (days ?? 0) : Number.NEGATIVE_INFINITY;
   const items = openItems(AS_ON)
     .filter((i) => inEntity(i.entityId, entity))
     .filter((i) => i.days > threshold)
@@ -160,10 +162,10 @@ function receivablesReport(
 
   const total = items.reduce((s, i) => s + i.outstanding, 0);
   const scope = entity ? entity.name : "all entities";
-  const ageLabel = threshold > 0 ? `over ${threshold} days overdue` : "outstanding";
+  const ageLabel = !overdueOnly ? "outstanding" : days ? `over ${days} days overdue` : "overdue";
 
   const metrics: CopilotMetric[] = [
-    { label: `Receivables ${ageLabel}`, value: inrCompact(total), tone: total > 0 ? "danger" : "success" },
+    { label: `Receivables ${ageLabel}`, value: inrCompact(total), tone: overdueOnly && total > 0 ? "danger" : "default" },
     { label: "Invoices", value: String(items.length) },
   ];
   if (compare) {
@@ -173,12 +175,12 @@ function receivablesReport(
 
   return {
     kind: "report",
-    title: `Overdue receivables — ${scope}`,
+    title: `${overdueOnly ? "Overdue receivables" : "Receivables"} — ${scope}`,
     narrative:
       items.length === 0
         ? `No receivables ${ageLabel} for ${scope}. Your collections are clean on this filter.`
         : `${items.length} invoice${items.length > 1 ? "s" : ""} ${ageLabel} for ${scope}, totalling ${inr(total)}.` +
-          (compare ? ` That's ${deltaLabel(total, priorEstimate(total))} — worth a collections push.` : ""),
+          (compare ? ` That's ${deltaLabel(total, priorEstimate(total))}${overdueOnly ? " — worth a collections push" : ""}.` : ""),
     metrics,
     columns: [
       { label: "Customer" }, { label: "Invoice" }, { label: "Days", align: "right" }, { label: "Outstanding", align: "right" },
@@ -194,9 +196,9 @@ function payablesReport(
   entity: { id: string; name: string } | null,
   days: number | null,
   compare: boolean,
+  overdueOnly: boolean,
 ): CopilotResult {
-  const threshold = days ?? 0;
-  const msmeFocus = false;
+  const threshold = overdueOnly ? (days ?? 0) : Number.NEGATIVE_INFINITY;
   const items = apOpenItems(AS_ON)
     .filter((i) => inEntity(i.entityId, entity))
     .filter((i) => i.days > threshold)
@@ -204,9 +206,10 @@ function payablesReport(
   const total = items.reduce((s, i) => s + i.outstanding, 0);
   const msme = items.filter((i) => i.msmeBreach);
   const scope = entity ? entity.name : "all entities";
+  const label = !overdueOnly ? "Payables outstanding" : days ? `Payables over ${days}d` : "Payables overdue";
 
   const metrics: CopilotMetric[] = [
-    { label: threshold > 0 ? `Payables over ${threshold}d` : "Payables overdue", value: inrCompact(total), tone: "warning" },
+    { label, value: inrCompact(total), tone: "warning" },
     { label: "MSME breaches", value: String(msme.length), tone: msme.length ? "danger" : "success" },
   ];
   if (compare) {
@@ -214,13 +217,14 @@ function payablesReport(
     metrics.push({ label: "Last quarter", value: inrCompact(prior), delta: deltaLabel(total, prior) });
   }
 
+  const word = overdueOnly ? "overdue " : "open ";
   return {
     kind: "report",
-    title: `Payables ${msmeFocus ? "(MSME) " : ""}— ${scope}`,
+    title: `Payables — ${scope}`,
     narrative:
       items.length === 0
-        ? `No overdue payables for ${scope}.`
-        : `${items.length} overdue bill${items.length > 1 ? "s" : ""} for ${scope} totalling ${inr(total)}.` +
+        ? `No ${word}payables for ${scope}.`
+        : `${items.length} ${word}bill${items.length > 1 ? "s" : ""} for ${scope} totalling ${inr(total)}.` +
           (msme.length ? ` ${msme.length} MSME bill${msme.length > 1 ? "s are" : " is"} past the statutory 45-day window — clear these first to avoid s.43B(h) disallowance.` : ""),
     metrics,
     columns: [
