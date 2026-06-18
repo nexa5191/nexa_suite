@@ -1,15 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { Calculator, Scale, Sparkles, ArrowRight, Info, RotateCcw, TrendingDown } from "lucide-react";
+import { Calculator, Scale, Sparkles, Info, RotateCcw, TrendingDown, UserCircle2 } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Money } from "@/components/ui/money";
-import { Input, Label, Select } from "@/components/ui/input";
+import { Input, Label } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { EMPLOYEES, employeeById } from "@/lib/hr/employees";
+import { employeeById } from "@/lib/hr/employees";
+import { usePortalEmployee, DEFAULT_PORTAL_EMP } from "@/lib/hr/portal-session";
 import { salaryStructure } from "@/lib/hr/payroll";
 import {
   compareRegimes,
@@ -37,8 +37,9 @@ const DEDUCTION_FIELDS: {
 ];
 
 export function TaxCalculatorClient() {
-  const [empId, setEmpId] = React.useState("emp-006");
-  const [gross, setGross] = React.useState(() => salaryStructure("emp-006").annualCtc);
+  const [empId] = usePortalEmployee();
+  const emp = employeeById(empId);
+  const [gross, setGross] = React.useState(() => salaryStructure(DEFAULT_PORTAL_EMP).annualCtc);
   const [deductions, setDeductions] = React.useState<Deductions>({
     ...EMPTY_DEDUCTIONS,
     sec80C: 150_000,
@@ -46,10 +47,11 @@ export function TaxCalculatorClient() {
     professionalTax: 2_400,
   });
 
-  function loadEmployee(id: string) {
-    setEmpId(id);
-    if (id) setGross(salaryStructure(id).annualCtc);
-  }
+  // Re-seed the gross from the signed-in employee's CTC whenever it changes
+  // (e.g. after the persisted portal employee loads, or you switch in My Portal).
+  React.useEffect(() => {
+    setGross(salaryStructure(empId).annualCtc);
+  }, [empId]);
 
   function setDeduction(key: keyof Deductions, value: number) {
     setDeductions((d) => ({ ...d, [key]: Number.isFinite(value) ? Math.max(0, value) : 0 }));
@@ -70,14 +72,9 @@ export function TaxCalculatorClient() {
         title="Income Tax Calculator"
         subtitle={`Compare your liability under the Old and New tax regimes — ${FY_LABEL}.`}
         actions={
-          <Select value={empId} onChange={(e) => loadEmployee(e.target.value)} className="h-9 w-56">
-            <option value="">Custom (enter manually)</option>
-            {EMPLOYEES.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.name}{e.status === "exited" ? " (exited)" : ""}
-              </option>
-            ))}
-          </Select>
+          <Badge variant="outline" className="gap-1.5 px-2.5 py-1 text-xs font-normal">
+            <UserCircle2 className="size-3.5" /> {emp ? emp.name : "Custom"}
+          </Badge>
         }
       />
 

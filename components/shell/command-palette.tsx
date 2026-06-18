@@ -3,7 +3,8 @@
 import * as React from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Search, CornerDownLeft, Keyboard, X } from "lucide-react";
-import { NAV_GROUPS, SECONDARY_NAV, type NavItem } from "./nav-items";
+import { NAV_GROUPS, SECONDARY_NAV, COMMAND_ACTIONS, type NavItem } from "./nav-items";
+import { NEW_INTENT_EVENT } from "@/lib/commands/new-intent";
 import { useAccess } from "@/components/access/access-provider";
 import { useSplit } from "@/components/shell/split/split-provider";
 import { cn } from "@/lib/utils";
@@ -58,13 +59,15 @@ export function CommandPalette() {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const listRef = React.useRef<HTMLDivElement>(null);
 
-  // All reachable commands: gated nav (RBAC-filtered) + always-present chrome.
+  // All reachable commands: quick create-actions + gated nav (RBAC-filtered) +
+  // always-present chrome.
   const commands = React.useMemo<Command[]>(() => {
+    const actions = COMMAND_ACTIONS.map((i) => ({ ...i, group: "Create" }));
     const gated = NAV_GROUPS.flatMap((g) =>
       g.items.filter((i) => can(i.key)).map((i) => ({ ...i, group: g.label })),
     );
     const chrome = SECONDARY_NAV.map((i) => ({ ...i, group: "Settings" }));
-    return [...gated, ...chrome];
+    return [...actions, ...gated, ...chrome];
   }, [can]);
 
   const byKey = React.useMemo(() => {
@@ -122,8 +125,18 @@ export function CommandPalette() {
         return next;
       });
       close();
-      if (split) openInSplit(cmd.href, pathname);
-      else router.push(cmd.href);
+      if (split) {
+        openInSplit(cmd.href, pathname);
+        return;
+      }
+      router.push(cmd.href);
+      // A "New …" action targeting the route you're already on won't remount the
+      // page, so router.push alone won't open the form — nudge the mounted page.
+      const qi = cmd.href.indexOf("?");
+      const targetPath = qi === -1 ? cmd.href : cmd.href.slice(0, qi);
+      if (qi !== -1 && cmd.href.includes("new=1") && pathname === targetPath) {
+        window.dispatchEvent(new CustomEvent(NEW_INTENT_EVENT));
+      }
     },
     [router, close, currentUserId, openInSplit, pathname],
   );

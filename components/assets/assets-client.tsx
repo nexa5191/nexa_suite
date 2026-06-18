@@ -15,6 +15,7 @@ import { usePrefs } from "@/components/prefs/prefs-provider";
 import { cn, formatDate, monthLabel } from "@/lib/utils";
 import { entityById, locationById, ENTITIES, locationsForEntity } from "@/lib/accounting/org";
 import { planDepreciation, recentMonths } from "@/lib/assets/dep-posting";
+import { useNewIntent } from "@/lib/commands/new-intent";
 import { CalendarClock, CheckCircle2, Wand2 } from "lucide-react";
 import {
   allAssets,
@@ -61,6 +62,7 @@ export function AssetsClient() {
   const [cat, setCat] = React.useState<"all" | AssetCategory>("all");
   const [q, setQ] = React.useState("");
   const [adding, setAdding] = React.useState(false);
+  useNewIntent(() => setAdding(true));
   const [section, setSection] = React.useState<"register" | "depreciation">("register");
 
   React.useEffect(() => setCreated(loadCreatedAssets()), []);

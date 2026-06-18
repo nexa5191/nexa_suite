@@ -110,13 +110,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "group-reporting", href: "/group", label: "Group Reporting", icon: Layers },
       { key: "intercompany", href: "/group/intercompany", label: "Inter-company", icon: ArrowLeftRight },
       { key: "bank-recon", href: "/banking", label: "Bank Reconciliation", icon: Repeat },
-    ],
-  },
-  {
-    label: "Receivables & Payments",
-    items: [
-      { key: "receivables", href: "/receivables", label: "Receivables", icon: ArrowDownToLine },
-      { key: "payables", href: "/payables", label: "Payables", icon: ArrowUpFromLine },
       { key: "payment-runs", href: "/payments", label: "Payment Runs", icon: Send },
     ],
   },
@@ -151,6 +144,8 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "balance-sheet", href: "/reports/balance-sheet", label: "Balance Sheet", icon: Scale },
       { key: "cash-flow", href: "/reports/cash-flow", label: "Cash Flow", icon: Wallet },
       { key: "report-explorer", href: "/reports/explorer", label: "Report Explorer", icon: Table2 },
+      { key: "receivables", href: "/receivables", label: "Receivables", icon: ArrowDownToLine },
+      { key: "payables", href: "/payables", label: "Payables", icon: ArrowUpFromLine },
       { key: "fx-revaluation", href: "/reports/fx-revaluation", label: "FX Revaluation", icon: Globe },
     ],
   },
@@ -165,7 +160,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "payroll-statutory", href: "/hr/payroll/statutory", label: "Payroll Statutory", icon: ShieldCheck },
       { key: "loans", href: "/hr/loans", label: "Loans & Advances", icon: PiggyBank },
       { key: "performance", href: "/hr/performance", label: "Performance & OKRs", icon: Gauge },
-      { key: "onboarding", href: "/hr/onboarding", label: "Onboarding", icon: UserPlus },
+      { key: "onboarding", href: "/hr/onboarding", label: "Onboarding & Offboarding", icon: UserPlus },
       { key: "holidays", href: "/hr/holidays", label: "Holidays", icon: Palmtree },
       { key: "cv-bank", href: "/cv-bank", label: "CV Bank", icon: Contact },
       { key: "agency-portal", href: "/agency-portal", label: "Agency Portal", icon: Handshake },
@@ -190,6 +185,22 @@ export const SECONDARY_NAV: NavItem[] = [
   { key: "setup", href: "/setup", label: "Access & Setup", icon: SlidersHorizontal },
   { key: "settings", href: "/settings", label: "Settings", icon: Settings },
   { key: "help", href: "/help", label: "Help", icon: LifeBuoy },
+];
+
+/**
+ * Quick "Create …" actions surfaced in the Cmd+K palette. Each either points at
+ * a create route (e.g. the invoice builder) or deep-links to a module with
+ * `?new=1`, which that module honours by opening its create form on load.
+ */
+export const COMMAND_ACTIONS: NavItem[] = [
+  { key: "new-invoice", href: "/invoicing/new", label: "New Invoice", icon: Receipt },
+  { key: "new-journal-entry-action", href: "/journal-entries?new=1", label: "New Journal Entry", icon: NotebookPen },
+  { key: "new-task-action", href: "/tasks?new=1", label: "New Task", icon: ListTodo },
+  { key: "new-reimbursement", href: "/reimbursements?new=1", label: "New Reimbursement Claim", icon: ReceiptText },
+  { key: "new-petty-cash", href: "/petty-cash?new=1", label: "Record Petty Cash Expense", icon: Coins },
+  { key: "new-asset", href: "/assets?new=1", label: "New Fixed Asset", icon: Building2 },
+  { key: "new-leave", href: "/leave?new=1", label: "New Leave Request", icon: CalendarDays },
+  { key: "new-loan", href: "/hr/loans?new=1", label: "New Loan / Advance", icon: PiggyBank },
 ];
 
 export const FLAT_NAV: NavItem[] = NAV_GROUPS.flatMap((g) => g.items);

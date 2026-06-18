@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { Money } from "@/components/ui/money";
 import { cn, formatDate } from "@/lib/utils";
+import { useNewIntent } from "@/lib/commands/new-intent";
 import { useJournal } from "@/components/accounting/journal-provider";
 import { ACTIVE_EMPLOYEES, employeeById, employeeName } from "@/lib/hr/employees";
 import { entityById } from "@/lib/accounting/org";
@@ -39,6 +40,7 @@ export function ReimbursementsClient() {
   const [filter, setFilter] = React.useState<"all" | ReimbStatus>("all");
   const [newOpen, setNewOpen] = React.useState(false);
   const [err, setErr] = React.useState<string[]>([]);
+  useNewIntent(() => setNewOpen(true));
 
   React.useEffect(() => {
     setCreated(loadCreatedReimbursements());

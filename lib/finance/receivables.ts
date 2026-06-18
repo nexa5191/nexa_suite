@@ -32,27 +32,77 @@ export const AS_ON = "2026-06-18";
 // Aging buckets
 // ---------------------------------------------------------------------------
 
-export type BucketKey = "current" | "d1_30" | "d31_60" | "d61_90" | "d90_plus";
+// Bucket keys are now derived from the active scheme, so this is just a string.
+export type BucketKey = string;
 
 export interface AgingBucket {
   key: BucketKey;
   label: string;
+  from: number; // inclusive lower day bound (days overdue); "current" is -Infinity..0
+  to: number | null; // inclusive upper day bound; null ⇒ open-ended
   /** Tailwind-friendly badge tone for days-overdue badges. */
   tone: "success" | "default" | "warning" | "danger";
   /** Dunning level this bucket maps to (worst bucket drives a customer's level). */
   dunning: DunningLevel;
 }
 
-export const AGING_BUCKETS: AgingBucket[] = [
-  { key: "current", label: "Current", tone: "success", dunning: 0 },
-  { key: "d1_30", label: "1–30", tone: "default", dunning: 1 },
-  { key: "d31_60", label: "31–60", tone: "warning", dunning: 2 },
-  { key: "d61_90", label: "61–90", tone: "warning", dunning: 2 },
-  { key: "d90_plus", label: "90+", tone: "danger", dunning: 3 },
-];
+/** Default breakpoints — upper day bounds dividing the overdue buckets. */
+export const DEFAULT_BREAKPOINTS = [30, 60, 90];
 
-export function bucketMeta(key: BucketKey): AgingBucket {
-  return AGING_BUCKETS.find((b) => b.key === key) ?? AGING_BUCKETS[0];
+function toneForFrom(from: number): AgingBucket["tone"] {
+  if (from <= 0) return "success";
+  if (from <= 30) return "default";
+  if (from <= 90) return "warning";
+  return "danger";
+}
+function dunningForFrom(from: number): DunningLevel {
+  if (from <= 0) return 0;
+  if (from <= 30) return 1;
+  if (from <= 90) return 2;
+  return 3;
+}
+function makeBucket(from: number, to: number | null): AgingBucket {
+  if (to === null) {
+    const base = from - 1; // label the open-ended bucket by its lower threshold ("90+")
+    return { key: `d${base}_plus`, label: `${base}+`, from, to, tone: toneForFrom(from), dunning: dunningForFrom(from) };
+  }
+  return { key: `d${from}_${to}`, label: `${from}–${to}`, from, to, tone: toneForFrom(from), dunning: dunningForFrom(from) };
+}
+
+/** Sanitise breakpoints to ascending, positive, de-duplicated integers. */
+export function cleanBreakpoints(breaks: number[]): number[] {
+  return Array.from(new Set(breaks.filter((n) => Number.isFinite(n) && n > 0).map((n) => Math.round(n)))).sort(
+    (a, b) => a - b,
+  );
+}
+
+/** Build an ordered aging scheme from ascending positive day breakpoints. */
+export function schemeFromBreakpoints(breaks: number[]): AgingBucket[] {
+  const bps = cleanBreakpoints(breaks);
+  const defs: AgingBucket[] = [
+    { key: "current", label: "Current", from: -Infinity, to: 0, tone: "success", dunning: 0 },
+  ];
+  let lower = 1;
+  for (const bp of bps) {
+    defs.push(makeBucket(lower, bp));
+    lower = bp + 1;
+  }
+  defs.push(makeBucket(lower, null)); // open-ended final bucket
+  return defs;
+}
+
+/** The default aging scheme (Current · 1–30 · 31–60 · 61–90 · 90+). */
+export const AGING_BUCKETS: AgingBucket[] = schemeFromBreakpoints(DEFAULT_BREAKPOINTS);
+
+export function bucketMeta(key: BucketKey, scheme: AgingBucket[] = AGING_BUCKETS): AgingBucket {
+  return scheme.find((b) => b.key === key) ?? scheme[0];
+}
+
+/** Empty per-bucket totals for a scheme — every bucket key seeded to 0. */
+export function emptyBucketTotals(scheme: AgingBucket[] = AGING_BUCKETS): BucketTotals {
+  const t: BucketTotals = {};
+  for (const b of scheme) t[b.key] = 0;
+  return t;
 }
 
 /** Whole days between two ISO dates (b − a). */
@@ -67,12 +117,19 @@ export function daysOverdue(dueDate: string, asOn: string = AS_ON): number {
   return daysBetween(dueDate, asOn);
 }
 
-export function bucketForDays(days: number): BucketKey {
-  if (days <= 0) return "current";
-  if (days <= 30) return "d1_30";
-  if (days <= 60) return "d31_60";
-  if (days <= 90) return "d61_90";
-  return "d90_plus";
+export function bucketForDays(days: number, scheme: AgingBucket[] = AGING_BUCKETS): BucketKey {
+  for (const b of scheme) {
+    if (days >= b.from && days <= (b.to ?? Infinity)) return b.key;
+  }
+  return scheme[scheme.length - 1].key;
+}
+
+/** Dunning level from raw days overdue — independent of the bucket scheme. */
+export function dunningForDays(days: number): DunningLevel {
+  if (days <= 0) return 0;
+  if (days <= 30) return 1;
+  if (days <= 90) return 2;
+  return 3;
 }
 
 // ---------------------------------------------------------------------------
@@ -151,7 +208,7 @@ function sources(): OpenItemSources {
 }
 
 /** Every open AR item (outstanding > 0, not draft), bucketed, newest first. */
-export function openItems(asOn: string = AS_ON): ArOpenItem[] {
+export function openItems(asOn: string = AS_ON, scheme: AgingBucket[] = AGING_BUCKETS): ArOpenItem[] {
   const { invoices, payments, overrides } = sources();
   const items: ArOpenItem[] = [];
   for (const inv of invoices) {
@@ -161,7 +218,7 @@ export function openItems(asOn: string = AS_ON): ArOpenItem[] {
     if (outstanding <= 0) continue;
     const acc = accountById(inv.accountId);
     const days = daysOverdue(inv.dueDate, asOn);
-    const bucket = bucketForDays(days);
+    const bucket = bucketForDays(days, scheme);
     items.push({
       id: inv.id,
       number: inv.number,
@@ -173,7 +230,7 @@ export function openItems(asOn: string = AS_ON): ArOpenItem[] {
       outstanding,
       days,
       bucket,
-      dunning: bucketMeta(bucket).dunning,
+      dunning: dunningForDays(days),
     });
   }
   return items.sort((a, b) => b.days - a.days);
@@ -181,14 +238,10 @@ export function openItems(asOn: string = AS_ON): ArOpenItem[] {
 
 export type BucketTotals = Record<BucketKey, number>;
 
-function emptyTotals(): BucketTotals {
-  return { current: 0, d1_30: 0, d31_60: 0, d61_90: 0, d90_plus: 0 };
-}
-
 /** Firm-wide AR totals per aging bucket. */
-export function agingBuckets(asOn: string = AS_ON): BucketTotals {
-  const totals = emptyTotals();
-  for (const it of openItems(asOn)) totals[it.bucket] += it.outstanding;
+export function agingBuckets(asOn: string = AS_ON, scheme: AgingBucket[] = AGING_BUCKETS): BucketTotals {
+  const totals = emptyBucketTotals(scheme);
+  for (const it of openItems(asOn, scheme)) totals[it.bucket] += it.outstanding;
   return totals;
 }
 
@@ -207,8 +260,8 @@ export interface CustomerAr {
   itemCount: number;
 }
 
-export function customerAging(asOn: string = AS_ON): CustomerAr[] {
-  const items = openItems(asOn);
+export function customerAging(asOn: string = AS_ON, scheme: AgingBucket[] = AGING_BUCKETS): CustomerAr[] {
+  const items = openItems(asOn, scheme);
   const byAcc = new Map<string, ArOpenItem[]>();
   for (const it of items) {
     const list = byAcc.get(it.accountId) ?? [];
@@ -218,23 +271,26 @@ export function customerAging(asOn: string = AS_ON): CustomerAr[] {
 
   const limits = loadCreditLimits();
   const out: CustomerAr[] = [];
-  const order: BucketKey[] = ["d90_plus", "d61_90", "d31_60", "d1_30", "current"];
+  // Worst (most overdue) bucket first — the scheme is ordered current → oldest.
+  const order = [...scheme].reverse().map((b) => b.key);
 
   for (const [accountId, list] of byAcc) {
-    const buckets = emptyTotals();
+    const buckets = emptyBucketTotals(scheme);
     let total = 0;
+    let maxDays = -Infinity;
     for (const it of list) {
       buckets[it.bucket] += it.outstanding;
       total += it.outstanding;
+      if (it.days > maxDays) maxDays = it.days;
     }
-    const worstBucket = order.find((k) => buckets[k] > 0) ?? "current";
+    const worstBucket = order.find((k) => buckets[k] > 0) ?? scheme[0].key;
     out.push({
       accountId,
       name: list[0].customerName,
       buckets,
       total,
       worstBucket,
-      dunning: bucketMeta(worstBucket).dunning,
+      dunning: dunningForDays(maxDays),
       credit: creditStatusFor(accountId, total, limits),
       itemCount: list.length,
     });
@@ -342,6 +398,20 @@ export interface CollectionAction {
 
 export const loadCollections = () => read<Record<string, CollectionAction>>(AR_COLLECTIONS_KEY, {});
 export const saveCollections = (c: Record<string, CollectionAction>) => write(AR_COLLECTIONS_KEY, c);
+
+// ---- Aging bucket scheme (shared by AR & AP) -------------------------------
+
+export const AGING_BUCKETS_KEY = "nexa-aging-buckets";
+
+/** Persisted breakpoints, or the defaults. */
+export function loadBreakpoints(): number[] {
+  const v = read<number[]>(AGING_BUCKETS_KEY, DEFAULT_BREAKPOINTS);
+  const cleaned = cleanBreakpoints(Array.isArray(v) ? v : DEFAULT_BREAKPOINTS);
+  return cleaned.length ? cleaned : DEFAULT_BREAKPOINTS;
+}
+export const saveBreakpoints = (b: number[]) => write(AGING_BUCKETS_KEY, cleanBreakpoints(b));
+/** The active aging scheme derived from persisted breakpoints. */
+export const loadBucketScheme = (): AgingBucket[] => schemeFromBreakpoints(loadBreakpoints());
 
 // ---------------------------------------------------------------------------
 // Summary

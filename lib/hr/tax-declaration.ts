@@ -9,6 +9,7 @@
 // ---------------------------------------------------------------------------
 
 import { salaryStructure } from "./payroll";
+import { employeeById } from "./employees";
 import {
   compareRegimes, calculateTax, EMPTY_DEDUCTIONS,
   type Deductions, type Regime, type TaxComparison,
@@ -40,12 +41,19 @@ export interface ProofEntry {
 
 export type Proofs = Record<ProofSection, ProofEntry>;
 
+/** Acknowledgement stamped onto a declaration when it is submitted to payroll. */
+export interface Acknowledgement {
+  ref: string; // human-readable reference number
+  submittedAt: string; // ISO timestamp of submission
+}
+
 export interface Declaration {
   empId: string;
   regime: Regime;
   deductions: Deductions;
   proofs: Proofs;
   submitted: boolean; // submitted to payroll
+  acknowledgement?: Acknowledgement; // present once submitted
   updatedAt: string; // ISO timestamp
 }
 
@@ -123,6 +131,28 @@ export function saveDeclaration(decl: Declaration): Declaration {
   store[decl.empId] = next;
   writeStore(store);
   return next;
+}
+
+/** A unique-ish acknowledgement reference for a submitted declaration. */
+export function makeAckRef(empId: string): string {
+  const code = (employeeById(empId)?.code ?? empId).toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const now = new Date();
+  const stamp = now.toISOString().slice(2, 10).replace(/-/g, ""); // YYMMDD
+  const rand = Math.floor(1000 + Math.random() * 9000);
+  return `TD/2526/${code}/${stamp}-${rand}`;
+}
+
+/**
+ * Lock a declaration as submitted to payroll: stamps an acknowledgement
+ * (reference + timestamp) and persists. Re-submitting keeps the original
+ * acknowledgement so the reference is stable.
+ */
+export function submitToPayroll(decl: Declaration): Declaration {
+  const acknowledgement: Acknowledgement = decl.acknowledgement ?? {
+    ref: makeAckRef(decl.empId),
+    submittedAt: new Date().toISOString(),
+  };
+  return saveDeclaration({ ...decl, submitted: true, acknowledgement });
 }
 
 // ---- TDS projection --------------------------------------------------------

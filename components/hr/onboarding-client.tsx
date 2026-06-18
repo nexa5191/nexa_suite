@@ -1,15 +1,17 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import {
   UserPlus, UserMinus, CalendarDays, Briefcase, AlertTriangle, Check,
-  CircleCheck, Circle, type LucideIcon,
+  CircleCheck, Circle, UserCircle2, type LucideIcon,
 } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn, formatDate } from "@/lib/utils";
 import { departmentName } from "@/lib/hr/employees";
+import { savePortalEmployee } from "@/lib/hr/portal-session";
 import {
   journeysFor, onboardingSummary, journeyProgress, journeyOverdueCount,
   resolveDone, taskDueDate, isOverdue,
@@ -43,6 +45,17 @@ export function OnboardingClient() {
       const raw = localStorage.getItem(STORE_KEY);
       if (raw) setOverrides(JSON.parse(raw));
     } catch { /* ignore */ }
+  }, []);
+
+  // Deep links — e.g. /hr/onboarding?kind=offboarding&id=off-emp-006 from the
+  // portal exit banner — open the right tab and pre-select the person.
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const p = new URLSearchParams(window.location.search);
+    const k = p.get("kind");
+    if (k === "offboarding" || k === "onboarding") setKind(k);
+    const id = p.get("id");
+    if (id) setSelectedId(id);
   }, []);
 
   function toggleTask(journeyId: string, taskId: string, next: boolean) {
@@ -222,6 +235,13 @@ function Checklist({
             {e.name} · {KIND_META[journey.kind].label}
           </CardTitle>
           <div className="flex items-center gap-3">
+            <Link
+              href="/portal"
+              onClick={() => savePortalEmployee(e.id)}
+              className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            >
+              <UserCircle2 className="size-3.5" /> View in My Portal
+            </Link>
             {overdue > 0 && <Badge variant="danger" className="text-[10px]"><AlertTriangle className="size-3" /> {overdue} overdue</Badge>}
             <ProgressRing pct={pct} />
           </div>

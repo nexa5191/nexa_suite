@@ -15,6 +15,7 @@ import { accountSafe } from "@/lib/accounting/chart-of-accounts";
 import { entityById, locationById } from "@/lib/accounting/org";
 import { partyName } from "@/lib/accounting/parties";
 import { cn, formatDate } from "@/lib/utils";
+import { useNewIntent } from "@/lib/commands/new-intent";
 
 const BASIS_LABEL: Record<string, string> = { accrual: "Accrual", cash: "Cash", both: "Both" };
 
@@ -28,6 +29,7 @@ export function JournalRegisterClient() {
   const { entries, reverse } = useJournal();
   const [showNew, setShowNew] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  useNewIntent(() => setShowNew(true));
   const [q, setQ] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
 

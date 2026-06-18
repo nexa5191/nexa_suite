@@ -10,6 +10,7 @@ import { Input, Select } from "@/components/ui/input";
 import { Money } from "@/components/ui/money";
 import { cn, formatDate } from "@/lib/utils";
 import { downloadCsv } from "@/lib/export";
+import { useNewIntent } from "@/lib/commands/new-intent";
 import { useJournal } from "@/components/accounting/journal-provider";
 import { ENTITIES, LOCATIONS, entityById } from "@/lib/accounting/org";
 import { accountSafe } from "@/lib/accounting/chart-of-accounts";
@@ -33,6 +34,7 @@ export function PettyCashClient() {
   const locs = LOCATIONS.filter((l) => l.entityId === entityId);
   const [locationId, setLocationId] = React.useState(locs[0]?.id ?? "loc-blr");
   const [mode, setMode] = React.useState<"expense" | "topup" | null>(null);
+  useNewIntent(() => setMode("expense"));
 
   React.useEffect(() => {
     if (!locs.some((l) => l.id === locationId)) setLocationId(locs[0]?.id ?? "");

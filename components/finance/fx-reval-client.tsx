@@ -13,12 +13,16 @@ import {
   FX_OPEN_ITEMS,
   FX_CURRENCIES,
   fxSymbol,
+  defaultRateRows,
   loadRateRows,
   saveRateRows,
   ratesFromRows,
   runRevaluation,
+  passthroughRevaluation,
   buildRevalJournal,
   journalTotals,
+  loadRevalEnabled,
+  saveRevalEnabled,
   type RateRow,
   type FxCurrency,
   type FxItemType,
@@ -42,14 +46,29 @@ function fc(amount: number, currency: FxCurrency): string {
 }
 
 export function FxRevalClient() {
-  const [rows, setRows] = React.useState<RateRow[]>(() => loadRateRows());
+  // Start from the SSR-equal default; load any saved rates after mount so the
+  // server and first client render match (no hydration mismatch).
+  const [rows, setRows] = React.useState<RateRow[]>(defaultRateRows);
+  const [enabled, setEnabled] = React.useState(true);
 
   React.useEffect(() => {
     setRows(loadRateRows());
+    setEnabled(loadRevalEnabled());
   }, []);
 
+  function toggleEnabled() {
+    setEnabled((prev) => {
+      const next = !prev;
+      saveRevalEnabled(next);
+      return next;
+    });
+  }
+
   const rates = React.useMemo(() => ratesFromRows(rows), [rows]);
-  const result = React.useMemo(() => runRevaluation(FX_OPEN_ITEMS, rates), [rates]);
+  const result = React.useMemo(
+    () => (enabled ? runRevaluation(FX_OPEN_ITEMS, rates) : passthroughRevaluation(FX_OPEN_ITEMS)),
+    [rates, enabled],
+  );
   const journal = React.useMemo(() => buildRevalJournal(result), [result]);
   const jTotals = React.useMemo(() => journalTotals(journal), [journal]);
 
@@ -84,10 +103,45 @@ export function FxRevalClient() {
       <PageHeader
         title="FX Revaluation"
         subtitle="Period-end restatement of foreign-currency open items · as on 31 May 2026"
+        actions={
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <span className={cn("font-medium", enabled ? "text-foreground" : "text-muted-foreground")}>
+              {enabled ? "Revaluation on" : "Revaluation off"}
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={enabled}
+              onClick={toggleEnabled}
+              className={cn(
+                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                enabled ? "bg-primary" : "bg-muted",
+              )}
+            >
+              <span
+                className={cn(
+                  "inline-block size-5 transform rounded-full bg-white shadow transition-transform",
+                  enabled ? "translate-x-5" : "translate-x-0.5",
+                )}
+              />
+            </button>
+          </label>
+        }
       />
 
+      {!enabled && (
+        <Card className="mb-4 flex items-start gap-3 border-warning/40 bg-warning/5 p-4">
+          <Scale className="mt-0.5 size-5 shrink-0 text-warning" />
+          <p className="text-sm text-muted-foreground">
+            FC revaluation is <span className="font-medium text-foreground">switched off</span> for this period. Open
+            foreign-currency items remain at their booked rates, no unrealised gain/loss is recognised, and no
+            restatement entry will be posted. Turn it on to restate at the closing rates below.
+          </p>
+        </Card>
+      )}
+
       {/* Editable rate table */}
-      <Card className="mb-4">
+      <Card className={cn("mb-4", !enabled && "opacity-60")}>
         <CardHeader>
           <CardTitle>Closing rates · INR per 1 foreign unit</CardTitle>
         </CardHeader>
@@ -108,6 +162,7 @@ export function FxRevalClient() {
                     value={r.periodEndInr}
                     onChange={(e) => setRate(r.currency, e.target.value)}
                     className="mt-1 tabular"
+                    disabled={!enabled}
                   />
                   <p className="mt-1.5 text-[11px] text-muted-foreground">
                     Baseline {r.baselineInr.toFixed(2)}
@@ -257,7 +312,9 @@ export function FxRevalClient() {
                 {journal.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
-                      No movement — period-end rates equal the booked rates.
+                      {enabled
+                        ? "No movement — period-end rates equal the booked rates."
+                        : "Revaluation is switched off — no restatement entry will be posted."}
                     </td>
                   </tr>
                 ) : (

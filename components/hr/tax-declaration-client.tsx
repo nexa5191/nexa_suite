@@ -3,19 +3,22 @@
 import * as React from "react";
 import {
   FileSignature, Scale, ShieldCheck, Sparkles, Info, Send, Check, Clock, X, Upload, Wallet, TrendingDown,
+  Download, RotateCcw, UserCircle2,
 } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Money } from "@/components/ui/money";
-import { Input, Label, Select } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
-import { EMPLOYEES } from "@/lib/hr/employees";
+import { Input, Label } from "@/components/ui/input";
+import { cn, formatDate } from "@/lib/utils";
+import { employeeById } from "@/lib/hr/employees";
+import { usePortalEmployee, DEFAULT_PORTAL_EMP } from "@/lib/hr/portal-session";
+import { printDocument } from "@/lib/export";
 import { DEDUCTION_CAPS, type Deductions } from "@/lib/hr/tax-calc";
 import {
-  loadDeclaration, saveDeclaration, projectTds,
-  type Declaration, type ProofSection, type ProofStatus,
+  defaultDeclaration, loadDeclaration, saveDeclaration, submitToPayroll, projectTds,
+  type Declaration, type ProofSection, type ProofStatus, type TdsProjectionResult,
 } from "@/lib/hr/tax-declaration";
 
 const FY_LABEL = "FY 2025-26 · AY 2026-27";
@@ -43,8 +46,10 @@ const STATUS_META: Record<ProofStatus, { label: string; variant: "default" | "pr
 };
 
 export function TaxDeclarationClient() {
-  const [empId, setEmpId] = React.useState("emp-006");
-  const [decl, setDecl] = React.useState<Declaration>(() => loadDeclaration("emp-006"));
+  const [empId] = usePortalEmployee();
+  const emp = employeeById(empId);
+  // SSR-equal default first; the persisted declaration loads in the effect below.
+  const [decl, setDecl] = React.useState<Declaration>(() => defaultDeclaration(DEFAULT_PORTAL_EMP));
   const [justSubmitted, setJustSubmitted] = React.useState(false);
 
   // Reload the persisted declaration whenever the employee changes.
@@ -55,8 +60,10 @@ export function TaxDeclarationClient() {
 
   const projection = React.useMemo(() => projectTds(empId, decl), [empId, decl]);
 
+  // A change to the declaration un-submits it and drops any acknowledgement —
+  // the employee must re-submit for the revised figures to reach payroll.
   function update(mut: (d: Declaration) => Declaration) {
-    setDecl((d) => mut({ ...d, submitted: false }));
+    setDecl((d) => mut({ ...d, submitted: false, acknowledgement: undefined }));
     setJustSubmitted(false);
   }
 
@@ -73,20 +80,36 @@ export function TaxDeclarationClient() {
     }));
   }
 
+  // Submitting a single proof is an explicit action — persist it so the
+  // submitted state survives a reload.
   function submitProof(key: ProofSection) {
-    update((d) => ({
+    setDecl((d) => saveDeclaration({
       ...d,
       proofs: { ...d.proofs, [key]: { ...d.proofs[key], status: "submitted" } },
     }));
   }
 
   function submitDeclaration() {
-    const saved = saveDeclaration({ ...decl, submitted: true });
-    setDecl(saved);
+    setDecl(submitToPayroll(decl));
     setJustSubmitted(true);
   }
 
+  // Re-open a submitted declaration for editing (clears the lock, keeps figures).
+  function revise() {
+    setDecl((d) => ({ ...d, submitted: false, acknowledgement: undefined }));
+    setJustSubmitted(false);
+  }
+
+  function downloadAcknowledgement() {
+    if (!decl.acknowledgement) return;
+    printDocument(
+      `Tax Declaration Acknowledgement — ${decl.acknowledgement.ref}`,
+      ackHtml(decl, emp?.name ?? empId, emp?.code, projection),
+    );
+  }
+
   const oldRegime = decl.regime === "old";
+  const ack = decl.acknowledgement;
 
   return (
     <>
@@ -94,11 +117,9 @@ export function TaxDeclarationClient() {
         title="Tax Declaration"
         subtitle={`Declare your investments and choose a regime — payroll projects your TDS. ${FY_LABEL}.`}
         actions={
-          <Select value={empId} onChange={(e) => setEmpId(e.target.value)} className="h-9 w-56">
-            {EMPLOYEES.map((e) => (
-              <option key={e.id} value={e.id}>{e.name}{e.status === "exited" ? " (exited)" : ""}</option>
-            ))}
-          </Select>
+          <Badge variant="outline" className="gap-1.5 px-2.5 py-1 text-xs font-normal">
+            <UserCircle2 className="size-3.5" /> {emp ? emp.name : empId}
+          </Badge>
         }
       />
 
@@ -206,7 +227,7 @@ export function TaxDeclarationClient() {
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={!oldRegime || proof.declared <= 0 || proof.status === "submitted" || proof.status === "verified"}
+                        disabled={decl.submitted || !oldRegime || proof.declared <= 0 || proof.status === "submitted" || proof.status === "verified"}
                         onClick={() => submitProof(sec.key)}
                       >
                         <Upload className="size-4" /> Submit proof
@@ -251,22 +272,52 @@ export function TaxDeclarationClient() {
             </CardContent>
           </Card>
 
-          {/* Submit to payroll */}
-          <Card className="p-4">
-            {decl.submitted || justSubmitted ? (
-              <div className="flex items-center gap-2 rounded-md bg-success/10 px-3 py-2.5 text-sm text-success">
+          {/* Submit to payroll / acknowledgement receipt */}
+          {decl.submitted && ack ? (
+            <Card className="overflow-hidden">
+              <div className="flex items-center gap-2 bg-success/10 px-4 py-3 text-success">
                 <Check className="size-4" />
-                <span className="font-medium">Declaration submitted to payroll.</span>
+                <span className="text-sm font-semibold">Submitted to payroll</span>
+                {justSubmitted && <Badge variant="success" className="ml-auto text-[10px]">Just now</Badge>}
               </div>
-            ) : (
+              <CardContent className="space-y-2 pt-4 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Reference</span>
+                  <span className="font-mono text-xs font-semibold">{ack.ref}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Submitted</span>
+                  <span className="tabular">{formatDateTime(ack.submittedAt)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Regime</span>
+                  <span className="font-medium capitalize">{decl.regime}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Proofs submitted</span>
+                  <span className="font-medium">{proofsSubmittedCount(decl)} of {SECTIONS.length}</span>
+                </div>
+                <div className="mt-3 flex gap-2 border-t pt-3">
+                  <Button variant="outline" className="flex-1" onClick={downloadAcknowledgement}>
+                    <Download className="size-4" /> Acknowledgement
+                  </Button>
+                  <Button variant="ghost" onClick={revise}>
+                    <RotateCcw className="size-4" /> Revise
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="p-4">
               <p className="mb-3 text-xs text-muted-foreground">
                 Submitting locks your regime election and forwards your declared proofs to payroll for verification.
+                You&apos;ll get a dated acknowledgement reference you can download.
               </p>
-            )}
-            <Button className="mt-3 w-full" onClick={submitDeclaration} disabled={decl.submitted}>
-              <Send className="size-4" /> {decl.submitted ? "Submitted" : "Submit declaration to payroll"}
-            </Button>
-          </Card>
+              <Button className="mt-1 w-full" onClick={submitDeclaration}>
+                <Send className="size-4" /> Submit declaration to payroll
+              </Button>
+            </Card>
+          )}
 
           <p className="text-[11px] leading-relaxed text-muted-foreground">
             Indicative TDS only, computed on annual CTC for {FY_LABEL} using the income-tax engine. Final TDS depends on
@@ -305,4 +356,51 @@ function Line({ label, value }: { label: string; value: number }) {
       <span className="tabular"><Money value={value} /></span>
     </div>
   );
+}
+
+function proofsSubmittedCount(decl: Declaration): number {
+  return SECTIONS.filter((s) => {
+    const st = decl.proofs[s.key].status;
+    return st === "submitted" || st === "verified";
+  }).length;
+}
+
+function formatDateTime(iso: string): string {
+  const d = new Date(iso);
+  return `${formatDate(iso)}, ${d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`;
+}
+
+const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
+
+/** Printable acknowledgement (print-to-PDF) for a submitted declaration. */
+function ackHtml(decl: Declaration, empName: string, empCode: string | undefined, proj: TdsProjectionResult): string {
+  const ack = decl.acknowledgement!;
+  const proofRows = SECTIONS.map((s) => {
+    const p = decl.proofs[s.key];
+    return `<tr><td>${s.label}</td><td class="n">${inr(p.declared)}</td><td>${STATUS_META[p.status].label}</td></tr>`;
+  }).join("");
+  return `
+    <h1>Investment Declaration — Acknowledgement</h1>
+    <div class="sub">${FY_LABEL} · NEXA Payroll</div>
+    <table style="margin-bottom:14px">
+      <tr><th style="width:30%">Reference</th><td>${ack.ref}</td></tr>
+      <tr><th>Employee</th><td>${empName}${empCode ? ` (${empCode})` : ""}</td></tr>
+      <tr><th>Submitted</th><td>${new Date(ack.submittedAt).toLocaleString("en-IN")}</td></tr>
+      <tr><th>Tax regime elected</th><td style="text-transform:capitalize">${decl.regime} regime</td></tr>
+    </table>
+    <h1 style="font-size:14px">Declared investments &amp; proofs</h1>
+    <table>
+      <thead><tr><th>Section</th><th class="n">Declared</th><th>Proof status</th></tr></thead>
+      <tbody>${proofRows}</tbody>
+    </table>
+    <h1 style="font-size:14px;margin-top:16px">Projected TDS</h1>
+    <table>
+      <tr><th style="width:50%">Annual salary (CTC)</th><td class="n">${inr(proj.annualSalary)}</td></tr>
+      <tr><th>Annual tax (${decl.regime} regime)</th><td class="n">${inr(proj.annualTax)}</td></tr>
+      <tr><th>Monthly TDS</th><td class="n">${inr(proj.monthlyTds)}</td></tr>
+    </table>
+    <p class="sub" style="margin-top:18px">
+      This is a system-generated acknowledgement of the declaration submitted to payroll. Final TDS is subject to
+      payroll's verification of the submitted proofs. Indicative figures computed on annual CTC for ${FY_LABEL}.
+    </p>`;
 }

@@ -19,10 +19,13 @@ import {
 } from "@/lib/vendors";
 import {
   AS_ON,
+  AGING_BUCKETS,
   bucketForDays,
   bucketMeta,
+  emptyBucketTotals,
   daysBetween,
   daysOverdue,
+  type AgingBucket,
   type BucketKey,
   type BucketTotals,
 } from "@/lib/finance/receivables";
@@ -56,7 +59,7 @@ function addDays(iso: string, days: number): string {
 }
 
 /** Every open AP item (billed PO with outstanding > 0), bucketed. */
-export function apOpenItems(asOn: string = AS_ON): ApOpenItem[] {
+export function apOpenItems(asOn: string = AS_ON, scheme: AgingBucket[] = AGING_BUCKETS): ApOpenItem[] {
   const payments = loadPoPayments();
   const items: ApOpenItem[] = [];
   for (const po of PURCHASE_ORDERS) {
@@ -70,7 +73,7 @@ export function apOpenItems(asOn: string = AS_ON): ApOpenItem[] {
     const term = vendor?.msme ? MSME_TERM_DAYS : AP_TERM_DAYS;
     const dueDate = addDays(invoiceDate, term);
     const days = daysOverdue(dueDate, asOn);
-    const bucket = bucketForDays(days);
+    const bucket = bucketForDays(days, scheme);
     const toDue = daysBetween(asOn, dueDate);
     items.push({
       poId: po.id,
@@ -91,14 +94,10 @@ export function apOpenItems(asOn: string = AS_ON): ApOpenItem[] {
   return items.sort((a, b) => b.days - a.days);
 }
 
-function emptyTotals(): BucketTotals {
-  return { current: 0, d1_30: 0, d31_60: 0, d61_90: 0, d90_plus: 0 };
-}
-
 /** Firm-wide AP totals per aging bucket. */
-export function apAgingBuckets(asOn: string = AS_ON): BucketTotals {
-  const totals = emptyTotals();
-  for (const it of apOpenItems(asOn)) totals[it.bucket] += it.outstanding;
+export function apAgingBuckets(asOn: string = AS_ON, scheme: AgingBucket[] = AGING_BUCKETS): BucketTotals {
+  const totals = emptyBucketTotals(scheme);
+  for (const it of apOpenItems(asOn, scheme)) totals[it.bucket] += it.outstanding;
   return totals;
 }
 
@@ -114,18 +113,19 @@ export interface VendorAp {
   itemCount: number;
 }
 
-export function vendorAging(asOn: string = AS_ON): VendorAp[] {
-  const items = apOpenItems(asOn);
+export function vendorAging(asOn: string = AS_ON, scheme: AgingBucket[] = AGING_BUCKETS): VendorAp[] {
+  const items = apOpenItems(asOn, scheme);
   const byVendor = new Map<string, ApOpenItem[]>();
   for (const it of items) {
     const list = byVendor.get(it.vendorId) ?? [];
     list.push(it);
     byVendor.set(it.vendorId, list);
   }
-  const order: BucketKey[] = ["d90_plus", "d61_90", "d31_60", "d1_30", "current"];
+  // Worst (most overdue) bucket first — scheme is ordered current → oldest.
+  const order = [...scheme].reverse().map((b) => b.key);
   const out: VendorAp[] = [];
   for (const [vendorId, list] of byVendor) {
-    const buckets = emptyTotals();
+    const buckets = emptyBucketTotals(scheme);
     let total = 0;
     let dueThisWeek = 0;
     for (const it of list) {
@@ -133,7 +133,7 @@ export function vendorAging(asOn: string = AS_ON): VendorAp[] {
       total += it.outstanding;
       if (it.dueThisWeek) dueThisWeek += it.outstanding;
     }
-    const worstBucket = order.find((k) => buckets[k] > 0) ?? "current";
+    const worstBucket = order.find((k) => buckets[k] > 0) ?? scheme[0].key;
     out.push({
       vendorId,
       name: list[0].vendorName,

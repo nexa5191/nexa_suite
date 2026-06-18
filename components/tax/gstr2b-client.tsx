@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, Flag, BookCheck, AlertTriangle, BookX, Scale, ShieldAlert } from "lucide-react";
+import { Check, Flag, BookCheck, AlertTriangle, BookX, Scale, ShieldAlert, Download, FileText } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,17 +9,22 @@ import { Button } from "@/components/ui/button";
 import { Money } from "@/components/ui/money";
 import { Label, Select } from "@/components/ui/input";
 import { cn, formatDate } from "@/lib/utils";
+import { downloadCsv, printDocument } from "@/lib/export";
+import { entityById } from "@/lib/accounting/org";
 import {
   reconcile,
   availablePeriods,
   bookEntities,
   placeLabelFor,
+  vendorGroups,
   loadActions,
   saveActions,
   STATUS_META,
   ACTION_META,
   ALL_PERIOD,
   type ReconStatus,
+  type ReconLine,
+  type VendorReconGroup,
   type ActionStore,
   type LineAction,
 } from "@/lib/tax/gstr2b";
@@ -40,12 +45,22 @@ export function Gstr2bClient() {
   const [entityId, setEntityId] = React.useState<string>(ALL_PERIOD);
   const [filter, setFilter] = React.useState<ReconStatus | "all">("all");
   const [actions, setActions] = React.useState<ActionStore>({});
+  const [stmtVendor, setStmtVendor] = React.useState<string>("");
 
   React.useEffect(() => {
     setActions(loadActions());
   }, []);
 
   const result = React.useMemo(() => reconcile(period, entityId), [period, entityId]);
+  const groups = React.useMemo(() => vendorGroups(result), [result]);
+
+  // Period / entity labels reused by exports.
+  const periodLabel = period === ALL_PERIOD ? "All periods" : (periods.find((p) => p.key === period)?.label ?? period);
+  const entityLabel = entityId === ALL_PERIOD ? "All entities" : (entityById(entityId)?.name ?? entityId);
+  const periodTag = period === ALL_PERIOD ? "all-periods" : period;
+
+  // The chosen vendor for a shareable statement (default: the one with the most to fix).
+  const activeGroup = groups.find((g) => g.vendorId === stmtVendor) ?? groups[0];
 
   const setAction = (id: string, action: LineAction) => {
     setActions((prev) => {
@@ -59,6 +74,31 @@ export function Gstr2bClient() {
   };
 
   const visible = result.lines.filter((l) => filter === "all" || l.status === filter);
+
+  function exportCsv() {
+    downloadCsv(
+      `gstr2b-recon-${periodTag}`,
+      [
+        "Status", "Vendor", "GSTIN", "Place of supply", "Invoice no", "Date", "Rate %",
+        "Book taxable", "Book tax", "2B taxable", "2B tax", "Difference (taxable)",
+        "ITC eligible", "ITC claimable", "Action", "Note",
+      ],
+      visible.map((l) => [
+        STATUS_META[l.status].label, l.vendor, l.gstin, placeLabelFor(l.gstin), l.invoiceNo,
+        formatDate(l.date), l.rate, l.bookValue, l.bookTax, l.b2bValue, l.b2bTax, l.difference,
+        l.itcEligible ? "Y" : "N", l.itcAmount, actions[l.id] ? ACTION_META[actions[l.id]].label : "",
+        l.note,
+      ]),
+    );
+  }
+
+  function exportVendorStatement() {
+    if (!activeGroup) return;
+    printDocument(
+      `GSTR-2B Reconciliation — ${activeGroup.vendor}`,
+      vendorStatementHtml(activeGroup, periodLabel, entityLabel),
+    );
+  }
 
   // per-status counts for the chips
   const counts = React.useMemo(() => {
@@ -93,6 +133,34 @@ export function Gstr2bClient() {
               <option key={en.id} value={en.id}>{en.name}</option>
             ))}
           </Select>
+        </div>
+
+        {/* Exports — full CSV + a per-vendor statement to share with the vendor */}
+        <div className="ml-auto flex flex-wrap items-end gap-2">
+          <Button size="sm" variant="outline" className="h-9" onClick={exportCsv} disabled={visible.length === 0}>
+            <Download className="size-4" /> Export CSV
+          </Button>
+          {groups.length > 0 && (
+            <div>
+              <Label className="text-[11px]">Vendor statement</Label>
+              <div className="mt-1 flex items-center gap-2">
+                <Select
+                  value={activeGroup?.vendorId ?? ""}
+                  onChange={(e) => setStmtVendor(e.target.value)}
+                  className="h-9 w-48"
+                >
+                  {groups.map((g) => (
+                    <option key={g.vendorId} value={g.vendorId}>
+                      {g.vendor}{g.discrepancyCount > 0 ? ` (${g.discrepancyCount} to fix)` : ""}
+                    </option>
+                  ))}
+                </Select>
+                <Button size="sm" variant="outline" className="h-9" onClick={exportVendorStatement} disabled={!activeGroup}>
+                  <FileText className="size-4" /> Statement
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -297,4 +365,68 @@ function Legend({ icon, title, body }: { icon: React.ReactNode; title: string; b
       </div>
     </div>
   );
+}
+
+// --- Per-vendor statement (print-to-PDF) ------------------------------------
+
+const inr = (n: number) => (n > 0 ? `₹${Math.round(n).toLocaleString("en-IN")}` : "—");
+
+function actionText(l: ReconLine): string {
+  switch (l.status) {
+    case "missing-in-2b":
+      return "Not reflected in GSTR-2B — please file this invoice in your GSTR-1.";
+    case "mismatch":
+      return l.difference > 0
+        ? "Value you filed is lower than our invoice — please verify & amend."
+        : "Value you filed is higher than our invoice — please verify & amend.";
+    case "missing-in-books":
+      return "In your filing but not in our books — please share the invoice copy.";
+    default:
+      return "Matched — no action required.";
+  }
+}
+
+function vendorStatementHtml(group: VendorReconGroup, periodLabel: string, entityLabel: string): string {
+  const generated = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  const rows = group.lines
+    .map((l) => `
+      <tr>
+        <td>${l.invoiceNo}</td>
+        <td>${formatDate(l.date)}</td>
+        <td class="n">${l.rate}%</td>
+        <td class="n">${inr(l.b2bValue)}</td>
+        <td class="n">${inr(l.bookValue)}</td>
+        <td class="n">${l.difference === 0 ? "—" : inr(Math.abs(l.difference))}</td>
+        <td>${STATUS_META[l.status].label}</td>
+        <td>${actionText(l)}</td>
+      </tr>`)
+    .join("");
+
+  return `
+    <h1>GSTR-2B Reconciliation Statement</h1>
+    <div class="sub">${periodLabel} · ${entityLabel} · generated ${generated}</div>
+    <table style="margin-bottom:14px">
+      <tr><th style="width:22%">Vendor</th><td>${group.vendor}</td></tr>
+      <tr><th>GSTIN</th><td>${group.gstin}</td></tr>
+      <tr><th>Invoices in scope</th><td>${group.lines.length} · ${group.discrepancyCount} needing action</td></tr>
+      ${group.itcAtRisk > 0 ? `<tr><th>ITC pending on filing</th><td>${inr(group.itcAtRisk)}</td></tr>` : ""}
+    </table>
+    <p class="sub">
+      As part of our input-tax-credit reconciliation against GSTR-2B for ${periodLabel}, the following invoices were
+      compared between your filing and our purchase records. Kindly action the items marked below.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Invoice no</th><th>Date</th><th class="n">Rate</th>
+          <th class="n">As filed (2B)</th><th class="n">Our books</th><th class="n">Difference</th>
+          <th>Status</th><th>Action needed</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p class="sub" style="margin-top:18px">
+      Values shown are taxable amounts. This statement is generated from our books and the GSTR-2B auto-drafted by the
+      GST portal; please reconcile against your own records and revert with any corrections.
+    </p>`;
 }

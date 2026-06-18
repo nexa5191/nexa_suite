@@ -419,6 +419,49 @@ export function reconcile(period: string = ALL_PERIOD, entityId: string = ALL_PE
 }
 
 // ---------------------------------------------------------------------------
+// 3b. Vendor grouping — for sharing a reconciliation statement with a vendor
+// ---------------------------------------------------------------------------
+
+export interface VendorReconGroup {
+  vendorId: string;
+  vendor: string;
+  gstin: string;
+  lines: ReconLine[];
+  /** Lines where the vendor must act — value mismatches + invoices they haven't filed. */
+  discrepancyCount: number;
+  itcAtRisk: number; // book tax stuck because the vendor hasn't filed
+}
+
+/** Group a reconciliation result by vendor, for per-vendor statements. */
+export function vendorGroups(result: ReconResult): VendorReconGroup[] {
+  const map = new Map<string, ReconLine[]>();
+  for (const l of result.lines) {
+    const arr = map.get(l.vendorId) ?? [];
+    arr.push(l);
+    map.set(l.vendorId, arr);
+  }
+  const groups: VendorReconGroup[] = [];
+  for (const [vendorId, lines] of map) {
+    const discrepancyCount = lines.filter(
+      (l) => l.status === "mismatch" || l.status === "missing-in-2b",
+    ).length;
+    const itcAtRisk = r2(
+      lines.filter((l) => l.status === "missing-in-2b").reduce((s, l) => s + l.bookTax, 0),
+    );
+    groups.push({
+      vendorId,
+      vendor: lines[0].vendor,
+      gstin: lines[0].gstin,
+      lines,
+      discrepancyCount,
+      itcAtRisk,
+    });
+  }
+  // Vendors with the most to fix first.
+  return groups.sort((a, b) => b.discrepancyCount - a.discrepancyCount || a.vendor.localeCompare(b.vendor));
+}
+
+// ---------------------------------------------------------------------------
 // 4. Persistence — per-line user action (accept ITC / reject / follow-up)
 // ---------------------------------------------------------------------------
 

@@ -208,6 +208,31 @@ export function runRevaluation(items: FxOpenItem[], rates: RateTable): FxRevalRe
   };
 }
 
+/**
+ * A "no-op" revaluation used when FC revaluation is switched off for the period:
+ * every open item is kept at its booked INR value, so there is no gain/loss and
+ * the restatement journal comes out empty.
+ */
+export function passthroughRevaluation(items: FxOpenItem[]): FxRevalResult {
+  const lines: FxRevalLine[] = items.map((item) => {
+    const bookedInr = item.fcAmount * item.bookedRateInr;
+    return { item, bookedInr, revaluedInr: bookedInr, diffInr: 0, gainLossInr: 0 };
+  });
+  const byCurrency = Object.fromEntries(
+    FX_CURRENCIES.map((c) => [c, emptyAgg()]),
+  ) as Record<FxCurrency, { exposureInr: number; gainLossInr: number }>;
+  const byType: Record<FxItemType, { exposureInr: number; gainLossInr: number }> = {
+    AR: emptyAgg(), AP: emptyAgg(), Bank: emptyAgg(),
+  };
+  let exposureInr = 0;
+  for (const l of lines) {
+    exposureInr += Math.abs(l.revaluedInr);
+    byCurrency[l.item.currency].exposureInr += Math.abs(l.revaluedInr);
+    byType[l.item.type].exposureInr += Math.abs(l.revaluedInr);
+  }
+  return { lines, totalGain: 0, totalLoss: 0, net: 0, exposureInr, byCurrency, byType };
+}
+
 // ---------------------------------------------------------------------------
 // Restatement journal (data only — nothing is posted).
 //
@@ -312,6 +337,28 @@ export function saveRateRows(rows: RateRow[]): void {
   for (const r of rows) table[r.currency] = r.periodEndInr;
   try {
     localStorage.setItem(FX_REVAL_KEY, JSON.stringify(table));
+  } catch {
+    /* ignore */
+  }
+}
+
+// Whether FC revaluation is switched on for the period (defaults on).
+export const FX_REVAL_ENABLED_KEY = "nexa-fx-reval-enabled";
+
+export function loadRevalEnabled(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    const raw = localStorage.getItem(FX_REVAL_ENABLED_KEY);
+    return raw === null ? true : raw === "true";
+  } catch {
+    return true;
+  }
+}
+
+export function saveRevalEnabled(enabled: boolean): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(FX_REVAL_ENABLED_KEY, String(enabled));
   } catch {
     /* ignore */
   }

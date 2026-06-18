@@ -7,7 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Money } from "@/components/ui/money";
 import { cn, formatDate } from "@/lib/utils";
-import { AS_ON, AGING_BUCKETS, bucketMeta } from "@/lib/finance/receivables";
+import { AS_ON, bucketMeta } from "@/lib/finance/receivables";
+import { useAgingScheme, AgingBucketEditor } from "@/components/finance/aging-buckets";
 import {
   apOpenItems,
   apAgingBuckets,
@@ -17,9 +18,11 @@ import {
 } from "@/lib/finance/payables";
 
 export function PayablesClient() {
-  const buckets = React.useMemo(() => apAgingBuckets(AS_ON), []);
-  const vendors = React.useMemo(() => vendorAging(AS_ON), []);
-  const items = React.useMemo(() => apOpenItems(AS_ON), []);
+  const aging = useAgingScheme();
+  const { scheme } = aging;
+  const buckets = React.useMemo(() => apAgingBuckets(AS_ON, scheme), [scheme]);
+  const vendors = React.useMemo(() => vendorAging(AS_ON, scheme), [scheme]);
+  const items = React.useMemo(() => apOpenItems(AS_ON, scheme), [scheme]);
   const summary = React.useMemo(() => apSummary(AS_ON), []);
   const grandTotal = vendors.reduce((s, v) => s + v.total, 0);
 
@@ -55,13 +58,16 @@ export function PayablesClient() {
 
       {/* Aging matrix */}
       <Card className="mb-4 overflow-hidden">
-        <div className="border-b px-5 py-3 text-sm font-semibold">AP aging — vendor × bucket</div>
+        <div className="flex items-center justify-between border-b px-5 py-3">
+          <span className="text-sm font-semibold">AP aging — vendor × bucket</span>
+          <AgingBucketEditor breaks={aging.breaks} onChange={aging.update} onReset={aging.reset} isDefault={aging.isDefault} />
+        </div>
         <div className="overflow-x-auto scrollbar-thin">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="px-5 py-3 font-medium">Vendor</th>
-                {AGING_BUCKETS.map((b) => (
+                {scheme.map((b) => (
                   <th key={b.key} className="px-4 py-3 text-right font-medium">{b.label}</th>
                 ))}
                 <th className="px-5 py-3 text-right font-medium">Total</th>
@@ -75,7 +81,7 @@ export function PayablesClient() {
                     {v.msme && <Badge variant="primary" className="ml-2">MSME</Badge>}
                     {v.msmeBreach && <Badge variant="danger" className="ml-1.5">45d breach</Badge>}
                   </td>
-                  {AGING_BUCKETS.map((b) => (
+                  {scheme.map((b) => (
                     <td key={b.key} className="px-4 py-3 text-right tabular">
                       {v.buckets[b.key] > 0 ? <Money value={v.buckets[b.key]} /> : <span className="text-muted-foreground/40">—</span>}
                     </td>
@@ -84,13 +90,13 @@ export function PayablesClient() {
                 </tr>
               ))}
               {vendors.length === 0 && (
-                <tr><td colSpan={AGING_BUCKETS.length + 2} className="px-5 py-8 text-center text-muted-foreground">No open payables.</td></tr>
+                <tr><td colSpan={scheme.length + 2} className="px-5 py-8 text-center text-muted-foreground">No open payables.</td></tr>
               )}
             </tbody>
             <tfoot>
               <tr className="border-t bg-muted/30 font-semibold">
                 <td className="px-5 py-3">Total</td>
-                {AGING_BUCKETS.map((b) => (
+                {scheme.map((b) => (
                   <td key={b.key} className="px-4 py-3 text-right tabular"><Money value={buckets[b.key]} /></td>
                 ))}
                 <td className="px-5 py-3 text-right tabular"><Money value={grandTotal} /></td>
@@ -117,7 +123,7 @@ export function PayablesClient() {
             </thead>
             <tbody>
               {items.map((it) => {
-                const bm = bucketMeta(it.bucket);
+                const bm = bucketMeta(it.bucket, scheme);
                 return (
                   <tr key={it.poId} className="border-b transition-colors last:border-0 hover:bg-accent/50">
                     <td className="px-5 py-3 font-medium">{it.vendorName}</td>

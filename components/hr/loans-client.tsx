@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Money } from "@/components/ui/money";
 import { Input, Label, Select } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useNewIntent } from "@/lib/commands/new-intent";
 import { EMPLOYEES, employeeName, departmentName } from "@/lib/hr/employees";
 import {
   LOAN_TYPES, STATUS_VARIANT, TODAY,
@@ -24,6 +25,7 @@ export function LoansClient() {
   const [empFilter, setEmpFilter] = React.useState<string>("all");
   const [showForm, setShowForm] = React.useState(false);
   const [detail, setDetail] = React.useState<Loan | null>(null);
+  useNewIntent(() => setShowForm(true));
 
   React.useEffect(() => {
     setStore(loadLoansStore());
