@@ -13,19 +13,20 @@ import { projectedCashflow, AS_ON, type CashflowForecast } from "@/lib/finance/c
 
 export function CashflowForecastClient() {
   const [mounted, setMounted] = React.useState(false);
+  const [includeGst, setIncludeGst] = React.useState(true);
   React.useEffect(() => setMounted(true), []);
 
   // GL-derived opening cash reads localStorage continuations, so compute post-mount.
-  const fc = React.useMemo<CashflowForecast | null>(() => (mounted ? projectedCashflow(AS_ON, 8) : null), [mounted]);
+  const fc = React.useMemo<CashflowForecast | null>(() => (mounted ? projectedCashflow(AS_ON, 8, includeGst) : null), [mounted, includeGst]);
 
   function exportCsv() {
     if (!fc) return;
     downloadCsv(
       "cashflow-forecast",
-      ["Period", "Opening", "AR receipts", "AP payments", "Payroll", "Statutory", "Net", "Closing"],
+      ["Period", "Opening", "AR receipts", "AP payments", "Payroll", "Statutory", "GST", "Net", "Closing"],
       fc.buckets.map((b) => [
         b.label, Math.round(b.opening), Math.round(b.inflowAr), Math.round(b.outflowAp),
-        Math.round(b.outflowPayroll), Math.round(b.outflowStatutory), Math.round(b.net), Math.round(b.closing),
+        Math.round(b.outflowPayroll), Math.round(b.outflowStatutory), Math.round(b.outflowGst), Math.round(b.net), Math.round(b.closing),
       ]),
     );
   }
@@ -35,7 +36,23 @@ export function CashflowForecastClient() {
       <PageHeader
         title="Projected Cash Flow"
         subtitle={`8-week liquidity forecast from open AR/AP and payroll · opening cash as on ${formatDate(AS_ON)}`}
-        actions={<Button size="sm" variant="outline" onClick={exportCsv} disabled={!fc}><Download className="size-4" /> Export CSV</Button>}
+        actions={
+          <div className="flex items-center gap-3">
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <span className={cn("font-medium", includeGst ? "text-foreground" : "text-muted-foreground")}>GST remittance</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={includeGst}
+                onClick={() => setIncludeGst((v) => !v)}
+                className={cn("relative inline-flex h-6 w-11 items-center rounded-full transition-colors", includeGst ? "bg-primary" : "bg-muted")}
+              >
+                <span className={cn("inline-block size-5 transform rounded-full bg-white shadow transition-transform", includeGst ? "translate-x-5" : "translate-x-0.5")} />
+              </button>
+            </label>
+            <Button size="sm" variant="outline" onClick={exportCsv} disabled={!fc}><Download className="size-4" /> Export CSV</Button>
+          </div>
+        }
       />
 
       {fc && (
@@ -74,6 +91,7 @@ export function CashflowForecastClient() {
                     <th className="px-4 py-3 text-right font-medium">AP out</th>
                     <th className="px-4 py-3 text-right font-medium">Payroll</th>
                     <th className="px-4 py-3 text-right font-medium">Statutory</th>
+                    <th className="px-4 py-3 text-right font-medium">GST</th>
                     <th className="px-4 py-3 text-right font-medium">Net</th>
                     <th className="px-4 py-3 text-right font-medium">Closing</th>
                   </tr>
@@ -90,6 +108,7 @@ export function CashflowForecastClient() {
                       <td className="px-4 py-2.5 text-right tabular">{b.outflowAp ? <Money value={b.outflowAp} /> : <Dash />}</td>
                       <td className="px-4 py-2.5 text-right tabular">{b.outflowPayroll ? <Money value={b.outflowPayroll} /> : <Dash />}</td>
                       <td className="px-4 py-2.5 text-right tabular">{b.outflowStatutory ? <Money value={b.outflowStatutory} /> : <Dash />}</td>
+                      <td className="px-4 py-2.5 text-right tabular">{b.outflowGst ? <Money value={b.outflowGst} /> : <Dash />}</td>
                       <td className={cn("px-4 py-2.5 text-right tabular font-medium", b.net < 0 ? "text-danger" : "text-success")}>
                         <Money value={b.net} colored bracketNegatives />
                       </td>
@@ -104,7 +123,7 @@ export function CashflowForecastClient() {
                     <td className="px-4 py-3">Horizon total</td>
                     <td className="px-4 py-3 text-right tabular text-muted-foreground"><Money value={fc.openingCash} /></td>
                     <td className="px-4 py-3 text-right tabular text-success"><Money value={fc.totalIn} /></td>
-                    <td className="px-4 py-3 text-right tabular" colSpan={3}><Money value={fc.totalOut} /> out</td>
+                    <td className="px-4 py-3 text-right tabular" colSpan={4}><Money value={fc.totalOut} /> out</td>
                     <td className="px-4 py-3 text-right tabular"><Money value={fc.totalIn - fc.totalOut} colored bracketNegatives /></td>
                     <td className="px-4 py-3 text-right tabular"><Money value={fc.endingCash} bracketNegatives /></td>
                   </tr>
@@ -114,7 +133,7 @@ export function CashflowForecastClient() {
           </Card>
           <p className="mt-3 text-xs text-muted-foreground">
             Receipts/payments are timed to each open invoice and bill&apos;s due date (overdue items fall in the first week).
-            Payroll net pay lands at month-end and statutory dues (TDS/PF/PT) on the ~10th of the following month. Indicative — a planning aid, not a commitment.
+            Payroll net pay lands at month-end, statutory dues (TDS/PF/PT) on the ~10th and GST (output − eligible ITC) on the 20th of the following month. Indicative — a planning aid, not a commitment.
           </p>
         </>
       )}

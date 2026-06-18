@@ -57,7 +57,6 @@ import {
   ShieldCheck,
   ScrollText,
   Gavel,
-  FileClock,
   type LucideIcon,
 } from "lucide-react";
 
@@ -185,7 +184,6 @@ export const NAV_GROUPS: NavGroup[] = [
 
 export const SECONDARY_NAV: NavItem[] = [
   { key: "portal", href: "/portal", label: "My Portal", icon: UserCircle },
-  { key: "audit-trail", href: "/audit-trail", label: "Audit Trail", icon: FileClock },
   { key: "auditor-portal", href: "/auditor", label: "Auditor Portal", icon: Gavel },
   { key: "setup", href: "/setup", label: "Access & Setup", icon: SlidersHorizontal },
   { key: "settings", href: "/settings", label: "Settings", icon: Settings },

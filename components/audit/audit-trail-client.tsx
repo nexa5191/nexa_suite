@@ -22,7 +22,7 @@ function fmtTs(iso: string) {
   return `${d} ${(t ?? "").slice(0, 5)}`;
 }
 
-export function AuditTrailClient() {
+export function AuditTrailClient({ embedded = false }: { embedded?: boolean } = {}) {
   const base = React.useMemo(() => fullChain(), []);
   const [moduleF, setModuleF] = React.useState("all");
   const [actorF, setActorF] = React.useState("all");
@@ -54,16 +54,18 @@ export function AuditTrailClient() {
 
   return (
     <>
-      <PageHeader
-        title="Audit Trail"
-        subtitle="Tamper-evident edit log — Companies Act 2013, Rule 11(g). Every change is hash-chained to the previous record."
-        actions={
-          <Badge variant={verification.valid ? "success" : "danger"} className="h-8 px-3 text-xs">
-            {verification.valid ? <ShieldCheck className="size-3.5" /> : <ShieldAlert className="size-3.5" />}
-            {verification.valid ? "Chain verified" : `Tampered at #${verification.brokenAtSeq}`}
-          </Badge>
-        }
-      />
+      {!embedded && (
+        <PageHeader
+          title="Audit Trail"
+          subtitle="Tamper-evident edit log — Companies Act 2013, Rule 11(g). Every change is hash-chained to the previous record."
+          actions={
+            <Badge variant={verification.valid ? "success" : "danger"} className="h-8 px-3 text-xs">
+              {verification.valid ? <ShieldCheck className="size-3.5" /> : <ShieldAlert className="size-3.5" />}
+              {verification.valid ? "Chain verified" : `Tampered at #${verification.brokenAtSeq}`}
+            </Badge>
+          }
+        />
+      )}
 
       {/* Integrity strip */}
       <Card className={cn("mb-4 flex flex-wrap items-center justify-between gap-3 p-4", verification.valid ? "border-success/30 bg-success/5" : "border-danger/30 bg-danger/5")}>

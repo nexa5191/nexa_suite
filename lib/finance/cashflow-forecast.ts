@@ -16,6 +16,8 @@ import { runTotals } from "@/lib/hr/payroll";
 import { cumulativeBalance } from "@/lib/accounting/ledger";
 import { CHART_OF_ACCOUNTS } from "@/lib/accounting/chart-of-accounts";
 import type { Basis } from "@/lib/accounting/types";
+import { gstr3bFor } from "@/lib/tax/returns";
+import { gstr3bDueDate } from "@/lib/tax/gst";
 
 function addDays(iso: string, n: number): string {
   const d = new Date(iso + "T00:00:00");
@@ -42,6 +44,7 @@ export interface CashflowBucket {
   outflowAp: number;
   outflowPayroll: number;
   outflowStatutory: number;
+  outflowGst: number;
   inflow: number;
   outflow: number;
   net: number;
@@ -61,10 +64,15 @@ export interface CashflowForecast {
   hasShortfall: boolean;
 }
 
-interface Flow { date: string; amount: number; kind: "ar" | "ap" | "payroll" | "statutory" }
+interface Flow { date: string; amount: number; kind: "ar" | "ap" | "payroll" | "statutory" | "gst" }
 
-/** Build the projected cash-flow over `weeks` weekly buckets (+ a "Beyond" bucket). */
-export function projectedCashflow(asOn: string = AS_ON, weeks = 8): CashflowForecast {
+/** GST net cash payable (output GST − eligible ITC) per month — claim all eligible ITC. */
+function gstNetCash(monthKey: string): number {
+  return gstr3bFor({ entityId: "all" }, monthKey, () => false).netCash;
+}
+
+/** Build the projected cash-flow over `weeks` weekly buckets. Set includeGst=false to exclude GST remittances. */
+export function projectedCashflow(asOn: string = AS_ON, weeks = 8, includeGst = true): CashflowForecast {
   const open = openingCash(asOn);
   const horizonEnd = addDays(asOn, weeks * 7 - 1);
 
@@ -100,6 +108,19 @@ export function projectedCashflow(asOn: string = AS_ON, weeks = 8): CashflowFore
     }
   }
 
+  // GST net remittance — each month's GSTR-3B falls due on the 20th of the next
+  // month; include the months whose due date lands inside the horizon.
+  if (includeGst) for (let off = -1; off <= 3; off++) {
+    const m0 = startD.getUTCMonth() + off;
+    const yy = startD.getUTCFullYear() + Math.floor(m0 / 12);
+    const mm = ((m0 % 12) + 12) % 12;
+    const monthKey = `${yy}-${String(mm + 1).padStart(2, "0")}`;
+    const due = gstr3bDueDate(monthKey);
+    if (due < asOn || due > horizonEnd) continue;
+    const net = gstNetCash(monthKey);
+    if (net > 0) flows.push({ date: due, amount: net, kind: "gst" });
+  }
+
   // Weekly buckets.
   const buckets: CashflowBucket[] = [];
   let running = open;
@@ -111,15 +132,16 @@ export function projectedCashflow(asOn: string = AS_ON, weeks = 8): CashflowFore
     const apOut = sum(inB, "ap");
     const payOut = sum(inB, "payroll");
     const statOut = sum(inB, "statutory");
+    const gstOut = sum(inB, "gst");
     const inflow = arIn;
-    const outflow = apOut + payOut + statOut;
+    const outflow = apOut + payOut + statOut + gstOut;
     const net = inflow - outflow;
     const opening = running;
     running = opening + net;
     buckets.push({
       label: w === 0 ? "This week (incl. overdue)" : `Week ${w + 1}`,
       start, end,
-      inflowAr: arIn, outflowAp: apOut, outflowPayroll: payOut, outflowStatutory: statOut,
+      inflowAr: arIn, outflowAp: apOut, outflowPayroll: payOut, outflowStatutory: statOut, outflowGst: gstOut,
       inflow, outflow, net, opening, closing: running,
     });
   }

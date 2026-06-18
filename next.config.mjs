@@ -50,6 +50,8 @@ const nextConfig = {
       ["/cost-audit", "/analysis/cost-audit"],
       ["/intercompany", "/group/intercompany"],
       ["/integrations", "/connections"],
+      ["/audit-trail", "/auditor"],
+      ["/audit", "/auditor"],
       ["/access", "/setup"],
       ["/admin", "/setup"],
       ["/profile", "/portal"],
