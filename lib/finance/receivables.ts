@@ -182,6 +182,7 @@ export interface ArOpenItem {
   id: string; // invoice id
   number: string;
   accountId: string;
+  entityId: string; // billing entity (Nexa Foods / Trading / Global)
   customerName: string;
   date: string; // ISO invoice date
   dueDate: string; // ISO
@@ -223,6 +224,7 @@ export function openItems(asOn: string = AS_ON, scheme: AgingBucket[] = AGING_BU
       id: inv.id,
       number: inv.number,
       accountId: inv.accountId,
+      entityId: inv.entityId,
       customerName: acc?.name ?? "—",
       date: inv.date,
       dueDate: inv.dueDate,

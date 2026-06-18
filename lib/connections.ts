@@ -11,8 +11,8 @@
 // experience is realistic and stable across renders.
 // ---------------------------------------------------------------------------
 
-export type ConnectorCategory = "ERP" | "Accounting" | "SME" | "OMS";
-export type AuthType = "OAuth 2.0" | "API token" | "Token + Company ID";
+export type ConnectorCategory = "ERP" | "Accounting" | "SME" | "OMS" | "Government";
+export type AuthType = "OAuth 2.0" | "API token" | "Token + Company ID" | "GSP / OTP" | "Digital signature";
 
 export interface DatasetVolume {
   accounts: number;
@@ -111,6 +111,44 @@ export const CONNECTORS: Connector[] = [
     sample: { accounts: 286, journals: 10240, invoices: 3450, bills: 2210, contacts: 1180, orders: 0 },
   },
 
+  // ---- Government / statutory portals (India) ----
+  {
+    id: "gstn",
+    name: "GST Portal (GSTN)",
+    vendor: "Goods & Services Tax Network",
+    category: "Government",
+    color: "#1f7a4d",
+    monogram: "GST",
+    blurb: "File GSTR-1 & GSTR-3B and auto-pull GSTR-2A/2B for ITC reconciliation.",
+    authType: "GSP / OTP",
+    region: "India",
+    sample: { accounts: 0, journals: 0, invoices: 5140, bills: 4360, contacts: 0, orders: 0 },
+  },
+  {
+    id: "irp",
+    name: "e-Invoice IRP (NIC)",
+    vendor: "National Informatics Centre",
+    category: "Government",
+    color: "#b8860b",
+    monogram: "IRP",
+    blurb: "Generate IRN & signed QR for B2B invoices and push e-way bills.",
+    authType: "Digital signature",
+    region: "India",
+    sample: { accounts: 0, journals: 0, invoices: 5140, bills: 0, contacts: 0, orders: 0 },
+  },
+  {
+    id: "nsdl",
+    name: "TRACES / NSDL",
+    vendor: "Protean (NSDL e-Gov)",
+    category: "Government",
+    color: "#5b3fb5",
+    monogram: "TDS",
+    blurb: "File TDS returns (24Q/26Q), pull Form 26AS / AIS and issue Form 16/16A.",
+    authType: "Digital signature",
+    region: "India",
+    sample: { accounts: 0, journals: 0, invoices: 0, bills: 4360, contacts: 1890, orders: 0 },
+  },
+
   // ---- Order Management Systems (commerce / fulfilment) ----
   {
     id: "unicommerce",
@@ -193,3 +231,32 @@ export const SAMPLE_MAPPING: Array<{ source: string; nexa: string; code: string 
 export function totalRecords(v: DatasetVolume): number {
   return v.accounts + v.journals + v.invoices + v.bills + v.contacts + v.orders;
 }
+
+// ---------------------------------------------------------------------------
+// "Migrate from Tally" — the one-click switch that removes the #1 objection for
+// Indian SMEs. A deterministic, staged import plan shown in the migration flow.
+// ---------------------------------------------------------------------------
+export interface MigrationStep {
+  key: string;
+  label: string;
+  detail: string;
+  count: string;
+}
+
+export const TALLY_MIGRATION: MigrationStep[] = [
+  { key: "connect", label: "Connect to Tally", detail: "Tally.ODBC / XML gateway on TCP 9000", count: "Nexa Foods Pvt Ltd" },
+  { key: "ledgers", label: "Import ledgers & groups", detail: "Chart of accounts auto-mapped to NEXA", count: "612 ledgers · 28 groups" },
+  { key: "masters", label: "Import masters", detail: "Customers, vendors & stock items", count: "1,890 parties · 740 items" },
+  { key: "vouchers", label: "Import vouchers", detail: "Sales, purchase, payment, receipt & journal", count: "22,870 vouchers" },
+  { key: "gst", label: "Map GST & HSN", detail: "GSTINs, tax ledgers and HSN/SAC codes", count: "5,140 GST invoices" },
+  { key: "verify", label: "Verify opening balances", detail: "Trial-balance tie-out against Tally", count: "Dr = Cr · balanced" },
+];
+
+/** Headline figures for the post-migration summary. */
+export const MIGRATION_RESULT = {
+  ledgers: 612,
+  parties: 1890,
+  vouchers: 22870,
+  invoices: 5140,
+  fyRange: "FY 2023-24 → FY 2025-26",
+};

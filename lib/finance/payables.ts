@@ -39,6 +39,7 @@ export interface ApOpenItem {
   poId: string;
   billNo: string;
   vendorId: string;
+  entityId: string; // buying entity
   vendorName: string;
   msme: boolean;
   invoiceDate: string; // ISO
@@ -79,6 +80,7 @@ export function apOpenItems(asOn: string = AS_ON, scheme: AgingBucket[] = AGING_
       poId: po.id,
       billNo: po.invoice.number,
       vendorId: po.vendorId,
+      entityId: po.entityId,
       vendorName: vendor?.name ?? "—",
       msme: !!vendor?.msme,
       invoiceDate,

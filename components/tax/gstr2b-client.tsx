@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, Flag, BookCheck, AlertTriangle, BookX, Scale, ShieldAlert, Download, FileText } from "lucide-react";
+import { Check, Flag, BookCheck, AlertTriangle, BookX, Scale, ShieldAlert, Download, FileText, CloudDownload, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -46,10 +46,21 @@ export function Gstr2bClient() {
   const [filter, setFilter] = React.useState<ReconStatus | "all">("all");
   const [actions, setActions] = React.useState<ActionStore>({});
   const [stmtVendor, setStmtVendor] = React.useState<string>("");
+  const [fetching, setFetching] = React.useState(false);
+  const [fetchedAt, setFetchedAt] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     setActions(loadActions());
   }, []);
+
+  // Simulate a live pull of the auto-drafted GSTR-2B from the GST portal (GSTN).
+  function fetchFromPortal() {
+    setFetching(true);
+    window.setTimeout(() => {
+      setFetchedAt(new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }));
+      setFetching(false);
+    }, 1100);
+  }
 
   const result = React.useMemo(() => reconcile(period, entityId), [period, entityId]);
   const groups = React.useMemo(() => vendorGroups(result), [result]);
@@ -112,6 +123,19 @@ export function Gstr2bClient() {
       <PageHeader
         title="GSTR-2B Reconciliation"
         subtitle="Match the portal's auto-drafted GSTR-2B against your purchase register and lock down your eligible input tax credit."
+        actions={
+          <div className="flex items-center gap-2">
+            {fetchedAt && (
+              <span className="hidden text-xs text-muted-foreground sm:inline">
+                Fetched from GSTN · {fetchedAt}
+              </span>
+            )}
+            <Button size="sm" variant="outline" onClick={fetchFromPortal} disabled={fetching}>
+              {fetching ? <Loader2 className="size-4 animate-spin" /> : <CloudDownload className="size-4" />}
+              {fetching ? "Fetching…" : "Fetch from GST portal"}
+            </Button>
+          </div>
+        }
       />
 
       {/* Filters: period + entity */}

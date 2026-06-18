@@ -53,7 +53,8 @@ import {
   UserPlus,
   PiggyBank,
   ShieldCheck,
-  ClipboardList,
+  ScrollText,
+  Gavel,
   FileClock,
   type LucideIcon,
 } from "lucide-react";
@@ -102,6 +103,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "gst-registers", href: "/tax/registers", label: "GST Registers", icon: FileSpreadsheet },
       { key: "e-invoicing", href: "/invoicing/e-invoicing", label: "e-Invoicing", icon: ScanLine },
       { key: "gstr2b-recon", href: "/tax/gstr2b", label: "GSTR-2B Match", icon: GitCompareArrows },
+      { key: "compliance-rules", href: "/compliance", label: "Compliance Rules", icon: ScrollText },
     ],
   },
   {
@@ -179,9 +181,8 @@ export const NAV_GROUPS: NavGroup[] = [
 
 export const SECONDARY_NAV: NavItem[] = [
   { key: "portal", href: "/portal", label: "My Portal", icon: UserCircle },
-  { key: "tax-calculator", href: "/portal/tax-calculator", label: "Tax Calculator", icon: Calculator },
-  { key: "tax-declaration", href: "/portal/tax-declaration", label: "Tax Declaration", icon: ClipboardList },
   { key: "audit-trail", href: "/audit-trail", label: "Audit Trail", icon: FileClock },
+  { key: "auditor-portal", href: "/auditor", label: "Auditor Portal", icon: Gavel },
   { key: "setup", href: "/setup", label: "Access & Setup", icon: SlidersHorizontal },
   { key: "settings", href: "/settings", label: "Settings", icon: Settings },
   { key: "help", href: "/help", label: "Help", icon: LifeBuoy },

@@ -36,7 +36,6 @@ const nextConfig = {
       ["/team", "/people"],
       ["/gst", "/tax"],
       ["/tds", "/tax"],
-      ["/compliance", "/tax"],
       ["/recruitment", "/cv-bank"],
       ["/candidates", "/cv-bank"],
       ["/hiring", "/cv-bank"],
