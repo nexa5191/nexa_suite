@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Send, X, Check, MailWarning, CalendarClock, Pencil } from "lucide-react";
+import Link from "next/link";
+import { Send, X, Check, MailWarning, CalendarClock, Pencil, BookUser } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -87,6 +88,11 @@ export function ReceivablesClient() {
       <PageHeader
         title="Receivables & Collections"
         subtitle={`AR aging, dunning and credit limits · as on ${formatDate(AS_ON)}`}
+        actions={
+          <Link href="/reports/ledgers" className="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-medium hover:bg-accent">
+            <BookUser className="size-4" /> Customer ledger
+          </Link>
+        }
       />
 
       {/* Summary cards */}

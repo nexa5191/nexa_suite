@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { ShieldAlert } from "lucide-react";
+import Link from "next/link";
+import { ShieldAlert, BookUser } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,11 @@ export function PayablesClient() {
       <PageHeader
         title="Payables & Aging"
         subtitle={`AP aging from vendor bills · 30-day terms (45-day for MSME) · as on ${formatDate(AS_ON)}`}
+        actions={
+          <Link href="/reports/ledgers" className="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-medium hover:bg-accent">
+            <BookUser className="size-4" /> Vendor ledger
+          </Link>
+        }
       />
 
       {/* Summary cards */}
