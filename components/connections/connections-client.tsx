@@ -3,7 +3,7 @@
 import * as React from "react";
 import {
   Plug, RefreshCw, Check, Database, Settings2, ArrowRight, ShieldCheck,
-  Loader2, Unplug, Layers, CheckCircle2,
+  Loader2, Unplug, Layers, CheckCircle2, ArrowRightLeft, Circle, PartyPopper,
 } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { Input, Select, Label } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
   CONNECTORS, DATASETS, SAMPLE_MAPPING, connectorById, totalRecords,
+  TALLY_MIGRATION, MIGRATION_RESULT,
   type Connector, type DatasetVolume,
 } from "@/lib/connections";
 
@@ -56,6 +57,7 @@ export function ConnectionsClient() {
   const [connecting, setConnecting] = React.useState<Connector | null>(null);
   const [mapping, setMapping] = React.useState<Connector | null>(null);
   const [syncing, setSyncing] = React.useState<string | null>(null);
+  const [migrateOpen, setMigrateOpen] = React.useState(false);
 
   React.useEffect(() => {
     setConns(load());
@@ -120,6 +122,23 @@ export function ConnectionsClient() {
           </Badge>
         }
       />
+
+      {/* Migrate from Tally — the headline switch-over for Indian SMEs */}
+      <Card className="mb-4 flex flex-wrap items-center gap-4 border-primary/30 bg-gradient-to-r from-primary/10 to-transparent p-4">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+          <ArrowRightLeft className="size-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold">Migrate from Tally in an afternoon</p>
+          <p className="text-sm text-muted-foreground">
+            Pull your full ledgers, masters, vouchers and GST history straight from Tally — no CSV gymnastics, opening
+            balances tied out to the rupee.
+          </p>
+        </div>
+        <Button onClick={() => setMigrateOpen(true)} className="shrink-0">
+          <ArrowRightLeft className="size-4" /> Migrate from Tally
+        </Button>
+      </Card>
 
       {/* Warehouse summary */}
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -229,7 +248,101 @@ export function ConnectionsClient() {
 
       <ConnectModal connector={connecting} onClose={() => setConnecting(null)} onConnect={connect} />
       <MappingDrawer connector={mapping} onClose={() => setMapping(null)} />
+      <MigrationDrawer open={migrateOpen} onClose={() => setMigrateOpen(false)} />
     </>
+  );
+}
+
+function MigrationDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [phase, setPhase] = React.useState<"idle" | "running" | "done">("idle");
+  const [done, setDone] = React.useState(0);
+  const timer = React.useRef<number | null>(null);
+
+  // Reset whenever the drawer is opened.
+  React.useEffect(() => {
+    if (open) { setPhase("idle"); setDone(0); }
+    return () => { if (timer.current) window.clearInterval(timer.current); };
+  }, [open]);
+
+  function start() {
+    setPhase("running");
+    setDone(0);
+    timer.current = window.setInterval(() => {
+      setDone((d) => {
+        const next = d + 1;
+        if (next >= TALLY_MIGRATION.length) {
+          if (timer.current) window.clearInterval(timer.current);
+          setPhase("done");
+        }
+        return next;
+      });
+    }, 650);
+  }
+
+  return (
+    <Drawer
+      open={open}
+      onClose={onClose}
+      width="max-w-lg"
+      title={<span className="flex items-center gap-2"><ArrowRightLeft className="size-4 text-primary" /> Migrate from Tally</span>}
+      subtitle="Read-only import — your Tally company is never modified"
+    >
+      <div className="space-y-4">
+        {phase === "done" && (
+          <Card className="flex items-start gap-3 border-success/30 bg-success/5 p-4">
+            <PartyPopper className="mt-0.5 size-5 shrink-0 text-success" />
+            <div>
+              <p className="font-semibold text-success">Migration complete</p>
+              <p className="text-sm text-muted-foreground">
+                Imported {MIGRATION_RESULT.ledgers.toLocaleString("en-IN")} ledgers, {MIGRATION_RESULT.parties.toLocaleString("en-IN")} parties and{" "}
+                {MIGRATION_RESULT.vouchers.toLocaleString("en-IN")} vouchers ({MIGRATION_RESULT.fyRange}). Opening balances tie out to Tally.
+              </p>
+            </div>
+          </Card>
+        )}
+
+        <ol className="space-y-2">
+          {TALLY_MIGRATION.map((step, i) => {
+            const complete = i < done;
+            const active = phase === "running" && i === done;
+            return (
+              <li key={step.key} className={cn("flex items-start gap-3 rounded-lg border p-3", active && "border-primary/40 bg-primary/5")}>
+                <span className="mt-0.5 shrink-0">
+                  {complete ? (
+                    <CheckCircle2 className="size-4 text-success" />
+                  ) : active ? (
+                    <Loader2 className="size-4 animate-spin text-primary" />
+                  ) : (
+                    <Circle className="size-4 text-muted-foreground/40" />
+                  )}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium">{step.label}</p>
+                    <span className={cn("text-xs tabular", complete ? "text-success" : "text-muted-foreground")}>{step.count}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{step.detail}</p>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+
+        <div className="flex justify-end gap-2 border-t pt-3">
+          {phase === "done" ? (
+            <Button onClick={onClose}><Check className="size-4" /> Done</Button>
+          ) : (
+            <>
+              <Button variant="outline" onClick={onClose} disabled={phase === "running"}>Cancel</Button>
+              <Button onClick={start} disabled={phase === "running"}>
+                {phase === "running" ? <Loader2 className="size-4 animate-spin" /> : <ArrowRightLeft className="size-4" />}
+                {phase === "running" ? "Migrating…" : "Start migration"}
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+    </Drawer>
   );
 }
 

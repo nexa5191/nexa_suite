@@ -9,6 +9,7 @@ import { ModuleGuard } from "@/components/access/module-guard";
 import { SplitView } from "./split/split-view";
 import { SplitClickCatcher } from "./split/split-click";
 import { CommandPalette } from "./command-palette";
+import { CopilotPanel } from "@/components/copilot/copilot-panel";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { nav } = usePrefs();
@@ -24,6 +25,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <SplitView />
         <SplitClickCatcher />
         <CommandPalette />
+        <CopilotPanel />
       </div>
     );
   }
@@ -43,6 +45,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <SplitView />
       <SplitClickCatcher />
       <CommandPalette />
+      <CopilotPanel />
     </div>
   );
 }

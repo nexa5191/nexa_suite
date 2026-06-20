@@ -21,6 +21,7 @@ import type { Posting, Basis } from "./types";
 import { accountSafe } from "./chart-of-accounts";
 import { locationById, entityById } from "./org";
 import { partyName, type PartyKind } from "./parties";
+import { isPeriodLocked } from "./period-close";
 
 /** The date the books opened — no entry may be posted before this. */
 export const BOOKS_OPENING = "2024-04-01";
@@ -96,6 +97,8 @@ export interface ManualEntryLine {
   accountCode: string;
   debit: number;
   credit: number;
+  /** Optional line-level narration (SAP "item text") — flows into the posting memo. */
+  memo?: string;
 }
 
 export interface ManualEntry {
@@ -295,6 +298,8 @@ export function validateDraft(draft: EntryDraft, today: string): string[] {
     errors.push(`Date is before the books opened (${BOOKS_OPENING}).`);
   } else if (draft.date > today) {
     errors.push("Posting date cannot be in the future.");
+  } else if (draft.entityId && isPeriodLocked(draft.entityId, draft.date)) {
+    errors.push(`Period ${draft.date.slice(0, 7)} is locked for this entity — reopen it in Financial Close to post here.`);
   }
 
   // Party requirement for sub-ledger voucher types.
@@ -447,7 +452,8 @@ export function expandManualEntries(entries: ManualEntry[]): Posting[] {
             state,
             currency: e.currency,
             basis,
-            memo,
+            // Line-level narration (SAP item text) sharpens the GL memo when present.
+            memo: l.memo ? `${memo} — ${l.memo}` : memo,
             category: cat,
           });
         });

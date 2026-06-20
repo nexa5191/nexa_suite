@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Label } from "@/components/ui/input";
 import { cn, formatDate } from "@/lib/utils";
+import { useNewIntent } from "@/lib/commands/new-intent";
 import { EMPLOYEES, employeeName } from "@/lib/hr/employees";
 import {
   DEFAULT_LEAVE_TYPES,
@@ -32,6 +33,7 @@ export function LeaveClient() {
   const [viewAs, setViewAs] = React.useState("emp-006");
   const [statusFilter, setStatusFilter] = React.useState("all");
   const [showApply, setShowApply] = React.useState(false);
+  useNewIntent(() => setShowApply(true));
 
   // Load the persisted policy (edited in /leave/config) after hydration.
   React.useEffect(() => {

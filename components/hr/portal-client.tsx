@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import {
   UserCircle2, Mail, MapPin, CalendarDays, FileText, Image as ImageIcon, Download,
-  Briefcase, Award, ArrowRightLeft, LogOut, Sparkles, Wallet,
+  Briefcase, Award, ArrowRightLeft, LogOut, Sparkles, Wallet, Calculator, ClipboardList, ArrowRight,
 } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Money } from "@/components/ui/money";
 import { Select } from "@/components/ui/input";
 import { cn, formatDate } from "@/lib/utils";
+import { usePortalEmployee } from "@/lib/hr/portal-session";
 import { EMPLOYEES, employeeById, employeeName, departmentName } from "@/lib/hr/employees";
 import { locationById, entityById } from "@/lib/accounting/org";
 import { DEFAULT_LEAVE_TYPES, balancesFor, leaveTypeById } from "@/lib/hr/leave";
@@ -33,7 +35,7 @@ const CAT_TONE: Record<DocCategory, "default" | "primary" | "success" | "warning
 };
 
 export function PortalClient() {
-  const [empId, setEmpId] = React.useState("emp-006");
+  const [empId, setEmpId] = usePortalEmployee();
   const emp = employeeById(empId)!;
   const exited = emp.status === "exited";
   const balances = balancesFor(empId, DEFAULT_LEAVE_TYPES);
@@ -59,12 +61,36 @@ export function PortalClient() {
       {exited && (
         <Card className="mb-4 flex items-start gap-3 border-danger/30 bg-danger/5 p-4">
           <LogOut className="mt-0.5 size-4 shrink-0 text-danger" />
-          <p className="text-sm text-muted-foreground">
-            This employee has <span className="font-medium text-foreground">exited</span> (relieved {formatDate(emp.exitDate!)}). Their work account is deactivated and
-            the portal now signs in with their <span className="font-medium text-foreground">personal email</span>; alumni still retain access to payslips, Form 16 and exit documents.
-          </p>
+          <div className="text-sm text-muted-foreground">
+            <p>
+              This employee has <span className="font-medium text-foreground">exited</span> (relieved {formatDate(emp.exitDate!)}). Their work account is deactivated and
+              the portal now signs in with their <span className="font-medium text-foreground">personal email</span>; alumni still retain access to payslips, Form 16 and exit documents.
+            </p>
+            <Link
+              href={`/hr/onboarding?kind=offboarding&id=off-${emp.id}`}
+              className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            >
+              View offboarding checklist <ArrowRight className="size-3" />
+            </Link>
+          </div>
         </Card>
       )}
+
+      {/* Quick actions — self-service tax tools, scoped to this employee */}
+      <div className="mb-4 grid gap-3 sm:grid-cols-2">
+        <QuickAction
+          href="/portal/tax-calculator"
+          icon={Calculator}
+          title="Tax Calculator"
+          desc="Compare Old vs New regime on your CTC."
+        />
+        <QuickAction
+          href="/portal/tax-declaration"
+          icon={ClipboardList}
+          title="Tax Declaration"
+          desc="Declare investments & submit proofs to payroll."
+        />
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Identity */}
@@ -198,6 +224,24 @@ export function PortalClient() {
         </Card>
       </div>
     </>
+  );
+}
+
+function QuickAction({ href, icon: Icon, title, desc }: { href: string; icon: React.ComponentType<{ className?: string }>; title: string; desc: string }) {
+  return (
+    <Link
+      href={href}
+      className="group flex items-center gap-3 rounded-lg border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/40"
+    >
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <Icon className="size-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-semibold">{title}</p>
+        <p className="truncate text-xs text-muted-foreground">{desc}</p>
+      </div>
+      <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+    </Link>
   );
 }
 

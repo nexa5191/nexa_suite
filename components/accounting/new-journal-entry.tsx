@@ -41,8 +41,9 @@ interface DraftLine {
   accountCode: string;
   debit: string;
   credit: string;
+  text: string;
 }
-const blankLine = (): DraftLine => ({ accountCode: "", debit: "", credit: "" });
+const blankLine = (): DraftLine => ({ accountCode: "", debit: "", credit: "", text: "" });
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
 const GST_RATES = [0, 5, 12, 18, 28];
@@ -207,7 +208,7 @@ export function NewJournalEntry({
   // taken from the line editor for free types (journal / stock).
   const resolvedLines: ManualEntryLine[] = def.guided
     ? buildGuidedLines(type, g)
-    : lines.map((l) => ({ accountCode: l.accountCode, debit: Number(l.debit) || 0, credit: Number(l.credit) || 0 }));
+    : lines.map((l) => ({ accountCode: l.accountCode, debit: Number(l.debit) || 0, credit: Number(l.credit) || 0, memo: l.text.trim() || undefined }));
   const totals = entryTotals(resolvedLines);
   const selectedInvoice = invoices.find((i) => i.id === invoiceId);
 
@@ -715,8 +716,9 @@ export function NewJournalEntry({
               <thead>
                 <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
                   <th className="px-3 py-2 font-medium">Account</th>
-                  <th className="w-36 px-3 py-2 text-right font-medium">Debit</th>
-                  <th className="w-36 px-3 py-2 text-right font-medium">Credit</th>
+                  <th className="px-3 py-2 font-medium">Line text</th>
+                  <th className="w-32 px-3 py-2 text-right font-medium">Debit</th>
+                  <th className="w-32 px-3 py-2 text-right font-medium">Credit</th>
                   <th className="w-10 px-2 py-2" />
                 </tr>
               </thead>
@@ -732,6 +734,9 @@ export function NewJournalEntry({
                           </option>
                         ))}
                       </Select>
+                    </td>
+                    <td className="px-3 py-2">
+                      <Input value={l.text} onChange={(e) => setLine(i, { text: e.target.value })} placeholder="Item narration (optional)" />
                     </td>
                     <td className="px-3 py-2">
                       <Input type="number" min={0} value={l.debit} onChange={(e) => setAmount(i, "debit", e.target.value)} placeholder="0.00" className="text-right tabular" />
@@ -754,6 +759,7 @@ export function NewJournalEntry({
                       <Plus className="size-3.5" /> Add line
                     </button>
                   </td>
+                  <td />
                   <td />
                   <td />
                   <td />
@@ -809,6 +815,7 @@ export function NewJournalEntry({
                           <td className="px-3 py-2">
                             <span className="font-mono text-xs text-muted-foreground">{l.accountCode}</span>{" "}
                             <span className="font-medium">{acc?.name ?? "—"}</span>
+                            {l.memo && <span className="block text-xs text-muted-foreground">{l.memo}</span>}
                           </td>
                           <td className="px-3 py-2 text-right tabular">{l.debit ? <Money value={l.debit} /> : <span className="text-muted-foreground">—</span>}</td>
                           <td className="px-3 py-2 text-right tabular">{l.credit ? <Money value={l.credit} /> : <span className="text-muted-foreground">—</span>}</td>
