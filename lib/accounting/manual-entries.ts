@@ -97,6 +97,8 @@ export interface ManualEntryLine {
   accountCode: string;
   debit: number;
   credit: number;
+  /** Optional line-level narration (SAP "item text") — flows into the posting memo. */
+  memo?: string;
 }
 
 export interface ManualEntry {
@@ -450,7 +452,8 @@ export function expandManualEntries(entries: ManualEntry[]): Posting[] {
             state,
             currency: e.currency,
             basis,
-            memo,
+            // Line-level narration (SAP item text) sharpens the GL memo when present.
+            memo: l.memo ? `${memo} — ${l.memo}` : memo,
             category: cat,
           });
         });

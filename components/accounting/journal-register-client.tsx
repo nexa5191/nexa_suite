@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useMemo, useState } from "react";
+import Link from "next/link";
 import { Plus, Undo2, ChevronRight, NotebookPen, Upload, Repeat } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Money } from "@/components/ui/money";
 import { useJournal } from "@/components/accounting/journal-provider";
 import { NewJournalEntry } from "@/components/accounting/new-journal-entry";
-import { JournalImport } from "@/components/accounting/journal-import";
 import { entryTotals, voucherType, type ManualEntry } from "@/lib/accounting/manual-entries";
 import { accountSafe } from "@/lib/accounting/chart-of-accounts";
 import { entityById, locationById } from "@/lib/accounting/org";
@@ -28,7 +28,6 @@ function statusBadge(e: ManualEntry) {
 export function JournalRegisterClient() {
   const { entries, reverse } = useJournal();
   const [showNew, setShowNew] = useState(false);
-  const [showImport, setShowImport] = useState(false);
   useNewIntent(() => setShowNew(true));
   const [q, setQ] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -66,9 +65,12 @@ export function JournalRegisterClient() {
             <div className="relative w-full sm:w-56">
               <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search voucher / narration…" />
             </div>
-            <Button variant="outline" onClick={() => setShowImport(true)} className="shrink-0">
-              <Upload className="size-4" /> Import
-            </Button>
+            <Link
+              href="/journal-entries/upload"
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-input bg-card px-3 text-sm font-medium shadow-sm transition-colors hover:bg-accent"
+            >
+              <Upload className="size-4" /> Upload
+            </Link>
             <Button onClick={() => setShowNew(true)} className="shrink-0">
               <Plus className="size-4" /> New entry
             </Button>
@@ -77,7 +79,6 @@ export function JournalRegisterClient() {
       />
 
       <NewJournalEntry open={showNew} onClose={() => setShowNew(false)} />
-      <JournalImport open={showImport} onClose={() => setShowImport(false)} />
 
       {upcomingReversals.length > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 px-4 py-2.5 text-sm">
@@ -190,6 +191,7 @@ export function JournalRegisterClient() {
                                     <td className="px-3 py-2">
                                       <span className="font-mono text-xs text-muted-foreground">{l.accountCode}</span>{" "}
                                       <span className="font-medium">{acc?.name}</span>
+                                      {l.memo && <span className="block text-xs text-muted-foreground">{l.memo}</span>}
                                     </td>
                                     <td className="px-3 py-2 text-right tabular">
                                       {l.debit ? <Money value={l.debit} /> : <span className="text-muted-foreground">—</span>}
