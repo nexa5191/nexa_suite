@@ -300,5 +300,5 @@ export function runDcf(segments: DcfSegment[], params: DcfParams): DcfResult {
     }))
   );
 
-  return { params, segments, consolidated, totalTerminalValue: totalTV, pvTerminalConsolidated: pvTVConsolidated, enterpriseValue, sensitivity };
+  return { params, segments: segDcfs, consolidated, totalTerminalValue: totalTV, pvTerminalConsolidated: pvTVConsolidated, enterpriseValue, sensitivity };
 }
