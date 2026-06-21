@@ -253,8 +253,9 @@ function rate(code) {
 // ===========================================================================
 // CONTENT
 // ===========================================================================
-const GENERATED = "2026-06-15";
-const PRODUCTS = ["SAP S/4HANA", "Tally", "Tally Prime", "Zoho Books", "Odoo", "QuickBooks", "Oracle NetSuite"];
+const GENERATED = "2026-06-22";
+// Column order: NEXA, then each of these (8 products)
+const PRODUCTS = ["SAP S/4HANA", "Tally", "Tally Prime", "Zoho Books", "Odoo", "QuickBooks", "Oracle NetSuite", "Dynamics 365"];
 
 // ---- Sheet 1: Cover ----
 function coverSheet() {
@@ -266,7 +267,7 @@ function coverSheet() {
   rows.push([sectionBar("What this workbook contains")]);
   const toc = [
     ["1 · Feature Inventory", "Every NEXA module & capability, with the accounting/engineering best practice it demonstrates"],
-    ["2 · Competitive Matrix", "54 capabilities scored for NEXA vs SAP S/4HANA, Tally, Tally Prime, Zoho Books, Odoo, QuickBooks, NetSuite"],
+    ["2 · Competitive Matrix", "54 capabilities scored for NEXA vs SAP S/4HANA, Tally, Tally Prime, Zoho Books, Odoo, QuickBooks, NetSuite, and Microsoft Dynamics 365"],
     ["3 · Where NEXA Wins", "The specific places NEXA leads or matches tier-1 ERP, and why"],
     ["4 · Best Practices", "The design & accounting disciplines baked into NEXA"],
     ["5 · Scorecard", "Native-feature tally per product (live formulas)"],
@@ -282,7 +283,7 @@ function coverSheet() {
   rows.push([rate("N"), { value: "None / very limited", style: { fontColor: INK } }]);
   rows.push([""]);
   rows.push([{ value: "Positioning note", style: { bold: true, fontColor: NAVY } }]);
-  rows.push([{ value: "NEXA is an integrated, India-statutory-first finance suite (a client-side SPA). The comparison below is about functional design, compliance depth and UX — areas where NEXA matches or beats far heavier products — not about backend scale or infrastructure, where tier-1 ERPs (SAP, NetSuite) remain the enterprise systems of record.", style: { fontColor: SLATE, wrap: true, vAlign: "top" } }]);
+  rows.push([{ value: "NEXA is an integrated, India-statutory-first finance suite (a client-side SPA). The comparison below is about functional design, compliance depth and UX — areas where NEXA matches or beats far heavier products — not about backend scale or infrastructure, where tier-1 ERPs (SAP, NetSuite, Dynamics 365) remain the enterprise systems of record.", style: { fontColor: SLATE, wrap: true, vAlign: "top" } }]);
   return {
     name: "Cover",
     cols: [{ width: 34 }, { width: 86 }],
@@ -396,81 +397,82 @@ function inventorySheet() {
 }
 
 // ---- Sheet 3: Competitive Matrix ----
-// order: [NEXA, SAP, Tally, TallyPrime, Zoho, Odoo, QuickBooks, NetSuite]
+// Row format: [capability, NEXA, SAP, Tally, TallyPrime, Zoho, Odoo, QuickBooks, NetSuite, Dynamics365, note]
+// codes = indices 1..9 (9 entries: NEXA + 8 products), note = index 10
 const MATRIX = [
   ["Accounting core", [
-    ["Double-entry general ledger", "Y","Y","Y","Y","Y","Y","Y","Y", "Baseline — NEXA matches all"],
-    ["Real-voucher posting behind every subledger action", "Y","Y","Y","Y","P","P","P","Y", "Petty cash, reimb., P2P, IC, assets ALL post real vouchers"],
-    ["Bank reconciliation", "Y","Y","Y","Y","Y","Y","Y","Y", "Standard everywhere"],
-    ["Petty cash book", "Y","P","Y","Y","P","P","P","P", "Real contra/payment vouchers, not a memo ledger"],
-    ["Employee reimbursements (accrual)", "Y","Y","P","P","Y","Y","P","Y", "Accrual on approve, payment on pay"],
-    ["Multi-entity / group ledgers", "Y","Y","Y","Y","P","Y","P","Y", "Group + inter-company native"],
+    ["Double-entry general ledger",                        "Y","Y","Y","Y","Y","Y","Y","Y","Y", "Baseline — NEXA matches all"],
+    ["Real-voucher posting behind every subledger action", "Y","Y","Y","Y","P","P","P","Y","Y", "Petty cash, reimb., P2P, IC, assets ALL post real vouchers"],
+    ["Bank reconciliation",                                "Y","Y","Y","Y","Y","Y","Y","Y","Y", "Standard everywhere"],
+    ["Petty cash book",                                    "Y","P","Y","Y","P","P","P","P","P", "Real contra/payment vouchers, not a memo ledger"],
+    ["Employee reimbursements (accrual)",                  "Y","Y","P","P","Y","Y","P","Y","Y", "Accrual on approve, payment on pay"],
+    ["Multi-entity / group ledgers",                       "Y","Y","Y","Y","P","Y","P","Y","Y", "Group + inter-company native"],
   ]],
   ["India statutory tax", [
-    ["GST CGST/SGST/IGST", "Y","Y","Y","Y","Y","P","N","P", "Built-in vs localisation add-ons"],
-    ["UTGST (Union Territory GST)", "Y","P","Y","Y","Y","P","N","P", "Explicit UT detection + return folding"],
-    ["GSTR-1 / 3B / 9 returns", "Y","P","Y","Y","Y","P","N","P", "Reconciling returns out-of-box"],
-    ["GST registers + ITC / filing-claim map", "Y","P","Y","Y","Y","P","N","P", "Invoice/rate/HSN-wise registers"],
-    ["TDS incl. sec.197 lower-deduction cert", "Y","P","Y","Y","Y","P","N","P", "LDC rate auto-applied"],
-    ["MSME 45-day aging (sec.43B(h))", "Y","N","P","Y","P","N","N","N", "Newest rule — most rivals lack it"],
-    ["RCM / reverse charge + HSN summary", "Y","P","Y","Y","Y","P","N","P", "Statutory schedules native"],
+    ["GST CGST/SGST/IGST",                                "Y","Y","Y","Y","Y","P","N","P","P", "Built-in vs localisation add-ons"],
+    ["UTGST (Union Territory GST)",                        "Y","P","Y","Y","Y","P","N","P","P", "Explicit UT detection + return folding"],
+    ["GSTR-1 / 3B / 9 returns",                           "Y","P","Y","Y","Y","P","N","P","P", "Reconciling returns out-of-box"],
+    ["GST registers + ITC / filing-claim map",             "Y","P","Y","Y","Y","P","N","P","P", "Invoice/rate/HSN-wise registers"],
+    ["TDS incl. sec.197 lower-deduction cert",             "Y","P","Y","Y","Y","P","N","P","P", "LDC rate auto-applied"],
+    ["MSME 45-day aging (sec.43B(h))",                     "Y","N","P","Y","P","N","N","N","N", "Newest rule — most rivals lack it"],
+    ["RCM / reverse charge + HSN summary",                 "Y","P","Y","Y","Y","P","N","P","P", "Statutory schedules native"],
   ]],
   ["Fixed assets", [
-    ["Fixed-asset register", "Y","Y","P","Y","P","Y","P","Y", "Tied to GL gross block"],
-    ["Companies Act Schedule II depreciation", "Y","P","P","P","P","P","N","P", "Posts the book charge to GL"],
-    ["Income-Tax block WDV + half-year rule", "Y","P","P","P","N","N","N","P", "Tax book alongside the book book"],
-    ["Capex GRN auto-capitalises asset", "Y","Y","N","N","N","P","N","P", "Procurement → asset with no rekey"],
+    ["Fixed-asset register",                               "Y","Y","P","Y","P","Y","P","Y","Y", "Tied to GL gross block"],
+    ["Companies Act Schedule II depreciation",             "Y","P","P","P","P","P","N","P","P", "Posts the book charge to GL"],
+    ["Income-Tax block WDV + half-year rule",              "Y","P","P","P","N","N","N","P","P", "Tax book alongside the book book"],
+    ["Capex GRN auto-capitalises asset",                   "Y","Y","N","N","N","P","N","P","Y", "Procurement → asset with no rekey"],
   ]],
   ["Procure-to-Pay", [
-    ["Purchase orders", "Y","Y","Y","Y","Y","Y","P","Y", "—"],
-    ["3-way match (PO/GRN/invoice)", "Y","Y","P","P","P","Y","N","Y", "Enterprise control in a light app"],
-    ["GRNI (goods received not invoiced) clearing", "Y","Y","N","P","N","Y","N","Y", "Accrual-accurate, tier-1 pattern"],
-    ["Vendor classes drive posting", "Y","Y","P","P","P","P","P","P", "Inventory/Opex/Capex/Employee buckets"],
-    ["AP aging / pay bills", "Y","Y","Y","Y","Y","Y","Y","Y", "—"],
+    ["Purchase orders",                                    "Y","Y","Y","Y","Y","Y","P","Y","Y", "—"],
+    ["3-way match (PO/GRN/invoice)",                       "Y","Y","P","P","P","Y","N","Y","Y", "Enterprise control in a light app"],
+    ["GRNI (goods received not invoiced) clearing",        "Y","Y","N","P","N","Y","N","Y","Y", "Accrual-accurate, tier-1 pattern"],
+    ["Vendor classes drive posting",                       "Y","Y","P","P","P","P","P","P","Y", "Inventory/Opex/Capex/Employee buckets"],
+    ["AP aging / pay bills",                               "Y","Y","Y","Y","Y","Y","Y","Y","Y", "—"],
   ]],
   ["Order-to-cash & inventory", [
-    ["CRM / sales pipeline", "Y","Y","N","N","P","Y","P","Y", "In-suite, not a separate purchase"],
-    ["Sales orders & sales-by-channel", "Y","Y","Y","Y","Y","Y","P","Y", "—"],
-    ["Customer invoicing & AR", "Y","Y","Y","Y","Y","Y","Y","Y", "—"],
-    ["Inventory items & movements", "Y","Y","Y","Y","Y","Y","P","Y", "Linked to P2P + GL"],
+    ["CRM / sales pipeline",                               "Y","Y","N","N","P","Y","P","Y","Y", "In-suite, not a separate purchase"],
+    ["Sales orders & sales-by-channel",                    "Y","Y","Y","Y","Y","Y","P","Y","Y", "—"],
+    ["Customer invoicing & AR",                            "Y","Y","Y","Y","Y","Y","Y","Y","Y", "—"],
+    ["Inventory items & movements",                        "Y","Y","Y","Y","Y","Y","P","Y","Y", "Linked to P2P + GL"],
   ]],
   ["Group & consolidation", [
-    ["Inter-company transactions", "Y","Y","P","P","P","P","N","Y", "—"],
-    ["Inter-company auto-mirror (both sides post)", "Y","Y","N","N","N","P","N","Y", "Sale in A = purchase in B automatically"],
-    ["Consolidation + eliminations", "Y","Y","P","P","P","P","N","Y", "Group reporting native"],
+    ["Inter-company transactions",                         "Y","Y","P","P","P","P","N","Y","Y", "—"],
+    ["Inter-company auto-mirror (both sides post)",        "Y","Y","N","N","N","P","N","Y","Y", "Sale in A = purchase in B automatically"],
+    ["Consolidation + eliminations",                       "Y","Y","P","P","P","P","N","Y","Y", "Group reporting native"],
   ]],
   ["Services, planning & analysis", [
-    ["Project / engagement accounting", "Y","Y","N","N","P","Y","P","Y", "Services P&L"],
-    ["Timesheets", "Y","Y","N","N","P","Y","P","Y", "Billable time"],
-    ["Budget & forecast", "Y","Y","P","P","P","P","P","Y", "Plan vs actual"],
-    ["Capital-investment appraisal / decisions", "Y","P","N","N","N","N","N","P", "Almost unique at this tier"],
-    ["Business plan model", "Y","P","N","N","N","N","N","P", "Strategy in-suite"],
-    ["Cost audit", "Y","Y","P","P","N","P","N","Y", "Statutory cost lens"],
-    ["Ad-hoc report explorer", "Y","Y","P","Y","P","P","P","Y", "Shared filters across heads"],
+    ["Project / engagement accounting",                    "Y","Y","N","N","P","Y","P","Y","Y", "Services P&L"],
+    ["Timesheets",                                         "Y","Y","N","N","P","Y","P","Y","Y", "Billable time"],
+    ["Budget & forecast",                                  "Y","Y","P","P","P","P","P","Y","Y", "Plan vs actual"],
+    ["Capital-investment appraisal / decisions",           "Y","P","N","N","N","N","N","P","P", "Almost unique at this tier"],
+    ["Business plan model",                                "Y","P","N","N","N","N","N","P","N", "Strategy in-suite"],
+    ["Cost audit",                                         "Y","Y","P","P","N","P","N","Y","P", "Statutory cost lens"],
+    ["Ad-hoc report explorer",                             "Y","Y","P","Y","P","P","P","Y","Y", "Shared filters across heads"],
   ]],
   ["People & HR", [
-    ["Payroll", "Y","Y","P","P","P","Y","P","P", "In-suite pay run"],
-    ["Leave / attendance / holidays", "Y","Y","P","P","P","Y","N","P", "Workforce admin"],
-    ["Recruitment / CV bank (ATS)", "Y","Y","N","N","P","Y","N","P", "Hiring in the same suite"],
-    ["External agency / recruiter portal", "Y","P","N","N","N","P","N","P", "Rare even in big ERP"],
-    ["Approvals workflow", "Y","Y","P","P","Y","Y","P","Y", "With global approvals bell"],
+    ["Payroll",                                            "Y","Y","P","P","P","Y","P","P","P", "In-suite pay run"],
+    ["Leave / attendance / holidays",                      "Y","Y","P","P","P","Y","N","P","P", "Workforce admin"],
+    ["Recruitment / CV bank (ATS)",                        "Y","Y","N","N","P","Y","N","P","P", "Hiring in the same suite"],
+    ["External agency / recruiter portal",                 "Y","P","N","N","N","P","N","P","N", "Rare even in big ERP"],
+    ["Approvals workflow",                                 "Y","Y","P","P","Y","Y","P","Y","Y", "With global approvals bell"],
   ]],
   ["Automation & controls", [
-    ["Command palette (⌘K) with RBAC filtering", "Y","Y","N","N","P","P","N","Y", "Keyboard-first nav, per-user shortcuts"],
-    ["Bank auto-match (UTR / confidence-tiered)", "Y","Y","N","P","Y","Y","Y","Y", "Auto-suggests reconciliation matches"],
-    ["Bulk CSV import to journals", "Y","Y","P","Y","Y","Y","Y","Y", "postMany bulk posting path"],
-    ["PDF export (invoices, GSTR-3B)", "Y","Y","Y","Y","Y","Y","Y","Y", "jsPDF, dynamically imported"],
-    ["Auto-post recurring GL (depreciation, payroll)", "Y","Y","P","P","P","P","P","Y", "Idempotent, deterministic narration"],
-    ["3-way match auto-approval (tolerance-based)", "Y","Y","N","N","N","P","N","Y", "Touchless AP within 2% tolerance"],
-    ["Maker-checker w/ segregation-of-duties", "Y","Y","P","P","P","P","P","Y", "Preparer ≠ approver enforced"],
+    ["Command palette (⌘K) with RBAC filtering",           "Y","Y","N","N","P","P","N","Y","N", "Keyboard-first nav, per-user shortcuts"],
+    ["Bank auto-match (UTR / confidence-tiered)",           "Y","Y","N","P","Y","Y","Y","Y","Y", "Auto-suggests reconciliation matches"],
+    ["Bulk CSV import to journals",                         "Y","Y","P","Y","Y","Y","Y","Y","Y", "postMany bulk posting path"],
+    ["PDF export (invoices, GSTR-3B)",                      "Y","Y","Y","Y","Y","Y","Y","Y","Y", "jsPDF, dynamically imported"],
+    ["Auto-post recurring GL (depreciation, payroll)",      "Y","Y","P","P","P","P","P","Y","Y", "Idempotent, deterministic narration"],
+    ["3-way match auto-approval (tolerance-based)",         "Y","Y","N","N","N","P","N","Y","Y", "Touchless AP within 2% tolerance"],
+    ["Maker-checker w/ segregation-of-duties",              "Y","Y","P","P","P","P","P","Y","Y", "Preparer ≠ approver enforced"],
   ]],
   ["Platform & experience", [
-    ["RBAC roles + 'mimic' view-as", "Y","Y","P","P","Y","Y","P","Y", "Admin sees exactly what a user sees"],
-    ["Modular per-function provisioning", "Y","Y","P","P","P","Y","P","Y", "Turn functions on/off per tenant"],
-    ["Native Excel export w/ LIVE formulas", "Y","P","P","P","P","P","P","P", "Workbooks recompute on open"],
-    ["Web / zero-install", "Y","P","N","P","Y","Y","Y","Y", "Browser-native"],
-    ["Modern Office-like UX (ribbon, mobile)", "Y","P","P","Y","P","P","Y","P", "Familiar & fast"],
-    ["Low cost / no implementation project", "Y","N","P","P","Y","P","Y","N", "Instant vs months of rollout"],
+    ["RBAC roles + 'mimic' view-as",                       "Y","Y","P","P","Y","Y","P","Y","Y", "Admin sees exactly what a user sees"],
+    ["Modular per-function provisioning",                   "Y","Y","P","P","P","Y","P","Y","Y", "Turn functions on/off per tenant"],
+    ["Native Excel export w/ LIVE formulas",               "Y","P","P","P","P","P","P","P","P", "Workbooks recompute on open"],
+    ["Web / zero-install",                                  "Y","P","N","P","Y","Y","Y","Y","Y", "Browser-native"],
+    ["Modern Office-like UX (ribbon, mobile)",              "Y","P","P","Y","P","P","Y","P","Y", "Familiar & fast"],
+    ["Low cost / no implementation project",               "Y","N","P","P","Y","P","Y","N","N", "Instant vs months of rollout"],
   ]],
 ];
 function matrixSheet() {
@@ -486,22 +488,24 @@ function matrixSheet() {
     rows.push(bandRow);
     for (const f of feats) {
       const cap = f[0];
-      const codes = f.slice(1, 9); // 8 products incl NEXA
-      const note = f[9];
+      const codes = f.slice(1, 10); // 9 codes: NEXA + 8 products
+      const note = f[10];
       const r = [tc(cap, { bold: true })];
       // NEXA col highlighted
       r.push({ ...rate(codes[0]), style: { ...rate(codes[0]).style, fill: codes[0] === "Y" ? "BBF7D0" : rate(codes[0]).style.fill } });
-      for (let i = 1; i < 8; i++) r.push(rate(codes[i]));
+      for (let i = 1; i < codes.length; i++) r.push(rate(codes[i]));
       r.push(tc(note, { fontColor: GREENF, italic: true }));
       rows.push(r);
     }
   }
+  const totalCols = 2 + PRODUCTS.length + 1; // Cap + NEXA + products + note
+  const lastCol = colLetter(totalCols - 1);
   const cols = [{ width: 40 }, { width: 13 }, ...PRODUCTS.map(() => ({ width: 12 })), { width: 46 }];
   return {
     name: "2 · Competitive Matrix",
     cols,
     freeze: { rows: 4, cols: 1 },
-    merges: ["A1:J1", "A2:J2"],
+    merges: [`A1:${lastCol}1`, `A2:${lastCol}2`],
     rowHeights: { 1: 34, 2: 18, 4: 30 },
     rows,
   };
@@ -511,19 +515,19 @@ function matrixSheet() {
 const WINS = [
   ["India compliance depth, out-of-the-box",
    "UTGST with Union-Territory detection, GSTR-1/3B/9 that reconcile, invoice/rate/HSN registers + ITC map, TDS sec.197 LDC, and MSME sec.43B(h) 45-day aging.",
-   "Matches Tally/Zoho on Indian statutory and goes further (MSME 43B(h), sec.197 LDC) — while bundling full ERP breadth those tools don't have. SAP/NetSuite need paid localisation; QuickBooks dropped India entirely."],
+   "Matches Tally/Zoho on Indian statutory and goes further (MSME 43B(h), sec.197 LDC) — while bundling full ERP breadth those tools don't have. SAP/NetSuite/Dynamics 365 need paid localisation; QuickBooks dropped India entirely."],
   ["Everything posts real double-entry",
    "Petty cash, reimbursements, P2P (PO/GRN/invoice/pay), inter-company, and asset capitalisation each post balanced vouchers through one engine.",
    "No orphan subledgers — books always tie to the GL. Many SMB tools keep petty cash / expenses / assets as side-records that drift from the ledger."],
   ["Tier-1 automation in a light package",
    "3-way match with GRNI clearing, capex-GRN that auto-capitalises a fixed asset, and inter-company auto-mirror (one txn posts both entities).",
-   "These are the controls you normally only get after a six-figure SAP/NetSuite implementation — here with zero setup."],
+   "These are the controls you normally only get after a six-figure SAP/NetSuite/Dynamics implementation — here with zero setup."],
   ["Dual-book fixed assets",
    "Companies Act Schedule II charge posts to the GL while Income-Tax block WDV (with the half-year rule) runs in parallel, plus a custom basis.",
    "Book vs tax depreciation in one place; most SMB tools offer a single basis and no IT block logic."],
   ["Planning & decisioning in the same suite",
    "Budget & forecast, capital-investment appraisal, a business-plan model and cost audit sit beside the ledgers.",
-   "Capex appraisal and business planning are essentially absent from Tally/Zoho/QuickBooks and are add-ons even in SAP/NetSuite."],
+   "Capex appraisal and business planning are essentially absent from Tally/Zoho/QuickBooks and are add-ons even in SAP/NetSuite/Dynamics 365."],
   ["Automation that removes the grunt work",
    "Command palette (⌘K), UTR-first bank auto-match, bulk CSV import, auto-posted depreciation & payroll (idempotent), and 3-way-match auto-approval within tolerance.",
    "Touchless AP, hands-off recurring postings and keyboard-first navigation are usually NetSuite/SAP-tier — here with no implementation project. Tally/QuickBooks have none of the auto-posting or auto-approval logic."],
@@ -538,10 +542,10 @@ const WINS = [
    "Mimic/view-as and per-function provisioning are enterprise-grade controls rarely found in SMB accounting tools."],
   ["One suite, not a bundle of apps",
    "Finance, tax, P2P, group, CRM, orders, inventory, projects, HR, recruitment and an agency portal in a single application.",
-   "Zoho needs Books+CRM+People+Recruit+Expense+Projects as separate apps; QuickBooks needs add-ons; NEXA is unified."],
+   "Zoho needs Books+CRM+People+Recruit+Expense+Projects as separate apps; Dynamics 365 spreads across Finance, BC, Sales, HR and Project Operations modules; QuickBooks needs add-ons. NEXA is unified."],
   ["Instant & low cost",
    "Web-native, no install, no multi-month rollout, no licence stack.",
-   "SAP/NetSuite are large implementation projects; Tally is desktop-bound. NEXA runs in a browser immediately."],
+   "SAP/NetSuite/Dynamics 365 are large implementation projects costing months and significant professional-services fees; Tally is desktop-bound. NEXA runs in a browser immediately."],
 ];
 function winsSheet() {
   const rows = [];
@@ -554,7 +558,7 @@ function winsSheet() {
   }
   rows.push([""]);
   rows.push([{ value: "Honest caveat", style: { bold: true, fontColor: AMBERF, fill: AMBER, border: "all" } },
-             { value: "NEXA is a client-side SPA (browser localStorage), so it is not yet a multi-user, server-backed system of record at SAP/NetSuite scale. Its edge is functional design, India-compliance depth and UX — not infrastructure or enterprise data volume.", style: { fontColor: AMBERF, fill: AMBER, wrap: true, border: "all", vAlign: "top" } },
+             { value: "NEXA is a client-side SPA (browser localStorage), so it is not yet a multi-user, server-backed system of record at SAP/NetSuite/Dynamics scale. Its edge is functional design, India-compliance depth and UX — not infrastructure or enterprise data volume.", style: { fontColor: AMBERF, fill: AMBER, wrap: true, border: "all", vAlign: "top" } },
              { value: "", style: { fill: AMBER, border: "all" } }]);
   return {
     name: "3 · Where NEXA Wins",
@@ -618,7 +622,7 @@ function scorecardSheet() {
   const firstDataRow = 5; // 1-based
   allRows.forEach((f) => {
     const cap = f[0];
-    const codes = f.slice(1, 9);
+    const codes = f.slice(1, 10); // 9 codes: NEXA + 8 products
     const r = [tc(cap)];
     codes.forEach((c, i) => {
       // store numeric weight 1/0.5/0 so totals are live & meaningful
@@ -645,12 +649,13 @@ function scorecardSheet() {
     pctRow.push({ formula: `${col}${totalsRowIdx}/${allRows.length}`, value: 0, style: { bold: true, fill: BAND, fontColor: NAVY, align: "center", border: "all", numFmt: "0%" } });
   });
   rows.push(pctRow);
+  const lastScoreCol = colLetter(products.length); // K with 10 products
   const cols = [{ width: 42 }, ...products.map(() => ({ width: 13 }))];
   return {
     name: "5 · Scorecard",
     cols,
     freeze: { rows: 4, cols: 1 },
-    merges: ["A1:I1", "A2:I2"],
+    merges: [`A1:${lastScoreCol}1`, `A2:${lastScoreCol}2`],
     rowHeights: { 1: 34, 2: 30, 4: 28 },
     rows,
   };
