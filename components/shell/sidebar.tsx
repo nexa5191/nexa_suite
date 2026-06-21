@@ -27,19 +27,53 @@ export function Sidebar({ side = "left" }: { side?: "left" | "right" }) {
   const expandedLabel = hovered ?? activeGroup;
 
   const renderLink = (item: NavItem) => {
-    const active = isNavActive(pathname, item.href);
+    const childActive = item.children?.some((c) => isNavActive(pathname, c.href)) ?? false;
+    // An item with children is "self-active" only when on the exact parent route, not a child route
+    const selfActive = childActive ? false : isNavActive(pathname, item.href);
+    const expanded = selfActive || childActive;
+
     return (
       <li key={item.href}>
         <Link
           href={item.href}
           className={cn(
             "flex items-center gap-3 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
-            active ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground",
+            selfActive
+              ? "bg-primary/10 text-primary"
+              : childActive
+                ? "text-foreground"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground",
           )}
         >
           <item.icon className="size-[18px] shrink-0" />
-          <span className="truncate">{item.label}</span>
+          <span className="flex-1 truncate">{item.label}</span>
+          {item.children && (
+            <ChevronDown className={cn("size-3.5 text-muted-foreground transition-transform duration-200", expanded ? "rotate-0" : "-rotate-90")} />
+          )}
         </Link>
+        {item.children && expanded && (
+          <ul className="ml-3 mt-0.5 space-y-0.5 border-l pl-3">
+            {item.children.map((child) => {
+              const childSelfActive = isNavActive(pathname, child.href);
+              return (
+                <li key={child.href}>
+                  <Link
+                    href={child.href}
+                    className={cn(
+                      "flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] font-medium transition-colors",
+                      childSelfActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                    )}
+                  >
+                    <child.icon className="size-3.5 shrink-0" />
+                    <span className="truncate">{child.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </li>
     );
   };

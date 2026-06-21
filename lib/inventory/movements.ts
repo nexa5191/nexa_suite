@@ -111,6 +111,7 @@ const HISTORY: RawMove[] = [
   { date: "2026-06-05", itemId: "fg-flour00", loc: "loc-mys", type: "sale", qty: -216, ref: "NXT/26-27/0110", note: "Specialty dispatch — 00 flour", by: "emp-010" },
   { date: "2026-06-05", itemId: "fg-semolina25", loc: "loc-mys", type: "sale", qty: -47, ref: "NXT/26-27/0111", note: "Specialty dispatch — semolina", by: "emp-010" },
   { date: "2026-06-05", itemId: "fg-atta10", loc: "loc-mys", type: "sale", qty: -1100, ref: "NXF/26-27/0113", note: "Private-label dispatch — atta", by: "emp-010" },
+  { date: "2026-06-05", itemId: "fg-atta1", loc: "loc-mys", type: "sale", qty: -2400, ref: "NXF/26-27/0114", note: "Private-label dispatch — atta pouches 1kg", by: "emp-010" },
 ];
 
 export const SEED_MOVEMENTS: Movement[] = [

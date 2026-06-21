@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Factory, ArrowLeftRight, AlertTriangle, PackageX, Boxes, ListTree, ChevronRight, Pencil, Check, X } from "lucide-react";
+import { Factory, ArrowLeftRight, AlertTriangle, PackageX, Boxes, ListTree, ChevronRight, Pencil, Check, X, TrendingUp, ClipboardList, PackageCheck, ScanLine, PackageOpen } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -99,6 +99,11 @@ export function InventoryClient() {
         subtitle="Manufacturing stock — raw, packing, semi-finished and finished goods."
         actions={
           <div className="flex gap-2">
+            <Link href="/inventory/planning">
+              <Button variant="outline">
+                <TrendingUp className="size-4" /> Demand Plan
+              </Button>
+            </Link>
             <Link href="/inventory/bom">
               <Button variant="outline">
                 <ListTree className="size-4" /> BOM
@@ -118,6 +123,26 @@ export function InventoryClient() {
           </div>
         }
       />
+
+      {/* Supply-chain quick actions */}
+      <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          { href: "/inventory/requisitions", icon: ClipboardList, label: "Purchase Requisitions", sub: "Raise a buy request" },
+          { href: "/inventory/grn", icon: PackageCheck, label: "Goods Receipts", sub: "Record inbound stock" },
+          { href: "/inventory/stock-count", icon: ScanLine, label: "Stock Count", sub: "Physical vs system qty" },
+          { href: "/inventory/issues", icon: PackageOpen, label: "Material Issues", sub: "Issue to production" },
+        ].map(({ href, icon: Icon, label, sub }) => (
+          <Link key={href} href={href}>
+            <div className="flex items-center gap-3 rounded-lg border bg-card p-3 hover:bg-accent/50 transition-colors cursor-pointer">
+              <Icon className="size-5 shrink-0 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">{label}</p>
+                <p className="text-xs text-muted-foreground">{sub}</p>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
 
       {/* Top metrics */}
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

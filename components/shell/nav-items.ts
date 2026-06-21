@@ -1,4 +1,5 @@
 import {
+  Activity,
   LayoutDashboard,
   Calendar,
   ListTodo,
@@ -39,6 +40,9 @@ import {
   Warehouse,
   Truck,
   FolderOpen,
+  ClipboardList,
+  PackageCheck,
+  PackageOpen,
   UserCircle,
   Settings,
   SlidersHorizontal,
@@ -71,6 +75,8 @@ export interface NavItem {
   href: string;
   label: string;
   icon: LucideIcon;
+  /** Optional sub-items rendered as an indented list below this item. */
+  children?: Array<Omit<NavItem, "children">>;
 }
 
 export interface NavGroup {
@@ -164,6 +170,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "receivables", href: "/receivables", label: "Receivables", icon: ArrowDownToLine },
       { key: "payables", href: "/payables", label: "Payables", icon: ArrowUpFromLine },
       { key: "fx-revaluation", href: "/reports/fx-revaluation", label: "FX Revaluation", icon: Globe },
+      { key: "dcf", href: "/reports/dcf", label: "DCF Valuation", icon: Activity },
     ],
   },
   {
@@ -187,7 +194,15 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Workspace",
     items: [
-      { key: "inventory", href: "/inventory", label: "Inventory", icon: Warehouse },
+      {
+        key: "inventory", href: "/inventory", label: "Inventory", icon: Warehouse,
+        children: [
+          { key: "purchase-requisitions", href: "/inventory/requisitions", label: "Purchase Requisitions", icon: ClipboardList },
+          { key: "goods-receipts", href: "/inventory/grn", label: "Goods Receipts", icon: PackageCheck },
+          { key: "stock-count", href: "/inventory/stock-count", label: "Stock Count", icon: ClipboardCheck },
+          { key: "material-issues", href: "/inventory/issues", label: "Material Issues", icon: PackageOpen },
+        ],
+      },
       { key: "vendors", href: "/vendors", label: "Vendors", icon: Truck },
       { key: "documents", href: "/documents", label: "Documents", icon: FolderOpen },
     ],
@@ -218,7 +233,9 @@ export const COMMAND_ACTIONS: NavItem[] = [
   { key: "new-loan", href: "/hr/loans?new=1", label: "New Loan / Advance", icon: PiggyBank },
 ];
 
-export const FLAT_NAV: NavItem[] = NAV_GROUPS.flatMap((g) => g.items);
+export const FLAT_NAV: NavItem[] = NAV_GROUPS.flatMap((g) =>
+  g.items.flatMap((item) => [item, ...(item.children ?? [])])
+);
 
 export function isNavActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
