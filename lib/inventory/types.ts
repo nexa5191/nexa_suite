@@ -37,6 +37,9 @@ export interface Item {
   conversionRate?: number; // ₹/unit conversion (own factory) or job-work (loan-license)
   buyRate?: number; // ₹/unit landed purchase cost for third-party finished goods
   manufacturer?: string; // loan-licensee / third-party supplier name
+  // Supply-chain planning parameters
+  leadTimeDays?: number; // supplier / production lead time in calendar days
+  safetyDays?: number;   // days of buffer stock above lead-time demand
 }
 
 export interface BomComponent {

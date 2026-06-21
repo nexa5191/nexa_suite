@@ -44,22 +44,43 @@ export function MobileNav() {
                   <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
                     {g.label}
                   </p>
-                  {g.items.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setOpen(false)}
-                      className={cn(
-                        "flex items-center gap-3 rounded-md px-2.5 py-2 text-sm font-medium",
-                        isNavActive(pathname, item.href)
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:bg-accent",
-                      )}
-                    >
-                      <item.icon className="size-[18px]" />
-                      {item.label}
-                    </Link>
-                  ))}
+                  {g.items.map((item) => {
+                    const childActive = item.children?.some((c) => isNavActive(pathname, c.href)) ?? false;
+                    const selfActive = childActive ? false : isNavActive(pathname, item.href);
+                    return (
+                      <div key={item.href}>
+                        <Link
+                          href={item.href}
+                          onClick={() => setOpen(false)}
+                          className={cn(
+                            "flex items-center gap-3 rounded-md px-2.5 py-2 text-sm font-medium",
+                            selfActive ? "bg-primary/10 text-primary" : childActive ? "text-foreground" : "text-muted-foreground hover:bg-accent",
+                          )}
+                        >
+                          <item.icon className="size-[18px]" />
+                          {item.label}
+                        </Link>
+                        {item.children && (
+                          <div className="ml-4 border-l pl-3 space-y-0.5 mb-1">
+                            {item.children.map((child) => (
+                              <Link
+                                key={child.href}
+                                href={child.href}
+                                onClick={() => setOpen(false)}
+                                className={cn(
+                                  "flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] font-medium",
+                                  isNavActive(pathname, child.href) ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent",
+                                )}
+                              >
+                                <child.icon className="size-3.5" />
+                                {child.label}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               ))}
               <div className="border-t pt-2">
