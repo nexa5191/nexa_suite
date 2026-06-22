@@ -61,6 +61,10 @@ export interface Invoice {
   notes: string;
   signatoryId: string; // employee
   billTo?: BillToOverride; // optional manual override of the account's bill-to
+  // Multi-currency: if currency is set and not INR, fxRate (INR per 1 FC unit) is required.
+  // All line rates are in the invoice currency; GL posting converts to INR at fxRate.
+  currency?: string;   // ISO 4217 e.g. "USD", "EUR". Omit or "INR" = domestic
+  fxRate?: number;     // INR per 1 unit of currency (e.g. 83.5 for USD)
 }
 
 // ---- per-entity invoice number prefix & state ----
