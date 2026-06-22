@@ -66,6 +66,13 @@ import {
   BookCopy,
   CalendarRange,
   FileSignature,
+  AlignLeft,
+  FileQuestion,
+  BarChart3,
+  Percent,
+  Code2,
+  ArrowRightLeft,
+  CalendarClock,
   type LucideIcon,
 } from "lucide-react";
 
@@ -119,7 +126,13 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "gst-registers", href: "/tax/registers", label: "GST Registers", icon: FileSpreadsheet },
       { key: "e-invoicing", href: "/invoicing/e-invoicing", label: "e-Invoicing", icon: ScanLine },
       { key: "gstr2b-recon", href: "/tax/gstr2b", label: "GSTR-2B Match", icon: GitCompareArrows },
+      { key: "tcs", href: "/tax/tcs", label: "TCS (Sec. 206C)", icon: Percent },
+      { key: "advance-tax", href: "/tax/advance-tax", label: "Advance Tax", icon: CalendarClock },
+      { key: "form-26q", href: "/tax/26q", label: "Form 26Q (Non-salary TDS)", icon: FileSpreadsheet },
+      { key: "transfer-pricing", href: "/tax/transfer-pricing", label: "Transfer Pricing", icon: ArrowRightLeft },
       { key: "compliance-rules", href: "/compliance", label: "Compliance Rules", icon: ScrollText },
+      { key: "compliance-calendar", href: "/compliance/calendar", label: "Compliance Calendar", icon: CalendarClock },
+      { key: "mca-roc", href: "/compliance/mca", label: "MCA / ROC Filings", icon: Gavel },
     ],
   },
   {
@@ -163,6 +176,8 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "profit-loss", href: "/reports/profit-loss", label: "Profit & Loss", icon: TrendingUp },
       { key: "balance-sheet", href: "/reports/balance-sheet", label: "Balance Sheet", icon: Scale },
       { key: "cash-flow", href: "/reports/cash-flow", label: "Cash Flow", icon: Wallet },
+      { key: "trial-balance", href: "/reports/trial-balance", label: "Trial Balance", icon: AlignLeft },
+      { key: "notes-to-accounts", href: "/reports/notes", label: "Notes to Accounts", icon: FileQuestion },
       { key: "cashflow-forecast", href: "/reports/cashflow-forecast", label: "Projected Cash Flow", icon: LineChart },
       { key: "report-explorer", href: "/reports/explorer", label: "Report Explorer", icon: Table2 },
       { key: "party-ledger", href: "/reports/ledgers", label: "Party Ledger", icon: BookUser },
@@ -243,8 +258,10 @@ export function isNavActive(pathname: string, href: string) {
   if (href === "/hr") return pathname === "/hr";
   // /journal must not stay active on /journal-entries (separate page).
   if (href === "/journal") return pathname === "/journal";
-  // /tax must not stay active on /tax/registers (separate page).
+  // /tax must not stay active on /tax/registers or any other sub-page.
   if (href === "/tax") return pathname === "/tax";
+  // /compliance must not stay active on /compliance/calendar or /compliance/mca.
+  if (href === "/compliance") return pathname === "/compliance";
   // /portal must not stay active on /portal/tax-calculator (separate page).
   if (href === "/portal") return pathname === "/portal";
   // /hr/payroll must not stay active on /hr/payroll/statutory (separate page).

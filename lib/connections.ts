@@ -198,6 +198,32 @@ export const CONNECTORS: Connector[] = [
     region: "Global",
     sample: { accounts: 0, journals: 0, invoices: 15200, bills: 0, contacts: 11800, orders: 33600 },
   },
+
+  // ---- Bank feed / Account Aggregator (India) ----
+  {
+    id: "finvu",
+    name: "Finvu / Account Aggregator",
+    vendor: "Finvu (Cookiejar Technologies)",
+    category: "Government",
+    color: "#0d6e87",
+    monogram: "AA",
+    blurb: "RBI Account Aggregator framework — pull bank statements for auto-reconciliation from all major Indian banks.",
+    authType: "OAuth 2.0",
+    region: "India",
+    sample: { accounts: 4, journals: 0, invoices: 0, bills: 0, contacts: 0, orders: 0 },
+  },
+  {
+    id: "mca",
+    name: "MCA21 / ROC Portal",
+    vendor: "Ministry of Corporate Affairs",
+    category: "Government",
+    color: "#7b3f00",
+    monogram: "MCA",
+    blurb: "Pull company master data, director details, charge registry and filing history from MCA21 v3.",
+    authType: "Digital signature",
+    region: "India",
+    sample: { accounts: 0, journals: 0, invoices: 0, bills: 0, contacts: 0, orders: 0 },
+  },
 ];
 
 export function connectorById(id: string): Connector | undefined {

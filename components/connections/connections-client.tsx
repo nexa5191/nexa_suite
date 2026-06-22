@@ -4,7 +4,12 @@ import * as React from "react";
 import {
   Plug, RefreshCw, Check, Database, Settings2, ArrowRight, ShieldCheck,
   Loader2, Unplug, Layers, CheckCircle2, ArrowRightLeft, Circle, PartyPopper,
+  Download, FileCode2,
 } from "lucide-react";
+import { buildTallyXml, downloadTallyXml } from "@/lib/xlsx/tally-export";
+import { buildXbrlXml, downloadXbrl, factsFromReports, type XbrlContext } from "@/lib/tax/xbrl";
+import { buildBalanceSheet, buildPnL } from "@/lib/accounting/reports";
+import type { ReportFilters } from "@/lib/accounting/types";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -122,6 +127,12 @@ export function ConnectionsClient() {
           </Badge>
         }
       />
+
+      {/* Export to Tally / XBRL */}
+      <div className="mb-4 grid gap-3 sm:grid-cols-2">
+        <TallyExportCard />
+        <XbrlExportCard />
+      </div>
 
       {/* Migrate from Tally — the headline switch-over for Indian SMEs */}
       <Card className="mb-4 flex flex-wrap items-center gap-4 border-primary/30 bg-gradient-to-r from-primary/10 to-transparent p-4">
@@ -425,6 +436,90 @@ function ConnectModal({
         </div>
       </div>
     </Modal>
+  );
+}
+
+function TallyExportCard() {
+  const [from, setFrom] = React.useState("2026-04-01");
+  const [to, setTo] = React.useState("2026-06-22");
+  const [exporting, setExporting] = React.useState(false);
+
+  function doExport() {
+    setExporting(true);
+    window.setTimeout(() => {
+      const xml = buildTallyXml({ from, to, basis: "accrual" });
+      downloadTallyXml(xml, `nexa-tally-export-${from.slice(0, 7)}-${to.slice(0, 7)}.xml`);
+      setExporting(false);
+    }, 300);
+  }
+
+  return (
+    <Card className="flex flex-col p-4">
+      <div className="flex items-center gap-3 mb-3">
+        <span className="flex size-10 items-center justify-center rounded-lg bg-red-100 text-red-700 font-bold text-xs dark:bg-red-900/40 dark:text-red-400">
+          TP
+        </span>
+        <div>
+          <p className="font-semibold text-sm">Export to Tally XML</p>
+          <p className="text-xs text-muted-foreground">Voucher-level XML importable into Tally Prime / ERP 9</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 text-xs mb-3">
+        <span className="text-muted-foreground">From</span>
+        <input type="date" className="rounded border bg-background px-2 py-1 text-xs" value={from} onChange={(e) => setFrom(e.target.value)} />
+        <span className="text-muted-foreground">to</span>
+        <input type="date" className="rounded border bg-background px-2 py-1 text-xs" value={to} onChange={(e) => setTo(e.target.value)} />
+      </div>
+      <Button className="mt-auto w-full" onClick={doExport} disabled={exporting}>
+        {exporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+        {exporting ? "Generating…" : "Download Tally XML"}
+      </Button>
+    </Card>
+  );
+}
+
+function XbrlExportCard() {
+  const [exporting, setExporting] = React.useState(false);
+  const DEFAULT_F: ReportFilters = { entityId: "all", locationId: "all", state: "all", basis: "accrual", from: "2026-04-01", to: "2026-06-22" };
+
+  function doExport() {
+    setExporting(true);
+    window.setTimeout(() => {
+      const bs = buildBalanceSheet(DEFAULT_F);
+      const pnl = buildPnL(DEFAULT_F);
+      const ctx: XbrlContext = {
+        cin: "U15400KA2021PTC143210",
+        entityName: "Nexa Foods Private Limited",
+        periodStart: DEFAULT_F.from,
+        periodEnd: DEFAULT_F.to,
+        currency: "INR",
+      };
+      const facts = factsFromReports(bs, pnl);
+      const xml = buildXbrlXml(ctx, facts);
+      downloadXbrl(xml, "nexa-xbrl-mca.xml");
+      setExporting(false);
+    }, 300);
+  }
+
+  return (
+    <Card className="flex flex-col p-4">
+      <div className="flex items-center gap-3 mb-3">
+        <span className="flex size-10 items-center justify-center rounded-lg bg-amber-100 text-amber-700 font-bold text-xs dark:bg-amber-900/40 dark:text-amber-400">
+          XML
+        </span>
+        <div>
+          <p className="font-semibold text-sm">Export XBRL for MCA</p>
+          <p className="text-xs text-muted-foreground">iXBRL instance document (in-gaap taxonomy) for MCA21 filing</p>
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground mb-3">
+        Generates BS + P&amp;L mapped to MCA in-gaap XBRL elements. Required for AOC-4 filing by non-small companies.
+      </p>
+      <Button className="mt-auto w-full" variant="outline" onClick={doExport} disabled={exporting}>
+        {exporting ? <Loader2 className="size-4 animate-spin" /> : <FileCode2 className="size-4" />}
+        {exporting ? "Generating…" : "Download XBRL / MCA XML"}
+      </Button>
+    </Card>
   );
 }
 
