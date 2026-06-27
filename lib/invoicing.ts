@@ -68,26 +68,10 @@ export interface Invoice {
 }
 
 // ---- per-entity invoice number prefix & state ----
-const ENTITY_PREFIX: Record<string, string> = {
-  "ent-nexa-in": "NXF",
-  "ent-nexa-trade": "NXT",
-  "ent-nexa-global": "NXG",
-};
-const ENTITY_STATE_CODE: Record<string, string> = {
-  "ent-nexa-in": "29", // Karnataka
-  "ent-nexa-trade": "27", // Maharashtra
-  "ent-nexa-global": "SG", // Singapore (export)
-};
-const ENTITY_BANK: Record<string, string> = {
-  "ent-nexa-in": "HDFC Bank · A/c 5011 2233 4455 · IFSC HDFC0000291 · UPI nexafoods@hdfcbank",
-  "ent-nexa-trade": "ICICI Bank · A/c 6022 7788 1122 · IFSC ICIC0000271 · UPI nexatrading@icici",
-  "ent-nexa-global": "DBS Bank · A/c 0012-345678 · SWIFT DBSSSGSG",
-};
-const ENTITY_ADDRESS: Record<string, string> = {
-  "ent-nexa-in": "No. 42, 1st Main, Koramangala Industrial Layout, Bengaluru 560095 · accounts@nexafoods.in · +91 80 4123 7000",
-  "ent-nexa-trade": "Unit 3, Andheri-Kurla Road, Sakinaka, Mumbai 400072 · billing@nexatrading.in · +91 22 4567 9000",
-  "ent-nexa-global": "8 Marina Boulevard #21-03, Marina Bay Financial Centre, Singapore 018981 · finance@nexa.global · +65 6800 1200",
-};
+const ENTITY_PREFIX: Record<string, string> = {};
+const ENTITY_STATE_CODE: Record<string, string> = {};
+const ENTITY_BANK: Record<string, string> = {};
+const ENTITY_ADDRESS: Record<string, string> = {};
 
 export interface Letterhead {
   name: string;

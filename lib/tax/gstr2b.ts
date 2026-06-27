@@ -124,32 +124,7 @@ export interface B2bLine {
   itcEligible: boolean; // portal "ITC available" flag
 }
 
-// Helper to look up a vendor GSTIN for the seed.
-const G = (vendorId: string): string => vendorById(vendorId)?.gstin ?? "—";
-
-// 2B rows. Most mirror the purchase register; a handful deviate on purpose:
-//   • STF/26-27/0192 (Sterling)  → MATCHED exactly
-//   • APX/4821 (Apex Logistics)  → MATCHED exactly
-//   • BOP-2026-441 (BlueOcean)   → VALUE MISMATCH (vendor filed a lower taxable)
-//   • TN-2026-1180 (TechNova)    → VALUE MISMATCH (vendor filed slightly higher)
-//   • STF/25-26/0061 (Sterling)  → MATCHED (April history)
-//   • TN-2026-880 (TechNova)     → MATCHED (March history)
-//   • GLF/26-27/0204 (GreenLeaf) → MISSING IN BOOKS (in 2B, not recorded yet)
-//   • (Apr) PW-3390 (PrintWorks) → present in books as paid, NOT in 2B → MISSING IN 2B
-//   • PrintWorks ITC flagged ineligible on the one 2B row it does file
-const B2B_SEED: B2bLine[] = [
-  // --- May 2026 period ---
-  { vendorId: "ven-1", gstin: G("ven-1"), invoiceNo: "STF/26-27/0192", date: "2026-06-03", taxable: 123000, itcEligible: true }, // exact match to PO-2007 (40*1850 + 30*1650)
-  { vendorId: "ven-2", gstin: G("ven-2"), invoiceNo: "BOP-2026-441", date: "2026-06-04", taxable: 38000, itcEligible: true }, // book is 500*42 + 60*320 = 40200 → MISMATCH
-  { vendorId: "ven-4", gstin: G("ven-4"), invoiceNo: "TN-2026-1180", date: "2026-06-04", taxable: 492000, itcEligible: true }, // book 480000 → MISMATCH (vendor filed higher)
-  { vendorId: "ven-3", gstin: G("ven-3"), invoiceNo: "APX/4821", date: "2026-06-02", taxable: 228000, itcEligible: true }, // matches PO-2010 (6*38000)
-  { vendorId: "ven-5", gstin: G("ven-5"), invoiceNo: "GLF/26-27/0204", date: "2026-06-05", taxable: 176000, itcEligible: true }, // NOT in books → MISSING IN BOOKS
-
-  // --- Apr / Mar / Feb history periods ---
-  { vendorId: "ven-1", gstin: G("ven-1"), invoiceNo: "STF/25-26/0061", date: "2026-02-14", taxable: 54600, itcEligible: true }, // matches PO-2001 (30*1820)
-  { vendorId: "ven-4", gstin: G("ven-4"), invoiceNo: "TN-2026-880", date: "2026-03-08", taxable: 368000, itcEligible: true }, // matches PO-2002 (4*92000)
-  // PrintWorks PW-3390 is deliberately ABSENT from 2B → that book bill is MISSING-IN-2B.
-];
+const B2B_SEED: B2bLine[] = [];
 
 // ---------------------------------------------------------------------------
 // 3. Reconciliation engine

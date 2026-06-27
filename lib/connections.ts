@@ -270,11 +270,11 @@ export interface MigrationStep {
 }
 
 export const TALLY_MIGRATION: MigrationStep[] = [
-  { key: "connect", label: "Connect to Tally", detail: "Tally.ODBC / XML gateway on TCP 9000", count: "Nexa Foods Pvt Ltd" },
-  { key: "ledgers", label: "Import ledgers & groups", detail: "Chart of accounts auto-mapped to NEXA", count: "612 ledgers · 28 groups" },
-  { key: "masters", label: "Import masters", detail: "Customers, vendors & stock items", count: "1,890 parties · 740 items" },
-  { key: "vouchers", label: "Import vouchers", detail: "Sales, purchase, payment, receipt & journal", count: "22,870 vouchers" },
-  { key: "gst", label: "Map GST & HSN", detail: "GSTINs, tax ledgers and HSN/SAC codes", count: "5,140 GST invoices" },
+  { key: "connect", label: "Connect to Tally", detail: "Tally.ODBC / XML gateway on TCP 9000", count: "" },
+  { key: "ledgers", label: "Import ledgers & groups", detail: "Chart of accounts auto-mapped to NEXA", count: "" },
+  { key: "masters", label: "Import masters", detail: "Customers, vendors & stock items", count: "" },
+  { key: "vouchers", label: "Import vouchers", detail: "Sales, purchase, payment, receipt & journal", count: "" },
+  { key: "gst", label: "Map GST & HSN", detail: "GSTINs, tax ledgers and HSN/SAC codes", count: "" },
   { key: "verify", label: "Verify opening balances", detail: "Trial-balance tie-out against Tally", count: "Dr = Cr · balanced" },
 ];
 

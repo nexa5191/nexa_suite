@@ -138,8 +138,8 @@ export function q26Returns(): Q26Return[] {
       quartersMap.set(key, {
         quarter: key,
         fy: fyLabel ?? "2026-27",
-        tan: "BLRN12345A",
-        entityName: "Nexa Foods Pvt. Ltd.",
+        tan: "",
+        entityName: "",
         totalDeductees: 0,
         totalAmountPaid: 0,
         totalTdsDeducted: 0,
