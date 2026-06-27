@@ -104,36 +104,14 @@ export interface DcfResult {
   sensitivity: SensitivityCell[][];  // [waccRow][gCol]
 }
 
-// ---------------------------------------------------------------------------
-// Seed data — NEXA Foods three product segments + realistic base-year figures
-// ---------------------------------------------------------------------------
-export const DEFAULT_SEGMENTS: DcfSegment[] = [
-  {
-    id: "seg-wheat", name: "Wheat Products", color: "#3b82f6",
-    allocationBasis: "revenue", customWeight: 65, volumeIndex: 70, headcount: 45,
-    baseRevenue: 9_50_00_000, baseEbitda: 1_66_00_000, baseCapex: 38_00_000, baseWC: 72_00_000,
-    revenueGrowth: 12, ebitdaMarginTarget: 20, capexPct: 4, wcPct: 8,
-  },
-  {
-    id: "seg-rice", name: "Rice Products", color: "#10b981",
-    allocationBasis: "volume", customWeight: 20, volumeIndex: 18, headcount: 12,
-    baseRevenue: 2_80_00_000, baseEbitda: 42_00_000, baseCapex: 7_00_000, baseWC: 22_00_000,
-    revenueGrowth: 18, ebitdaMarginTarget: 18, capexPct: 2.5, wcPct: 10,
-  },
-  {
-    id: "seg-oil", name: "Oil Products", color: "#f59e0b",
-    allocationBasis: "headcount", customWeight: 15, volumeIndex: 12, headcount: 8,
-    baseRevenue: 2_40_00_000, baseEbitda: 28_80_000, baseCapex: 5_00_000, baseWC: 18_00_000,
-    revenueGrowth: 8, ebitdaMarginTarget: 14, capexPct: 2, wcPct: 6,
-  },
-];
+export const DEFAULT_SEGMENTS: DcfSegment[] = [];
 
 export const DEFAULT_PARAMS: DcfParams = {
-  wacc: 12,
-  terminalGrowth: 4,
-  taxRate: 25,
+  wacc: 0,
+  terminalGrowth: 0,
+  taxRate: 0,
   years: 5,
-  sharedOverhead: 1_60_00_000,
+  sharedOverhead: 0,
 };
 
 // ---------------------------------------------------------------------------

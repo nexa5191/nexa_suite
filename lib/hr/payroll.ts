@@ -7,13 +7,7 @@ import type { Employee } from "./types";
 // ---------------------------------------------------------------------------
 
 // Annual CTC (₹ lakh) by employee — drives the whole structure.
-const CTC_LAKH: Record<string, number> = {
-  "emp-001": 120, "emp-002": 90, "emp-003": 80, "emp-004": 70, "emp-005": 75,
-  "emp-006": 18, "emp-007": 12, "emp-008": 15, "emp-009": 16, "emp-010": 14,
-  "emp-011": 22, "emp-012": 18, "emp-013": 8, "emp-014": 12, "emp-015": 13,
-  "emp-016": 24, "emp-017": 26, "emp-018": 20, "emp-019": 22, "emp-020": 28,
-  "emp-021": 12, "emp-022": 7, "emp-023": 20, "emp-024": 11,
-};
+const CTC_LAKH: Record<string, number> = {};
 
 function effectiveTdsRate(annualLakh: number) {
   if (annualLakh < 10) return 0.05;
@@ -61,12 +55,7 @@ export interface PayrollRun {
   processedById: string; // payroll owner
 }
 
-export const PAYROLL_RUNS: PayrollRun[] = [
-  { id: "run-2026-03", month: "2026-03", label: "March 2026", status: "paid", runDate: "2026-03-31", processedById: "emp-002" },
-  { id: "run-2026-04", month: "2026-04", label: "April 2026", status: "paid", runDate: "2026-04-30", processedById: "emp-002" },
-  { id: "run-2026-05", month: "2026-05", label: "May 2026", status: "paid", runDate: "2026-05-31", processedById: "emp-002" },
-  { id: "run-2026-06", month: "2026-06", label: "June 2026", status: "draft", runDate: null, processedById: "emp-002" },
-];
+export const PAYROLL_RUNS: PayrollRun[] = [];
 
 export function runByMonth(month: string) {
   return PAYROLL_RUNS.find((r) => r.month === month);

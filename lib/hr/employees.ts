@@ -11,14 +11,8 @@ export const DEPARTMENTS: Department[] = [
   { id: "dep-proc", name: "Procurement" },
 ];
 
-// loc → entity is fixed by the org tree; keep employees consistent with it.
-const ENTITY_OF: Record<string, string> = {
-  "loc-blr": "ent-nexa-in",
-  "loc-mys": "ent-nexa-in",
-  "loc-mum": "ent-nexa-trade",
-  "loc-del": "ent-nexa-trade",
-  "loc-sg": "ent-nexa-global",
-};
+// loc → entity mapping; populated when entities and locations are configured.
+const ENTITY_OF: Record<string, string> = {};
 
 type Seed = Omit<Employee, "entityId" | "email" | "status" | "personalEmail"> & {
   status?: Employee["status"];

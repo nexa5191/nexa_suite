@@ -83,37 +83,22 @@ export interface BusinessPlan {
 const CR = 1e7; // one crore in rupees
 
 export function defaultInputs(base: BaseFinancials): PlanInputs {
-  const revCr = base.revenue / CR;
   return {
-    companyName: "Nexa Group",
-    tagline: "Farm-to-shelf staple foods, vertically integrated and tech-run.",
-    execSummary:
-      "Nexa is a multi-entity food manufacturing and distribution group producing flour, rice, edible oil and packaged staples. We control milling, packing and multi-state distribution on a single operating platform, giving us cost leadership and full traceability from raw grain to retail shelf.",
-    problem:
-      "India's ₹4 lakh-crore staple-foods market is fragmented across unbranded mills with thin margins, weak quality control and no real-time visibility into cost or inventory.",
-    solution:
-      "A vertically integrated operation — own plants, branded SKUs and a digital backbone covering production, inventory, GST compliance and multi-state logistics — that compounds margin while scaling distribution.",
-    targetCustomer:
-      "Modern-trade and general-trade retailers, HoReCa buyers and export distributors across India and the GCC.",
-    marketTamCr: 400000,
-    marketSamCr: 28000,
-    marketSomCr: Math.max(50, Math.round(revCr * 6)),
+    companyName: "",
+    tagline: "",
+    execSummary: "",
+    problem: "",
+    solution: "",
+    targetCustomer: "",
+    marketTamCr: 0,
+    marketSamCr: 0,
+    marketSomCr: 0,
     projectionYears: 4,
     revenueCagr: 0.35,
     targetCostRatio: Math.max(0.7, Math.min(base.costRatio || 0.82, 0.9)) - 0.06,
-    fundingAskCr: Math.max(5, Math.round((revCr * 0.4) / 5) * 5),
-    useOfFunds: [
-      { label: "Plant capacity & automation", pct: 0.35 },
-      { label: "Sales & distribution", pct: 0.3 },
-      { label: "Brand & marketing", pct: 0.2 },
-      { label: "Working capital", pct: 0.15 },
-    ],
-    milestones: [
-      { when: "Q1", label: "Commission second milling line at Mysuru plant" },
-      { when: "Q2", label: "Launch 5 retail SKUs in modern trade nationally" },
-      { when: "Q3", label: "Onboard GCC export distributor; ₹10 Cr export run-rate" },
-      { when: "Q4", label: "Reach EBITDA-positive at group level" },
-    ],
+    fundingAskCr: 0,
+    useOfFunds: [],
+    milestones: [],
   };
 }
 

@@ -23,21 +23,7 @@ export interface RevContract {
   milestones?: Milestone[];
 }
 
-export const REV_CONTRACTS: RevContract[] = [
-  { id: "rc-1", customer: "QuickBasket", name: "Annual listing & data-insights fee", method: "ratable", total: 3_600_000, start: "2026-01-01", months: 12 },
-  { id: "rc-2", customer: "Spencer's Gourmet", name: "Annual category supply retainer", method: "ratable", total: 1_800_000, start: "2025-10-01", months: 12 },
-  { id: "rc-3", customer: "FreshMart Retail", name: "Private-label product development", method: "milestone", total: 2_400_000, start: "2026-04-01",
-    milestones: [
-      { date: "2026-05-15", label: "Design sign-off", pct: 30 },
-      { date: "2026-07-01", label: "Pilot batch", pct: 40 },
-      { date: "2026-09-01", label: "Rollout", pct: 30 },
-    ] },
-  { id: "rc-4", customer: "Pantry Pulse", name: "Platform integration & onboarding", method: "milestone", total: 1_200_000, start: "2026-04-01",
-    milestones: [
-      { date: "2026-04-10", label: "Integration live", pct: 50 },
-      { date: "2026-08-10", label: "Go-live & training", pct: 50 },
-    ] },
-];
+export const REV_CONTRACTS: RevContract[] = [];
 
 function monthsElapsed(start: string, asOn: string): number {
   const [ys, ms, ds] = start.split("-").map(Number);

@@ -5,75 +5,9 @@ import type { Entity, Location } from "./types";
 // resolveEntityIds() expands a group ID to include itself + all children,
 // so any filter that calls it automatically handles rollup.
 
-export const ENTITIES: Entity[] = [
-  // ── Standalone legal entities ─────────────────────────────────────────────
-  {
-    id: "ent-nexa-in",
-    name: "Nexa Foods",
-    legalName: "Nexa Foods Pvt Ltd",
-    currency: "INR",
-    country: "India",
-    gstin: "29ABCDE1234F1Z5",
-  },
-  {
-    id: "ent-nexa-trade",
-    name: "Nexa Trading",
-    legalName: "Nexa Trading LLP",
-    currency: "INR",
-    country: "India",
-    gstin: "27ABCDE1234F2Z3",
-  },
-  {
-    id: "ent-nexa-global",
-    name: "Nexa Global",
-    legalName: "Nexa Global Pte Ltd",
-    currency: "SGD",
-    country: "Singapore",
-  },
-  // ── Nexa Foods outlets (parentId → treated as rollup children) ────────────
-  {
-    id: "ent-nexa-pune",
-    name: "Pune Outlet",
-    legalName: "Nexa Foods - Pune",
-    currency: "INR",
-    country: "India",
-    gstin: "27ABCDE1234F3Z1",
-    parentId: "ent-nexa-in",
-  },
-  {
-    id: "ent-nexa-hyd",
-    name: "Hyderabad Outlet",
-    legalName: "Nexa Foods - Hyderabad",
-    currency: "INR",
-    country: "India",
-    gstin: "36ABCDE1234F4Z9",
-    parentId: "ent-nexa-in",
-  },
-  {
-    id: "ent-nexa-chn",
-    name: "Chennai Outlet",
-    legalName: "Nexa Foods - Chennai",
-    currency: "INR",
-    country: "India",
-    gstin: "33ABCDE1234F5Z7",
-    parentId: "ent-nexa-in",
-  },
-];
+export const ENTITIES: Entity[] = [];
 
-export const LOCATIONS: Location[] = [
-  // Nexa Foods HQ locations
-  { id: "loc-blr", entityId: "ent-nexa-in",    name: "Bengaluru HQ",         city: "Bengaluru", state: "Karnataka",    stateCode: "29" },
-  { id: "loc-mys", entityId: "ent-nexa-in",    name: "Mysuru Plant",          city: "Mysuru",    state: "Karnataka",    stateCode: "29" },
-  // Nexa Trading locations
-  { id: "loc-mum", entityId: "ent-nexa-trade", name: "Mumbai Depot",          city: "Mumbai",    state: "Maharashtra",  stateCode: "27" },
-  { id: "loc-del", entityId: "ent-nexa-trade", name: "Delhi Branch",          city: "New Delhi", state: "Delhi",        stateCode: "07" },
-  // Nexa Global
-  { id: "loc-sg",  entityId: "ent-nexa-global",name: "Singapore Office",      city: "Singapore", state: "Singapore",    stateCode: "SG" },
-  // Nexa Foods outlets
-  { id: "loc-pune",entityId: "ent-nexa-pune",  name: "Pune Outlet",           city: "Pune",      state: "Maharashtra",  stateCode: "27" },
-  { id: "loc-hyd", entityId: "ent-nexa-hyd",   name: "Hyderabad Outlet",      city: "Hyderabad", state: "Telangana",    stateCode: "36" },
-  { id: "loc-chn", entityId: "ent-nexa-chn",   name: "Chennai Outlet",        city: "Chennai",   state: "Tamil Nadu",   stateCode: "33" },
-];
+export const LOCATIONS: Location[] = [];
 
 export const ALL = "all";
 
