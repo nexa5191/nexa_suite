@@ -234,11 +234,7 @@ export interface CashDeposit {
 export const loadCashDeposits = () => read<CashDeposit[]>(CASH_KEY, []);
 export const saveCashDeposits = (d: CashDeposit[]) => write(CASH_KEY, d);
 
-// Seed opening balances so the first GSTR-3B has cash to settle against.
-export const SEED_CASH: CashDeposit[] = [
-  { id: "cash-seed-1", date: "2026-04-05", ref: "CIN24040500001", igst: 150000, cgst: 90000, sgst: 90000 },
-  { id: "cash-seed-2", date: "2026-05-06", ref: "CIN24050600002", igst: 120000, cgst: 70000, sgst: 70000 },
-];
+export const SEED_CASH: CashDeposit[] = [];
 
 export function allCashDeposits(user: CashDeposit[]): CashDeposit[] {
   return [...SEED_CASH, ...user].sort((a, b) => a.date.localeCompare(b.date));

@@ -70,20 +70,7 @@ const IN = "ent-nexa-in";
 const TR = "ent-nexa-trade";
 const GL = "ent-nexa-global";
 
-export const SEED_IC: IcTransaction[] = [
-  T(1, "2025-04-05", "loan", IN, TR, 5_000_000, "Working-capital loan to Trading LLP", "open"),
-  T(2, "2025-05-20", "sale", IN, TR, 2_400_000, "Finished-goods supply — Mumbai depot", "open"),
-  T(3, "2025-06-01", "service-fee", IN, GL, 1_200_000, "Shared services & management fee", "open"),
-  T(4, "2025-06-15", "royalty", IN, GL, 600_000, "Brand royalty — Nexa trademark", "settled", { settledDate: "2025-09-30" }),
-  T(5, "2025-07-10", "expense-recharge", IN, TR, 480_000, "ERP & IT cost recharge", "settled", { settledDate: "2025-10-12" }),
-  T(6, "2025-08-02", "sale", TR, GL, 1_800_000, "Export consolidation — Trading to Global", "open"),
-  T(7, "2025-09-18", "loan", IN, GL, 3_000_000, "Capex loan — Singapore office build-out", "open"),
-  T(8, "2025-10-05", "service-fee", TR, IN, 900_000, "Distribution & logistics fee to Foods", "open"),
-  T(9, "2025-11-12", "sale", IN, TR, 1_500_000, "Festive-season FG batch", "settled", { settledDate: "2026-01-20" }),
-  T(10, "2026-01-08", "expense-recharge", IN, GL, 750_000, "Expat payroll recharge", "open", { counterAmount: 720_000 }),
-  T(11, "2026-02-14", "royalty", IN, TR, 300_000, "Brand royalty — Trading", "open"),
-  T(12, "2026-03-22", "service-fee", IN, GL, 540_000, "Finance shared-services — Q4", "open", { counterAmount: 540_000 }),
-];
+export const SEED_IC: IcTransaction[] = [];
 
 // ---------------------------------------------------------------------------
 // Persistence
