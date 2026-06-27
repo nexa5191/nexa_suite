@@ -86,10 +86,10 @@ function templateSheet() {
     vals.map((v, i) => c(v, COLUMNS[i].numeric ? EX_NUM : EX));
   const rows: CellInput[][] = [
     header,
-    ex(["DOC-1", "Journal", "2026-05-31", "Nexa Foods", "Bengaluru HQ", "Accrual", "Accrue May electricity", "Yes", "2026-06-01", "6030", 18000, 0, "Power & fuel"]),
-    ex(["DOC-1", "Journal", "2026-05-31", "Nexa Foods", "Bengaluru HQ", "Accrual", "Accrue May electricity", "Yes", "2026-06-01", "2010", 0, 18000, "Accrued payable"]),
-    ex(["DOC-2", "Journal", "2026-05-31", "Nexa Foods", "Bengaluru HQ", "Accrual", "Reclassify courier to admin", "No", "", "6035", 4500, 0, "Office & admin"]),
-    ex(["DOC-2", "Journal", "2026-05-31", "Nexa Foods", "Bengaluru HQ", "Accrual", "Reclassify courier to admin", "No", "", "6070", 0, 4500, "From travel"]),
+    ex(["DOC-1", "Journal", "2026-05-31", "Your Company", "HQ", "Accrual", "Accrue May electricity", "Yes", "2026-06-01", "6030", 18000, 0, "Power & fuel"]),
+    ex(["DOC-1", "Journal", "2026-05-31", "Your Company", "HQ", "Accrual", "Accrue May electricity", "Yes", "2026-06-01", "2010", 0, 18000, "Accrued payable"]),
+    ex(["DOC-2", "Journal", "2026-05-31", "Your Company", "HQ", "Accrual", "Reclassify courier to admin", "No", "", "6035", 4500, 0, "Office & admin"]),
+    ex(["DOC-2", "Journal", "2026-05-31", "Your Company", "HQ", "Accrual", "Reclassify courier to admin", "No", "", "6070", 0, 4500, "From travel"]),
   ];
   return {
     name: "Template",
@@ -157,7 +157,7 @@ export function uploadTemplateWorkbook(today: string): Workbook {
 export function uploadTemplateCsv(): string {
   return toCsv([
     COLUMNS.map((col) => col.name),
-    ["DOC-1", "Journal", "2026-05-31", "Nexa Foods", "Bengaluru HQ", "Accrual", "Accrue May electricity", "Yes", "2026-06-01", "6030", "18000", "0", "Power & fuel"],
-    ["DOC-1", "Journal", "2026-05-31", "Nexa Foods", "Bengaluru HQ", "Accrual", "Accrue May electricity", "Yes", "2026-06-01", "2010", "0", "18000", "Accrued payable"],
+    ["DOC-1", "Journal", "2026-05-31", "Your Company", "HQ", "Accrual", "Accrue May electricity", "Yes", "2026-06-01", "6030", "18000", "0", "Power & fuel"],
+    ["DOC-1", "Journal", "2026-05-31", "Your Company", "HQ", "Accrual", "Accrue May electricity", "Yes", "2026-06-01", "2010", "0", "18000", "Accrued payable"],
   ]);
 }

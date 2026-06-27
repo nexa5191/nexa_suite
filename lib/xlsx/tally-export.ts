@@ -179,7 +179,7 @@ export function buildTallyXml(filters: TallyExportFilters = {}): string {
       <REQUESTDESC>
         <REPORTNAME>All Masters</REPORTNAME>
         <STATICVARIABLES>
-          <SVCURRENTCOMPANY>Nexa Foods Pvt. Ltd.</SVCURRENTCOMPANY>
+          <SVCURRENTCOMPANY></SVCURRENTCOMPANY>
         </STATICVARIABLES>
       </REQUESTDESC>
       <REQUESTDATA>
