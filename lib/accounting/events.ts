@@ -66,7 +66,12 @@ function opening(entityId: string, locationId: string, scale: number) {
 
 for (const ent of ENTITIES) {
   const locs = LOCATIONS.filter((l) => l.entityId === ent.id);
-  const scale = ent.id === "ent-nexa-global" ? 0.6 : ent.id === "ent-nexa-trade" ? 1.2 : 1;
+  const scale = ent.id === "ent-nexa-global" ? 0.6
+    : ent.id === "ent-nexa-trade" ? 1.2
+    : ent.id === "ent-nexa-pune" ? 0.55
+    : ent.id === "ent-nexa-hyd"  ? 0.45
+    : ent.id === "ent-nexa-chn"  ? 0.40
+    : 1;
   opening(ent.id, locs[0].id, scale);
 
   for (const [y, m] of MONTHS) {

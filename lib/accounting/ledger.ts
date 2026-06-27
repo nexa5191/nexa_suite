@@ -1,6 +1,6 @@
 import type { BusinessEvent, Posting, ReportFilters, Basis } from "./types";
 import { BUSINESS_EVENTS, gstRateFor } from "./events";
-import { locationById } from "./org";
+import { locationById, resolveEntityIds } from "./org";
 
 let _seq = 0;
 function post(
@@ -109,7 +109,7 @@ export function allPostings(): Posting[] {
 }
 
 function matchesOrg(p: Posting, f: ReportFilters) {
-  if (f.entityId !== "all" && p.entityId !== f.entityId) return false;
+  if (f.entityId !== "all" && !resolveEntityIds(f.entityId).includes(p.entityId)) return false;
   if (f.locationId !== "all" && p.locationId !== f.locationId) return false;
   if (f.state !== "all" && p.state !== f.state) return false;
   if (p.basis !== f.basis) return false;

@@ -19,6 +19,7 @@ import {
 } from "@/lib/hr/employees";
 import type { Employee } from "@/lib/hr/types";
 import { ENTITIES, LOCATIONS, ALL } from "@/lib/accounting/org";
+import { EntityCombobox } from "@/components/ui/entity-combobox";
 
 const TYPE_LABEL: Record<string, string> = {
   "full-time": "Full-time",
@@ -77,18 +78,11 @@ export function PeopleClient() {
               <option key={d.id} value={d.id}>{d.name}</option>
             ))}
           </Select>
-          <Select
+          <EntityCombobox
             value={entity}
-            onChange={(e) => {
-              setEntity(e.target.value);
-              setLocation(ALL);
-            }}
-          >
-            <option value={ALL}>All entities</option>
-            {ENTITIES.map((en) => (
-              <option key={en.id} value={en.id}>{en.name}</option>
-            ))}
-          </Select>
+            onChange={(id) => { setEntity(id); setLocation(ALL); }}
+            showAll
+          />
           <Select value={location} onChange={(e) => setLocation(e.target.value)}>
             <option value={ALL}>All locations</option>
             {locs.map((l) => (

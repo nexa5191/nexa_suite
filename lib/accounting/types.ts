@@ -27,6 +27,8 @@ export interface Entity {
   currency: string; // functional currency code
   country: string;
   gstin?: string;
+  /** Set on outlet / subsidiary entities; the parent is a rollup group. */
+  parentId?: string;
 }
 
 export interface Location {

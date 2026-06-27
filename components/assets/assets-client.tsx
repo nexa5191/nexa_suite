@@ -14,6 +14,7 @@ import { useJournal } from "@/components/accounting/journal-provider";
 import { usePrefs } from "@/components/prefs/prefs-provider";
 import { cn, formatDate, monthLabel } from "@/lib/utils";
 import { entityById, locationById, ENTITIES, locationsForEntity } from "@/lib/accounting/org";
+import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { planDepreciation, recentMonths } from "@/lib/assets/dep-posting";
 import { useNewIntent } from "@/lib/commands/new-intent";
 import { CalendarClock, CheckCircle2, Wand2 } from "lucide-react";
@@ -627,9 +628,7 @@ function AddAssetForm({ created, onAdd, postError }: { created: FixedAsset[]; on
           </Select>
         </L>
         <L label="Entity">
-          <Select value={entityId} onChange={(e) => { setEntityId(e.target.value); setLocationId(locationsForEntity(e.target.value)[0].id); }}>
-            {ENTITIES.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-          </Select>
+          <EntityCombobox value={entityId} onChange={(id) => { setEntityId(id); setLocationId(locationsForEntity(id)[0]?.id ?? ""); }} />
         </L>
         <L label="Location">
           <Select value={locationId} onChange={(e) => setLocationId(e.target.value)}>

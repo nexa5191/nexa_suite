@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ScanLine, Plus, ChevronRight, CheckCircle2, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { ScanLine, Plus, ChevronRight, CheckCircle2, TrendingUp, TrendingDown, Minus, Search } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,7 @@ const TODAY = "2026-06-22";
 
 export function StockCountClient() {
   const [added, setAdded] = React.useState<StockCount[]>([]);
+  const [search, setSearch] = React.useState("");
   const [selected, setSelected] = React.useState<StockCount | null>(null);
   const [creating, setCreating] = React.useState(false);
 
@@ -41,7 +42,16 @@ export function StockCountClient() {
     saveCounts(extra);
   }
 
-  const counts = allCounts(added);
+  const allCountsList = allCounts(added);
+  const q = search.toLowerCase();
+  const counts = q
+    ? allCountsList.filter((c) =>
+        c.ref.toLowerCase().includes(q) ||
+        employeeName(c.countedBy).toLowerCase().includes(q) ||
+        (LOCATIONS.find((l) => l.id === c.locationId)?.name ?? c.locationId).toLowerCase().includes(q) ||
+        c.lines.some((l) => itemName(l.itemId).toLowerCase().includes(q))
+      )
+    : allCountsList;
 
   function updateStatus(id: string, patch: Partial<StockCount>) {
     const next = counts.map((c) => c.id === id ? { ...c, ...patch } : c);
@@ -57,7 +67,7 @@ export function StockCountClient() {
     updateStatus(id, { status: "posted" });
   }
 
-  const open = counts.filter((c) => c.status === "open" || c.status === "submitted").length;
+  const open = allCountsList.filter((c) => c.status === "open" || c.status === "submitted").length;
 
   return (
     <>
@@ -73,9 +83,19 @@ export function StockCountClient() {
       />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <StatCard label="Total counts" value={String(counts.length)} />
+        <StatCard label="Total counts" value={String(allCountsList.length)} />
         <StatCard label="Open / pending" value={String(open)} highlight={open > 0} />
-        <StatCard label="Posted" value={String(counts.filter((c) => c.status === "posted").length)} />
+        <StatCard label="Posted" value={String(allCountsList.filter((c) => c.status === "posted").length)} />
+      </div>
+
+      <div className="mb-3 relative max-w-xs">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search ref, location, item…"
+          className="h-8 pl-8 text-xs"
+        />
       </div>
 
       <Card className="overflow-hidden">

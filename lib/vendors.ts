@@ -102,6 +102,18 @@ export interface POInvoice {
   amount: number; // base INR
 }
 
+// Audit record written every time lines/prices are changed.
+export interface POAmendment {
+  id: string;
+  date: string;       // ISO
+  reason: string;
+  amendedBy: string;  // employeeId
+  prevLines: POLine[];
+  prevTotal: number;
+  newLines: POLine[];
+  newTotal: number;
+}
+
 // Base (seed) status. The effective status is derived together with the live
 // approval decision — see effectiveStatus().
 export type POBaseStatus = "issued" | "invoiced" | "paid";
@@ -112,7 +124,7 @@ export interface PurchaseOrder {
   title: string;
   date: string; // ISO — PO raised on
   lines: POLine[];
-  total: number; // base INR
+  total: number; // base INR — reflects latest amendment
   spocId: string; // employee who raised & owns the PO (the approver of its invoice)
   entityId: string;
   locationId: string;
@@ -120,6 +132,48 @@ export interface PurchaseOrder {
   invoice?: POInvoice; // present once the vendor bills the PO
   payMode?: "bank" | "upi" | "cheque";
   paidOn?: string; // ISO — for historically paid POs
+  amendments?: POAmendment[]; // ordered oldest → newest
+  shortClosed?: boolean;
+  committedAmount?: number; // set on short-close: value of goods actually received
+}
+
+// ---------------------------------------------------------------------------
+// PO mutations store — patches for both seed and user-created POs.
+// Stored separately so seed POs (immutable consts) can still be amended/closed.
+// ---------------------------------------------------------------------------
+export interface POMutation {
+  amendments: POAmendment[];
+  shortClosed?: boolean;
+  committedAmount?: number;
+  // Lines and total are derived from the last amendment's newLines/newTotal.
+}
+
+const PO_MUTATIONS_KEY = "nexa-po-mutations";
+
+export const loadPOMutations = (): Record<string, POMutation> =>
+  read<Record<string, POMutation>>(PO_MUTATIONS_KEY, {});
+
+export const savePOMutations = (m: Record<string, POMutation>) =>
+  write(PO_MUTATIONS_KEY, m);
+
+/** Merge mutations into a flat PO list. Returns new objects — originals untouched. */
+export function applyPOMutations(
+  pos: PurchaseOrder[],
+  mutations: Record<string, POMutation>,
+): PurchaseOrder[] {
+  return pos.map((po) => {
+    const m = mutations[po.id];
+    if (!m) return po;
+    const lastAmend = m.amendments.at(-1);
+    return {
+      ...po,
+      lines: lastAmend?.newLines ?? po.lines,
+      total: lastAmend?.newTotal ?? po.total,
+      amendments: m.amendments,
+      shortClosed: m.shortClosed,
+      committedAmount: m.committedAmount,
+    };
+  });
 }
 
 // The first six vendors are the stable pool the tax dataset fans purchases over
@@ -286,3 +340,37 @@ export function poOutstanding(po: PurchaseOrder, payments: Record<string, number
   if (!po.invoice) return 0;
   return Math.max(0, Math.round(po.invoice.amount - (payments[po.id] ?? 0)));
 }
+
+// ---- User-created PO persistence -------------------------------------------
+const ADDED_POS_KEY = "nexa-added-pos";
+
+export const loadAddedPOs = (): PurchaseOrder[] => read<PurchaseOrder[]>(ADDED_POS_KEY, []);
+export const saveAddedPOs = (pos: PurchaseOrder[]) => write(ADDED_POS_KEY, pos);
+export function allPOs(added: PurchaseOrder[]): PurchaseOrder[] {
+  return [...PURCHASE_ORDERS, ...added];
+}
+
+function nextPOId(added: PurchaseOrder[]): string {
+  const all = allPOs(added);
+  let max = 2012;
+  for (const p of all) {
+    const n = parseInt(p.id.replace("PO-", ""), 10);
+    if (!Number.isNaN(n)) max = Math.max(max, n);
+  }
+  return `PO-${max + 1}`;
+}
+export function buildNewPO(
+  added: PurchaseOrder[],
+  fields: Omit<PurchaseOrder, "id" | "total">,
+): PurchaseOrder {
+  const total = fields.lines.reduce((s, l) => s + l.qty * l.unitPrice, 0);
+  return { ...fields, id: nextPOId(added), total };
+}
+
+/** COA subtypes that represent spend for each vendor class (used by budget balance). */
+export const CLASS_COA_SUBTYPES: Record<VendorClass, string[]> = {
+  Inventory: ["Cost of Sales"],
+  Opex: ["Operating Expenses", "Finance Costs"],
+  Capex: ["Fixed Assets"],
+  Employee: ["Operating Expenses"],
+};

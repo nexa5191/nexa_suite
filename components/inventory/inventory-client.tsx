@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Factory, ArrowLeftRight, AlertTriangle, PackageX, Boxes, ListTree, ChevronRight, Pencil, Check, X, TrendingUp, ClipboardList, PackageCheck, ScanLine, PackageOpen } from "lucide-react";
+import { Factory, ArrowLeftRight, AlertTriangle, PackageX, Boxes, ListTree, ChevronRight, Pencil, Check, X, TrendingUp, ClipboardList, PackageCheck, ScanLine, PackageOpen, Clock, Search } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +40,16 @@ import {
   lowStockItems,
   type StockIndex,
 } from "@/lib/inventory/movements";
+import { suggestedDemand } from "@/lib/inventory/planning";
+import { allGRNs, loadGRNs } from "@/lib/inventory/supply-chain";
+import {
+  buildLotRegister,
+  computeWACOG,
+  computeStockAgeing,
+  computeDIO,
+  AGE_BAND_META,
+  type ItemAgeing,
+} from "@/lib/inventory/costing";
 import type { Item, ItemCategory } from "@/lib/inventory/types";
 
 const LOC_SHORT: Record<string, string> = {
@@ -56,10 +66,39 @@ export function InventoryClient() {
   const [loc, setLoc] = React.useState<string>(ALL);
   const [selected, setSelected] = React.useState<Item | null>(null);
   const [uomOverrides, setUomOverrides] = React.useState<Record<string, AltUom | null>>({});
+  const [avgDaily, setAvgDaily] = React.useState<Record<string, number>>({});
+  const [search, setSearch] = React.useState("");
+  const [ageingMap, setAgeingMap] = React.useState<Map<string, ItemAgeing>>(new Map());
+  const [dio, setDio] = React.useState(0);
 
   React.useEffect(() => {
-    setIdx(buildStockIndex(allMovements(loadAddedMovements())));
+    const added = loadAddedMovements();
+    const mvs = allMovements(added);
+    setIdx(buildStockIndex(mvs));
     setUomOverrides(loadUomOverrides());
+    // Compute avg daily consumption for all items from consumption movements
+    const consuming: Record<string, number[]> = {};
+    for (const m of mvs) {
+      if (m.type === "consumption" && m.qty < 0) {
+        if (!consuming[m.itemId]) consuming[m.itemId] = [];
+        consuming[m.itemId].push(Math.abs(m.qty));
+      }
+    }
+    // Also use sales-derived avgDaily for finished goods
+    const { avgDaily: salesAvg } = suggestedDemand(mvs, 30);
+    const computed: Record<string, number> = { ...salesAvg };
+    for (const [id, qtys] of Object.entries(consuming)) {
+      const totalQty = qtys.reduce((s, q) => s + q, 0);
+      const spanDays = 90; // assume 90-day window
+      computed[id] = (computed[id] ?? 0) || totalQty / spanDays;
+    }
+    setAvgDaily(computed);
+    // Costing: lot register → WACOG → ageing + DIO
+    const grns = allGRNs(loadGRNs());
+    const lots = buildLotRegister(mvs, grns);
+    const wacog = computeWACOG(lots);
+    setAgeingMap(computeStockAgeing(lots));
+    setDio(computeDIO(mvs, wacog).dio);
   }, []);
 
   function saveOverride(itemId: string, alt: AltUom | null) {
@@ -88,8 +127,12 @@ export function InventoryClient() {
   });
 
   const shownItems = (tab === "all" ? ITEMS : itemsByCategory(tab)).filter((it) => {
-    if (loc === ALL) return true;
-    return stockAt(idx, it.id, loc) !== 0;
+    if (loc !== ALL && stockAt(idx, it.id, loc) === 0) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return it.name.toLowerCase().includes(q) || it.code.toLowerCase().includes(q) || it.hsn.toLowerCase().includes(q);
+    }
+    return true;
   });
 
   return (
@@ -119,18 +162,24 @@ export function InventoryClient() {
                 <Factory className="size-4" /> Production
               </Button>
             </Link>
+            <Link href="/inventory/costing">
+              <Button variant="outline">
+                <Clock className="size-4" /> Costing
+              </Button>
+            </Link>
             <VoucherButton type="stock" label="Stock journal" />
           </div>
         }
       />
 
       {/* Supply-chain quick actions */}
-      <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
         {[
           { href: "/inventory/requisitions", icon: ClipboardList, label: "Purchase Requisitions", sub: "Raise a buy request" },
-          { href: "/inventory/grn", icon: PackageCheck, label: "Goods Receipts", sub: "Record inbound stock" },
+          { href: "/inventory/grn", icon: PackageCheck, label: "Goods Receipts", sub: "Receive & QC inbound stock" },
           { href: "/inventory/stock-count", icon: ScanLine, label: "Stock Count", sub: "Physical vs system qty" },
           { href: "/inventory/issues", icon: PackageOpen, label: "Material Issues", sub: "Issue to production" },
+          { href: "/inventory/traceability", icon: ChevronRight, label: "Batch Traceability", sub: "Trace batch forward / backward" },
         ].map(({ href, icon: Icon, label, sub }) => (
           <Link key={href} href={href}>
             <div className="flex items-center gap-3 rounded-lg border bg-card p-3 hover:bg-accent/50 transition-colors cursor-pointer">
@@ -145,11 +194,12 @@ export function InventoryClient() {
       </div>
 
       {/* Top metrics */}
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <MetricMoney label="Total stock value" value={totalValue} />
         <Metric label="SKUs tracked" value={String(ITEMS.length)} />
         <Metric label="Low-stock items" value={String(low.length)} highlight={low.length > 0} />
         <Metric label="Stock locations" value={String(LOCATIONS.length)} />
+        <Metric label="DIO (days)" value={dio > 0 ? `${dio}d` : "—"} sub="Days Inventory Outstanding" />
       </div>
 
       {/* Value by stage — flip each card for its per-SKU breakdown */}
@@ -194,14 +244,25 @@ export function InventoryClient() {
             </button>
           ))}
         </div>
-        <Select value={loc} onChange={(e) => setLoc(e.target.value)} className="h-8 w-44 text-xs">
-          <option value={ALL}>All locations</option>
-          {LOCATIONS.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.name}
-            </option>
-          ))}
-        </Select>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search items…"
+              className="h-8 w-44 pl-8 text-xs"
+            />
+          </div>
+          <Select value={loc} onChange={(e) => setLoc(e.target.value)} className="h-8 w-44 text-xs">
+            <option value={ALL}>All locations</option>
+            {LOCATIONS.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </Select>
+        </div>
       </div>
 
       {/* Item master */}
@@ -214,6 +275,7 @@ export function InventoryClient() {
                 <th className="px-5 py-3 font-medium">Category</th>
                 <th className="px-5 py-3 text-right font-medium">{loc === ALL ? "On hand" : "At location"}</th>
                 <th className="px-5 py-3 font-medium">By location</th>
+                <th className="px-5 py-3 text-right font-medium">Coverage</th>
                 <th className="px-5 py-3 text-right font-medium">Rate</th>
                 <th className="px-5 py-3 text-right font-medium">Value</th>
                 <th className="px-5 py-3 font-medium">Status</th>
@@ -222,7 +284,7 @@ export function InventoryClient() {
             <tbody>
               {shownItems.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                  <td colSpan={8} className="px-5 py-10 text-center text-sm text-muted-foreground">
                     No items in this view.
                   </td>
                 </tr>
@@ -279,6 +341,31 @@ export function InventoryClient() {
                       </div>
                     </td>
                     <td className="px-5 py-3 text-right">
+                      {(() => {
+                        const daily = avgDaily[it.id];
+                        if (!daily || daily <= 0) return <span className="text-xs text-muted-foreground">—</span>;
+                        const coverDays = Math.round(groupOnHand / daily);
+                        const leadTime = it.leadTimeDays ?? 0;
+                        const coverColor =
+                          coverDays < leadTime ? "text-danger" :
+                          coverDays < leadTime + 7 ? "text-warning" :
+                          "text-success";
+                        return (
+                          <div>
+                            <span className={cn("font-bold tabular-nums text-sm", coverColor)}>
+                              {coverDays}d
+                            </span>
+                            {leadTime > 0 && (
+                              <p className={cn("text-[10px] flex items-center gap-0.5 justify-end mt-0.5", coverDays < leadTime ? "text-danger" : "text-muted-foreground")}>
+                                <Clock className="size-2.5" />
+                                {leadTime}d lead{coverDays < leadTime ? " ⚠ late" : ""}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-5 py-3 text-right">
                       <Money value={it.rate} />
                       {hasBom(it.id) && (
                         <p className="text-[11px] text-muted-foreground">
@@ -291,13 +378,23 @@ export function InventoryClient() {
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex items-start justify-between gap-2">
-                        <div>
+                        <div className="space-y-1">
                           {isLow ? (
                             <Badge variant="warning">Reorder</Badge>
                           ) : (
                             <Badge variant="success">In stock</Badge>
                           )}
-                          <p className="mt-0.5 text-[11px] text-muted-foreground">ROL {fmtQty(it.reorderLevel)}</p>
+                          {(() => {
+                            const age = ageingMap.get(it.id);
+                            if (!age || age.riskBand === "fresh" || age.riskBand === "normal") return null;
+                            const m = AGE_BAND_META[age.riskBand];
+                            return (
+                              <div className={cn("flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium", m.bgColor, m.color)}>
+                                <Clock className="size-2.5" /> {m.label} · {age.oldestDays}d old
+                              </div>
+                            );
+                          })()}
+                          <p className="text-[11px] text-muted-foreground">ROL {fmtQty(it.reorderLevel)}</p>
                         </div>
                         <ChevronRight className="size-4 shrink-0 text-muted-foreground/50" />
                       </div>
@@ -548,11 +645,12 @@ function Field({
   );
 }
 
-function Metric({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function Metric({ label, value, highlight, sub }: { label: string; value: string; highlight?: boolean; sub?: string }) {
   return (
     <Card className={cn("p-4", highlight && "border-warning/40")}>
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className={cn("mt-1 text-3xl font-bold tabular", highlight && "text-warning")}>{value}</p>
+      {sub && <p className="mt-0.5 text-[10px] text-muted-foreground">{sub}</p>}
     </Card>
   );
 }

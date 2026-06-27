@@ -13,6 +13,7 @@ import { downloadCsv } from "@/lib/export";
 import { useNewIntent } from "@/lib/commands/new-intent";
 import { useJournal } from "@/components/accounting/journal-provider";
 import { ENTITIES, LOCATIONS, entityById } from "@/lib/accounting/org";
+import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { accountSafe } from "@/lib/accounting/chart-of-accounts";
 import {
   PETTY_HEADS,
@@ -69,11 +70,7 @@ export function PettyCashClient() {
       {/* scope */}
       <Card className="mb-4 flex flex-wrap items-end gap-3 p-3">
         <Field label="Entity (float)">
-          <Select value={entityId} onChange={(e) => setEntityId(e.target.value)} className="h-9 w-52">
-            {INDIA_ENTITIES.map((e) => (
-              <option key={e.id} value={e.id}>{e.name}</option>
-            ))}
-          </Select>
+          <EntityCombobox value={entityId} onChange={setEntityId} indiaOnly className="h-9 w-52" />
         </Field>
         <Field label="Custodian location">
           <Select value={locationId} onChange={(e) => setLocationId(e.target.value)} className="h-9 w-48">

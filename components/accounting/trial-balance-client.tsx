@@ -9,6 +9,7 @@ import { Money } from "@/components/ui/money";
 import { buildTrialBalance, type TrialBalanceLine } from "@/lib/accounting/trial-balance";
 import type { Basis } from "@/lib/accounting/types";
 import { ENTITIES } from "@/lib/accounting/org";
+import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { cn } from "@/lib/utils";
 import { Download, Printer, Filter } from "lucide-react";
 
@@ -62,10 +63,7 @@ export function TrialBalanceClient() {
       {/* Controls */}
       <Card className="mb-4 flex flex-wrap items-center gap-3 p-3">
         <Filter className="size-4 text-muted-foreground" />
-        <select className="rounded border bg-background px-2 py-1 text-sm" value={entityId} onChange={(e) => setEntityId(e.target.value)}>
-          <option value="all">All entities</option>
-          {ENTITIES.map((en) => <option key={en.id} value={en.id}>{en.name}</option>)}
-        </select>
+        <EntityCombobox value={entityId} onChange={setEntityId} showAll className="w-48" />
         <select className="rounded border bg-background px-2 py-1 text-sm" value={basis} onChange={(e) => setBasis(e.target.value as Basis)}>
           <option value="accrual">Accrual</option>
           <option value="cash">Cash</option>

@@ -64,7 +64,10 @@ export function CommandPalette() {
   const commands = React.useMemo<Command[]>(() => {
     const actions = COMMAND_ACTIONS.map((i) => ({ ...i, group: "Create" }));
     const gated = NAV_GROUPS.flatMap((g) =>
-      g.items.filter((i) => can(i.key)).map((i) => ({ ...i, group: g.label })),
+      g.items
+        .flatMap((item) => [item, ...(item.children ?? [])])
+        .filter((i) => can(i.key))
+        .map((i) => ({ ...i, group: g.label })),
     );
     const chrome = SECONDARY_NAV.map((i) => ({ ...i, group: "Settings" }));
     return [...actions, ...gated, ...chrome];

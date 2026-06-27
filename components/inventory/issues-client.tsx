@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PackageOpen, Plus, Trash2, ChevronRight, CheckCircle2 } from "lucide-react";
+import { PackageOpen, Plus, Trash2, ChevronRight, CheckCircle2, Search } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,7 @@ const ISSUABLE = ITEMS.filter((it) => ["raw", "packing", "semi-finished"].includ
 
 export function IssuesClient() {
   const [added, setAdded] = React.useState<MaterialIssue[]>([]);
+  const [search, setSearch] = React.useState("");
   const [selected, setSelected] = React.useState<MaterialIssue | null>(null);
   const [creating, setCreating] = React.useState(false);
 
@@ -44,7 +45,17 @@ export function IssuesClient() {
     saveIssues(extra);
   }
 
-  const issues = allIssues(added);
+  const allIssuesList = allIssues(added);
+  const q = search.toLowerCase();
+  const issues = q
+    ? allIssuesList.filter((m) =>
+        m.ref.toLowerCase().includes(q) ||
+        (m.productionRef ?? "").toLowerCase().includes(q) ||
+        employeeName(m.issuedBy).toLowerCase().includes(q) ||
+        (LOCATIONS.find((l) => l.id === m.locationId)?.name ?? "").toLowerCase().includes(q) ||
+        m.lines.some((l) => itemName(l.itemId).toLowerCase().includes(q))
+      )
+    : allIssuesList;
 
   function postIssue(id: string) {
     const issue = issues.find((m) => m.id === id);
@@ -55,7 +66,7 @@ export function IssuesClient() {
     setSelected(next.find((m) => m.id === id) ?? null);
   }
 
-  const drafts = issues.filter((m) => m.status === "draft").length;
+  const drafts = allIssuesList.filter((m) => m.status === "draft").length;
 
   return (
     <>
@@ -71,9 +82,19 @@ export function IssuesClient() {
       />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <StatCard label="Total issues" value={String(issues.length)} />
+        <StatCard label="Total issues" value={String(allIssuesList.length)} />
         <StatCard label="Draft (unposted)" value={String(drafts)} highlight={drafts > 0} />
-        <StatCard label="Posted" value={String(issues.filter((m) => m.status === "posted").length)} />
+        <StatCard label="Posted" value={String(allIssuesList.filter((m) => m.status === "posted").length)} />
+      </div>
+
+      <div className="mb-3 relative max-w-xs">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search ref, production ref, item…"
+          className="h-8 pl-8 text-xs"
+        />
       </div>
 
       <Card className="overflow-hidden">

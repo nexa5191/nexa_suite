@@ -25,6 +25,7 @@ import { usePrefs } from "@/components/prefs/prefs-provider";
 import { useJournal } from "@/components/accounting/journal-provider";
 import { CHART_OF_ACCOUNTS } from "@/lib/accounting/chart-of-accounts";
 import { ENTITIES, ALL, locationsForEntity } from "@/lib/accounting/org";
+import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { VOUCHER_TYPES, nextVoucherNo } from "@/lib/accounting/manual-entries";
 import { downloadCsv } from "@/lib/csv/csv";
 import { downloadXlsx } from "@/lib/xlsx/xlsx";
@@ -414,13 +415,7 @@ function DocCard({
           </div>
           <div>
             <Label>Entity</Label>
-            <Select value={doc.entityId} onChange={(e) => onChangeEntity(e.target.value)} className="mt-1">
-              {ENTITIES.map((en) => (
-                <option key={en.id} value={en.id}>
-                  {en.name}
-                </option>
-              ))}
-            </Select>
+            <EntityCombobox value={doc.entityId} onChange={onChangeEntity} className="mt-1" />
           </div>
           <div>
             <Label>Location</Label>

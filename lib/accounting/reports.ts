@@ -1,7 +1,7 @@
 import type { ReportFilters, Basis } from "./types";
 import { CHART_OF_ACCOUNTS, account, accountSafe, SUBTYPE_ORDER } from "./chart-of-accounts";
 import { periodMovement, cumulativeBalance, allPostings } from "./ledger";
-import { ENTITIES } from "./org";
+import { ENTITIES, resolveEntityIds } from "./org";
 
 export interface Row {
   code: string;
@@ -180,7 +180,7 @@ function cashBalance(f: ReportFilters, predicate: (date: string) => boolean): nu
   let total = 0;
   for (const p of allPostings()) {
     if (p.basis !== f.basis) continue;
-    if (f.entityId !== "all" && p.entityId !== f.entityId) continue;
+    if (f.entityId !== "all" && !resolveEntityIds(f.entityId).includes(p.entityId)) continue;
     if (f.locationId !== "all" && p.locationId !== f.locationId) continue;
     if (f.state !== "all" && p.state !== f.state) continue;
     if (!account(p.accountCode).isCash) continue;
@@ -253,7 +253,7 @@ export function monthlyTrend(f: ReportFilters): TrendPoint[] {
   const map = new Map<string, { revenue: number; expense: number }>();
   for (const p of allPostings()) {
     if (p.basis !== f.basis) continue;
-    if (f.entityId !== "all" && p.entityId !== f.entityId) continue;
+    if (f.entityId !== "all" && !resolveEntityIds(f.entityId).includes(p.entityId)) continue;
     if (f.locationId !== "all" && p.locationId !== f.locationId) continue;
     if (f.state !== "all" && p.state !== f.state) continue;
     if (f.from && p.date < f.from) continue;
@@ -312,7 +312,7 @@ export function accountMonthly(f: ReportFilters, code: string): Array<{ month: s
   const map = new Map<string, number>();
   for (const p of allPostings()) {
     if (p.basis !== f.basis) continue;
-    if (f.entityId !== "all" && p.entityId !== f.entityId) continue;
+    if (f.entityId !== "all" && !resolveEntityIds(f.entityId).includes(p.entityId)) continue;
     if (f.locationId !== "all" && p.locationId !== f.locationId) continue;
     if (f.state !== "all" && p.state !== f.state) continue;
     if (f.from && p.date < f.from) continue;
