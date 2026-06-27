@@ -103,7 +103,7 @@ function deltaLabel(current: number, prior: number, period = "last quarter"): st
 // ---------------------------------------------------------------------------
 
 const SUGGESTIONS = [
-  "Receivables outstanding for Nexa Global vs last quarter",
+  "Receivables outstanding vs last quarter",
   "Top customers by outstanding",
   "GST input tax credit at risk this period",
   "Top vendors by payable",
@@ -139,7 +139,7 @@ export function answer(query: string): CopilotResult {
     kind: "answer",
     title: "Ask me about your finances",
     narrative:
-      "I read live from your ledgers — receivables, payables, GST/ITC and vendor risk. Try one of these, or rephrase with an amount, an age (e.g. “over 60 days”) or an entity (Nexa Foods / Trading / Global).",
+      “I read live from your ledgers — receivables, payables, GST/ITC and vendor risk. Try one of these, or rephrase with an amount, an age (e.g. “over 60 days”) or an entity name.”,
     followups: SUGGESTIONS,
   };
 }
@@ -443,23 +443,7 @@ export interface SampleDoc {
   tdsRate?: number; // on taxable
 }
 
-export const SAMPLE_DOCS: SampleDoc[] = [
-  {
-    id: "doc-1", vendor: "BrightConsult Advisory LLP", gstin: "29AACCB1234F1Z5", invoiceNo: "BCA/26-27/0188",
-    date: "2026-06-14", description: "Management consulting — June", expenseAccount: "Professional Fees",
-    taxable: 180000, gstRate: 18, interState: false, tdsSection: "194J", tdsRate: 10,
-  },
-  {
-    id: "doc-2", vendor: "Sterling Foods Pvt Ltd", gstin: "27AAACS9876Q1Z2", invoiceNo: "STF/26-27/0205",
-    date: "2026-06-15", description: "Raw materials — inter-state purchase", expenseAccount: "Purchases — Raw Material",
-    taxable: 245000, gstRate: 5, interState: true,
-  },
-  {
-    id: "doc-3", vendor: "Prime Office Spaces", gstin: "29AAFCP4567R1Z9", invoiceNo: "POS/JUN/2026",
-    date: "2026-06-01", description: "Office rent — June (Bengaluru HQ)", expenseAccount: "Rent",
-    taxable: 150000, gstRate: 18, interState: false, tdsSection: "194I", tdsRate: 10,
-  },
-];
+export const SAMPLE_DOCS: SampleDoc[] = [];
 
 export function draftJournal(doc: SampleDoc): CopilotResult {
   const gst = Math.round(doc.taxable * doc.gstRate / 100);

@@ -7,7 +7,7 @@
 // SKUs so value ties back to the catalogue.
 // ---------------------------------------------------------------------------
 
-import { FINISHED_ITEMS, itemById } from "@/lib/inventory/items";
+import { itemById } from "@/lib/inventory/items";
 
 export type OrderStatus =
   | "new"
@@ -42,14 +42,7 @@ export interface SalesOrder {
 // Channel → OMS source that ingests it, and the entity/location that books it.
 // Marketplace + own-storefront volume sells from Nexa Foods (Bengaluru); the
 // distributor & quick-commerce lanes are served by Nexa Trading (Mumbai).
-export const CHANNELS: { name: string; source: string; entityId: string; locationId: string }[] = [
-  { name: "Amazon", source: "unicommerce", entityId: "ent-nexa-in", locationId: "loc-blr" },
-  { name: "Flipkart", source: "increff", entityId: "ent-nexa-in", locationId: "loc-blr" },
-  { name: "Shopify Store", source: "shopify", entityId: "ent-nexa-in", locationId: "loc-blr" },
-  { name: "Website D2C", source: "easyecom", entityId: "ent-nexa-in", locationId: "loc-blr" },
-  { name: "Quick Commerce", source: "unicommerce", entityId: "ent-nexa-trade", locationId: "loc-mum" },
-  { name: "Distributor", source: "increff", entityId: "ent-nexa-trade", locationId: "loc-mum" },
-];
+export const CHANNELS: { name: string; source: string; entityId: string; locationId: string }[] = [];
 
 export const STATUS_META: Record<
   OrderStatus,
@@ -65,88 +58,6 @@ export const STATUS_META: Record<
 };
 
 export const FUNNEL_ORDER: OrderStatus[] = ["new", "confirmed", "packed", "shipped", "delivered"];
-
-function mulberry32(seed: number) {
-  return function () {
-    seed |= 0;
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-const rnd = mulberry32(20240602);
-const pick = <T,>(a: T[]) => a[Math.floor(rnd() * a.length)];
-const between = (lo: number, hi: number) => Math.round(lo + rnd() * (hi - lo));
-const iso = (y: number, m: number, d: number) => `${y}-${String(m).padStart(2, "0")}-${String(Math.min(d, 28)).padStart(2, "0")}`;
-
-// Apr 2024 → Jun 2026 — two full FYs plus the current year-to-date (27 months).
-const MONTHS: Array<[number, number]> = [];
-for (let i = 0; i < 27; i++) {
-  const m = ((3 + i) % 12) + 1;
-  const y = 2024 + Math.floor((3 + i) / 12);
-  MONTHS.push([y, m]);
-}
-
-const CUSTOMERS = [
-  "Aarav Sharma", "Priya Menon", "Rohan Gupta", "Ananya Iyer", "Vikram Singh", "Sneha Reddy",
-  "Karthik Nair", "Meera Joshi", "Arjun Patel", "Divya Rao", "FreshMart Retail", "BlueMart Stores",
-  "QuickKart", "DailyNeeds Hyperlocal", "Sunrise Provisions", "Green Basket", "Metro Cash & Carry",
-];
-const STATES = ["Karnataka", "Maharashtra", "Delhi", "Tamil Nadu", "Telangana", "Gujarat", "West Bengal"];
-
-function rollStatus(monthsAgo: number): OrderStatus {
-  const r = rnd();
-  // Recent orders are still mid-funnel; older ones are mostly delivered.
-  if (monthsAgo <= 0) {
-    if (r < 0.25) return "new";
-    if (r < 0.5) return "confirmed";
-    if (r < 0.7) return "packed";
-    if (r < 0.9) return "shipped";
-    if (r < 0.95) return "delivered";
-    return "cancelled";
-  }
-  if (r < 0.86) return "delivered";
-  if (r < 0.91) return "shipped";
-  if (r < 0.96) return "returned";
-  return "cancelled";
-}
-
-function build(): SalesOrder[] {
-  const out: SalesOrder[] = [];
-  let n = 0;
-  MONTHS.forEach(([y, m], mi) => {
-    const monthsAgo = MONTHS.length - 1 - mi;
-    const count = between(26, 40); // orders per month
-    for (let i = 0; i < count; i++) {
-      const ch = pick(CHANNELS);
-      const item = pick(FINISHED_ITEMS);
-      const qty = between(1, item.uom === "pcs" && item.rate < 100 ? 24 : 6);
-      const rate = item.rate;
-      const day = between(1, 28);
-      const status = rollStatus(monthsAgo);
-      out.push({
-        id: `so-${++n}`,
-        orderNo: `ORD-${y}${String(m).padStart(2, "0")}-${String(1000 + i)}`,
-        date: iso(y, m, day),
-        channel: ch.name,
-        source: ch.source,
-        customer: pick(CUSTOMERS),
-        state: pick(STATES),
-        entityId: ch.entityId,
-        locationId: ch.locationId,
-        itemId: item.id,
-        qty,
-        rate,
-        amount: qty * rate,
-        status,
-        payment: rnd() < 0.62 ? "Prepaid" : "COD",
-        fulfilledOn: status === "delivered" ? iso(y, m, Math.min(28, day + between(1, 6))) : undefined,
-      });
-    }
-  });
-  return out;
-}
 
 export const ORDERS: SalesOrder[] = [];
 
