@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { DatabaseZap, RotateCcw, TriangleAlert } from "lucide-react";
+import { RotateCcw, Shell, TriangleAlert } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,33 +27,33 @@ export function DataResetCard() {
     <Card className="mt-4 border-danger/30">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <DatabaseZap className="size-4" /> Demo Data
+          <Shell className="size-4" /> Reset to Bare Shell
           {pending > 0 && (
-            <Badge variant="warning" className="ml-1">{pending} module{pending === 1 ? "" : "s"} edited</Badge>
+            <Badge variant="warning" className="ml-1">{pending} module{pending === 1 ? "" : "s"} with data</Badge>
           )}
         </CardTitle>
         <CardDescription>
-          Clear out everything you&apos;ve changed and reload the original, mutually-consistent test
-          dataset across all modules. Your theme, layout and Excel templates are kept.
+          Wipe all locally stored business data and return every module to its empty starting state.
+          Your theme, layout and Excel templates are kept.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-          <RotateCcw className="size-3.5" /> Reset &amp; reload fresh data
+          <RotateCcw className="size-3.5" /> Reset to bare shell
         </Button>
       </CardContent>
 
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title="Reset all demo data?"
-        description="This restores the fresh seed dataset and reloads the app."
+        title="Reset to bare shell?"
+        description="All locally stored business data will be cleared and the app will reload empty."
         footer={
           !done && (
             <>
               <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
               <Button variant="danger" size="sm" onClick={confirmReset}>
-                <RotateCcw className="size-3.5" /> Reset everything
+                <RotateCcw className="size-3.5" /> Yes, clear everything
               </Button>
             </>
           )
@@ -61,13 +61,13 @@ export function DataResetCard() {
       >
         {done ? (
           <p className="flex items-center gap-2 text-sm text-success">
-            <RotateCcw className="size-4" /> Fresh data loaded — reloading…
+            <RotateCcw className="size-4" /> Cleared — reloading…
           </p>
         ) : (
           <>
             <div className="mb-3 flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-sm">
               <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warning" />
-              <span>This permanently discards local edits in the modules below and cannot be undone.</span>
+              <span>This permanently discards all locally stored records in the modules below and cannot be undone.</span>
             </div>
             <ul className="grid grid-cols-1 gap-x-4 gap-y-1 text-sm text-muted-foreground sm:grid-cols-2">
               {RESET_MODULES.map((m) => (

@@ -1,11 +1,8 @@
-// Central demo-data reset. Every module persists its user edits under a
-// `nexa-*` localStorage key on top of the deterministic seed dataset. Clearing
-// those keys returns every module to its fresh, mutually-consistent seed — so
-// "reset" is how we clean out accumulated data and reload fresh test data.
-//
-// We clear by prefix (so dynamic keys like `nexa-budget:<entity>:<fy>` are
-// covered automatically) and keep only the appearance/layout preferences the
-// user has chosen, which are not "business data".
+// Bare-shell reset. Every module persists its data under a `nexa-*`
+// localStorage key. Clearing those keys returns every module to its empty
+// starting state. We clear by prefix (so dynamic keys like
+// `nexa-budget:<entity>:<fy>` are covered automatically) and keep only
+// appearance/layout preferences, which are not business data.
 
 /** Appearance & export-formatting keys preserved across a reset. */
 const KEEP = new Set<string>([
@@ -16,18 +13,20 @@ const KEEP = new Set<string>([
   "nexa-report-period", // selected reporting period (a view preference)
 ]);
 
-/** Human-readable summary of the operational modules a reset restores. */
+/** Human-readable list of modules cleared on reset. */
 export const RESET_MODULES = [
-  "CRM pipeline, journeys & tags",
-  "Sales invoices & statuses",
-  "Vendor & document approvals",
+  "Journal entries & GL postings",
+  "Sales invoices & payments",
+  "Vendors, POs & approvals",
   "Inventory movements & production",
   "Fixed assets & disposals",
-  "Bank reconciliation matches",
+  "Bank accounts & reconciliation",
   "Tax filings & ITC/TDS workings",
-  "Inter-company transactions & settlements",
-  "Budgets, assumptions & business plan",
-  "Leave policy, payroll runs & tasks",
+  "Inter-company transactions",
+  "Budgets & business plan",
+  "HR — payroll, leave & tasks",
+  "CRM pipeline & contacts",
+  "Contracts, leases & FX items",
 ];
 
 /** Returns the operational `nexa-*` keys currently present in localStorage. */
