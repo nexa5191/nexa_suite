@@ -8,6 +8,7 @@ import { ColorStudio } from "@/components/theme/color-studio";
 import { FontSetting } from "@/components/theme/font-setting";
 import { NavLayoutSetting } from "@/components/shell/nav-layout-setting";
 import { DataResetCard } from "@/components/settings/data-reset-card";
+import { DemoLoadCard } from "@/components/settings/demo-load-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ENTITIES, LOCATIONS } from "@/lib/accounting/org";
@@ -92,6 +93,7 @@ export function SettingsClient() {
         </CardContent>
       </Card>
 
+      <DemoLoadCard />
       <DataResetCard />
     </>
   );

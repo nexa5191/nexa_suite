@@ -11,31 +11,12 @@ export const DEPARTMENTS: Department[] = [
   { id: "dep-proc", name: "Procurement" },
 ];
 
-// loc → entity mapping; populated when entities and locations are configured.
-const ENTITY_OF: Record<string, string> = {};
-
-type Seed = Omit<Employee, "entityId" | "email" | "status" | "personalEmail"> & {
-  status?: Employee["status"];
-  exitDate?: string;
-};
-
-function email(name: string) {
-  return `${name.toLowerCase().replace(/[^a-z]+/g, ".")}@nexa.example`;
+function readLS<T>(key: string, fb: T): T {
+  if (typeof window === "undefined") return fb;
+  try { const r = localStorage.getItem(key); return r ? (JSON.parse(r) as T) : fb; } catch { return fb; }
 }
 
-function personalEmail(name: string) {
-  return `${name.toLowerCase().replace(/[^a-z]+/g, ".")}@gmail.com`;
-}
-
-const SEED: Seed[] = [];
-
-export const EMPLOYEES: Employee[] = SEED.map((s) => ({
-  ...s,
-  entityId: ENTITY_OF[s.locationId],
-  email: email(s.name),
-  personalEmail: personalEmail(s.name),
-  status: s.status ?? "active",
-}));
+export const EMPLOYEES: Employee[] = readLS<Employee[]>("nexa-employees", []);
 
 export const ACTIVE_EMPLOYEES = EMPLOYEES.filter((e) => e.status !== "exited");
 

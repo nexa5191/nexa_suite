@@ -130,9 +130,12 @@ export interface CrmContact {
 // Seed data
 // ---------------------------------------------------------------------------
 
-export const ACCOUNTS: CrmAccount[] = [];
-
-export const CONTACTS: CrmContact[] = [];
+function readLS<T>(key: string, fb: T): T {
+  if (typeof window === "undefined") return fb;
+  try { const r = localStorage.getItem(key); return r ? (JSON.parse(r) as T) : fb; } catch { return fb; }
+}
+export const ACCOUNTS: CrmAccount[] = readLS<CrmAccount[]>("nexa-crm-accounts", []);
+export const CONTACTS: CrmContact[] = readLS<CrmContact[]>("nexa-crm-contacts", []);
 
 export const SEED_EVENTS: JourneyEvent[] = [];
 

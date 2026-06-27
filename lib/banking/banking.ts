@@ -21,7 +21,11 @@ export interface BankAccount {
   opening: number; // book opening balance at the start of the rec window (base INR)
 }
 
-export const BANK_ACCOUNTS: BankAccount[] = [];
+function readLS<T>(key: string, fb: T): T {
+  if (typeof window === "undefined") return fb;
+  try { const r = localStorage.getItem(key); return r ? (JSON.parse(r) as T) : fb; } catch { return fb; }
+}
+export const BANK_ACCOUNTS: BankAccount[] = readLS<BankAccount[]>("nexa-bank-accounts", []);
 
 export function bankAccountById(id: string) {
   return BANK_ACCOUNTS.find((b) => b.id === id);

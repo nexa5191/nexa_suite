@@ -5,9 +5,13 @@ import type { Entity, Location } from "./types";
 // resolveEntityIds() expands a group ID to include itself + all children,
 // so any filter that calls it automatically handles rollup.
 
-export const ENTITIES: Entity[] = [];
+function readLS<T>(key: string): T[] {
+  if (typeof window === "undefined") return [];
+  try { const r = localStorage.getItem(key); return r ? (JSON.parse(r) as T[]) : []; } catch { return []; }
+}
 
-export const LOCATIONS: Location[] = [];
+export const ENTITIES: Entity[] = readLS<Entity>("nexa-entities");
+export const LOCATIONS: Location[] = readLS<Location>("nexa-locations");
 
 export const ALL = "all";
 

@@ -179,7 +179,11 @@ export function applyPOMutations(
 // The first six vendors are the stable pool the tax dataset fans purchases over
 // (see TAX_VENDOR_POOL) — keep them and their order fixed so the GST/TDS demo
 // data stays deterministic. Capex/Employee vendors are appended after.
-export const VENDORS: Vendor[] = [];
+function readLS<T>(key: string, fb: T): T {
+  if (typeof window === "undefined") return fb;
+  try { const r = localStorage.getItem(key); return r ? (JSON.parse(r) as T) : fb; } catch { return fb; }
+}
+export const VENDORS: Vendor[] = readLS<Vendor[]>("nexa-vendors", []);
 
 /** Stable subset the tax dataset fans purchases over (deterministic). */
 export const TAX_VENDOR_POOL: Vendor[] = VENDORS.slice(0, 6);

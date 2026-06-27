@@ -23,7 +23,11 @@ export function uomLabel(uom: Uom) {
 // Plant is the primary manufacturing/storage site.
 const PLANT = "";
 
-export const ITEMS: Item[] = [];
+function readLS<T>(key: string, fb: T): T {
+  if (typeof window === "undefined") return fb;
+  try { const r = localStorage.getItem(key); return r ? (JSON.parse(r) as T) : fb; } catch { return fb; }
+}
+export const ITEMS: Item[] = readLS<Item[]>("nexa-items", []);
 
 // ---- Ownership / sourcing model metadata --------------------------------
 export const OWNERSHIP_META: Record<
@@ -40,7 +44,7 @@ export function ownershipOf(itemId: string): OwnershipModel {
 }
 
 // ---- Bill of materials: output item → components consumed per unit ----
-export const BOM: Record<string, BomComponent[]> = {};
+export const BOM: Record<string, BomComponent[]> = readLS<Record<string, BomComponent[]>>("nexa-bom", {});
 
 // ---------------------------------------------------------------------------
 // Alternative unit of measure (Case / pack) — base unit is `item.uom`; the
