@@ -12,8 +12,7 @@ import * as React from "react";
 import { EMPLOYEES } from "@/lib/hr/employees";
 
 export const PORTAL_EMP_KEY = "nexa-portal-emp";
-/** The default signed-in employee (matches the prior hard-coded default). */
-export const DEFAULT_PORTAL_EMP = "emp-006";
+export const DEFAULT_PORTAL_EMP = "";
 const PORTAL_EMP_EVENT = "nexa-portal-emp-change";
 
 function isValid(id: string): boolean {

@@ -62,22 +62,7 @@ export const DEFAULT_ROLES: Role[] = [
   },
 ];
 
-// The signed-in account (matches the session user) is the Owner. The rest are
-// sample teammates so the roles / mimic flows are concrete out of the box.
-export const DEFAULT_MEMBERS: Member[] = [
-  { id: "u-owner", name: "You", email: "500xlabs@gmail.com", roleId: "owner" },
-  { id: "u-asha", name: "Asha Menon", email: "asha@nexa.app", roleId: "admin" },
-  { id: "u-ravi", name: "Ravi Kapoor", email: "ravi@nexa.app", roleId: "manager" },
-  { id: "u-neha", name: "Neha Shah", email: "neha@nexa.app", roleId: "member" },
-  { id: "u-dev", name: "Dev Patel", email: "dev@nexa.app", roleId: "viewer" },
-  { id: "u-sara", name: "Sara Khan", email: "sara@nexa.app", roleId: "admin" },
-  { id: "u-meera", name: "Meera Pillai", email: "meera@nexa.app", roleId: "manager" },
-  { id: "u-tom", name: "Thomas George", email: "thomas@nexa.app", roleId: "manager" },
-  { id: "u-arjun", name: "Arjun Rao", email: "arjun@nexa.app", roleId: "member" },
-  { id: "u-vikram", name: "Vikram Shah", email: "vikram@nexa.app", roleId: "member" },
-  { id: "u-leela", name: "Leela Nair", email: "leela@nexa.app", roleId: "viewer" },
-  { id: "u-imran", name: "Imran Sheikh", email: "imran@nexa.app", roleId: "viewer" },
-];
+export const DEFAULT_MEMBERS: Member[] = [];
 
 export const DEFAULT_CURRENT_USER_ID = "u-owner";
 
