@@ -50,13 +50,7 @@ function makeId(seed: string) {
   return `tcs-${Math.abs(h).toString(16).slice(0, 8)}`;
 }
 
-const BUYERS = [
-  { name: "Steel Scrap Traders", pan: "AABCS1234D" },
-  { name: "Raj Motor Sales", pan: "BBRCM5678E" },
-  { name: "Forest Products Ltd.", pan: "" },
-  { name: "Vijay Mining Corp", pan: "CVCMI9012F" },
-  { name: "Overseas Tours & Travels", pan: "DOTTA3456G" },
-];
+const BUYERS: { name: string; pan: string }[] = [];
 
 function seedTxn(idx: number, month: string, section: TcsSection, buyer: typeof BUYERS[0], saleValue: number): TcsTransaction {
   const hasPan = !!buyer.pan;
@@ -80,17 +74,7 @@ function seedTxn(idx: number, month: string, section: TcsSection, buyer: typeof 
   };
 }
 
-export const TCS_TRANSACTIONS: TcsTransaction[] = [
-  seedTxn(0, "2026-04", TCS_SECTIONS[3], BUYERS[0], 1800000),
-  seedTxn(1, "2026-04", TCS_SECTIONS[6], BUYERS[1], 1250000),
-  seedTxn(2, "2026-04", TCS_SECTIONS[2], BUYERS[2], 950000),
-  seedTxn(3, "2026-05", TCS_SECTIONS[3], BUYERS[0], 2200000),
-  seedTxn(4, "2026-05", TCS_SECTIONS[7], BUYERS[4], 1500000),
-  seedTxn(5, "2026-05", TCS_SECTIONS[9], BUYERS[3], 6500000),
-  seedTxn(6, "2026-06", TCS_SECTIONS[3], BUYERS[0], 1600000),
-  seedTxn(7, "2026-06", TCS_SECTIONS[6], BUYERS[1], 1400000),
-  seedTxn(8, "2026-06", TCS_SECTIONS[9], BUYERS[3], 7200000),
-];
+export const TCS_TRANSACTIONS: TcsTransaction[] = [];
 
 export interface TcsSummary {
   period: string;

@@ -65,10 +65,7 @@ export interface NineBoxCell {
 
 // ---- Review cycles --------------------------------------------------------
 
-export const REVIEW_CYCLES: ReviewCycle[] = [
-  { id: "fy24-h2", label: "H2 FY24-25", period: "Oct 2024 – Mar 2025", phase: "done", active: false, startsOn: "2025-03-15", closesOn: "2025-04-20" },
-  { id: "fy25-h1", label: "H1 FY25-26", period: "Apr 2025 – Sep 2025", phase: "calibration", active: true, startsOn: "2026-06-01", closesOn: "2026-07-15" },
-];
+export const REVIEW_CYCLES: ReviewCycle[] = [];
 
 export const ACTIVE_CYCLE = REVIEW_CYCLES.find((c) => c.active) ?? REVIEW_CYCLES[REVIEW_CYCLES.length - 1];
 

@@ -37,14 +37,7 @@ const INCOME_ACCOUNT = "4020"; // Service Revenue
 /** Renewal window — contracts ending within this many days are "expiring". */
 export const RENEWAL_WINDOW_DAYS = 60;
 
-export const CONTRACTS: Contract[] = [
-  { id: "ct-1", name: "HVAC & DG-set AMC", counterparty: "CoolAir Facility Services", direction: "payable", category: "AMC", fee: 18_000, frequency: "monthly", start: "2025-04-01", end: "2026-06-30", entityId: "ent-nexa-in", locationId: "loc-blr" },
-  { id: "ct-2", name: "ERP & email cloud subscription", counterparty: "CloudStack Technologies", direction: "payable", category: "Subscription", fee: 65_000, frequency: "monthly", start: "2025-07-01", end: "2027-06-30", entityId: "ent-nexa-in", locationId: "loc-blr" },
-  { id: "ct-3", name: "Fire & safety AMC", counterparty: "SafeGuard Systems", direction: "payable", category: "AMC", fee: 30_000, frequency: "quarterly", start: "2025-04-01", end: "2026-08-10", entityId: "ent-nexa-trade", locationId: "loc-mum" },
-  { id: "ct-4", name: "Legal & secretarial retainer", counterparty: "Lex & Associates", direction: "payable", category: "Retainer", fee: 50_000, frequency: "monthly", start: "2026-01-01", end: "2026-12-31", entityId: "ent-nexa-in", locationId: "loc-blr" },
-  { id: "ct-5", name: "Cold-chain monitoring licence", counterparty: "ChainSense IoT", direction: "payable", category: "Licence", fee: 120_000, frequency: "annual", start: "2025-05-01", end: "2026-04-30", entityId: "ent-nexa-trade", locationId: "loc-mum" },
-  { id: "ct-6", name: "Data-insights AMC (billed)", counterparty: "QuickBasket", direction: "receivable", category: "AMC", fee: 50_000, frequency: "monthly", start: "2025-10-01", end: "2026-09-30", entityId: "ent-nexa-in", locationId: "loc-blr" },
-];
+export const CONTRACTS: Contract[] = [];
 
 // ---- Contract document repository ------------------------------------------
 
@@ -69,17 +62,7 @@ export const DOC_KIND_META: Record<DocKind, { label: string; tone: "primary" | "
   insurance: { label: "Insurance", tone: "default" },
 };
 
-export const CONTRACT_DOCS: ContractDoc[] = [
-  { id: "cd-1", contractId: "ct-1", name: "HVAC AMC — master agreement.pdf", kind: "agreement", date: "2025-03-28", version: "v1.0", sizeKb: 412 },
-  { id: "cd-2", contractId: "ct-1", name: "HVAC AMC — SLA annexure.pdf", kind: "sla", date: "2025-03-28", version: "v1.0", sizeKb: 188 },
-  { id: "cd-3", contractId: "ct-2", name: "CloudStack ERP — subscription order form.pdf", kind: "agreement", date: "2025-06-25", version: "v2.1", sizeKb: 356 },
-  { id: "cd-4", contractId: "ct-2", name: "CloudStack — DPA & security addendum.pdf", kind: "amendment", date: "2025-09-12", version: "v2.2", sizeKb: 274 },
-  { id: "cd-5", contractId: "ct-3", name: "SafeGuard fire AMC — agreement.pdf", kind: "agreement", date: "2025-03-30", version: "v1.0", sizeKb: 298 },
-  { id: "cd-6", contractId: "ct-4", name: "Lex & Associates — retainer LOE.pdf", kind: "agreement", date: "2025-12-20", version: "v1.0", sizeKb: 210 },
-  { id: "cd-7", contractId: "ct-5", name: "ChainSense IoT — licence & PO.pdf", kind: "po", date: "2025-04-22", version: "v1.0", sizeKb: 164 },
-  { id: "cd-8", contractId: "ct-6", name: "QuickBasket data-insights AMC — MSA.pdf", kind: "agreement", date: "2025-09-25", version: "v1.0", sizeKb: 488 },
-  { id: "cd-9", contractId: "ct-6", name: "QuickBasket — renewal addendum FY26.pdf", kind: "renewal", date: "2026-03-15", version: "v1.1", sizeKb: 132 },
-];
+export const CONTRACT_DOCS: ContractDoc[] = [];
 
 export function docsFor(contractId: string): ContractDoc[] {
   return CONTRACT_DOCS.filter((d) => d.contractId === contractId);

@@ -21,12 +21,7 @@ export interface BankAccount {
   opening: number; // book opening balance at the start of the rec window (base INR)
 }
 
-export const BANK_ACCOUNTS: BankAccount[] = [
-  { id: "bank-foods-hdfc", entityId: "ent-nexa-in", accountCode: "1020", bankName: "HDFC Bank — Current", number: "5011 2233 4455", ifsc: "HDFC0000291", currency: "INR", opening: 4_200_000 },
-  { id: "bank-foods-eefc", entityId: "ent-nexa-in", accountCode: "1030", bankName: "HDFC Bank — EEFC (Forex)", number: "5011 9988 7766", ifsc: "HDFC0000291", currency: "INR", opening: 1_350_000 },
-  { id: "bank-trade-icici", entityId: "ent-nexa-trade", accountCode: "1020", bankName: "ICICI Bank — Current", number: "6022 7788 1122", ifsc: "ICIC0000271", currency: "INR", opening: 2_600_000 },
-  { id: "bank-global-dbs", entityId: "ent-nexa-global", accountCode: "1020", bankName: "DBS Bank — Current", number: "0012-345678", ifsc: "DBSSSGSG", currency: "SGD", opening: 900_000 },
-];
+export const BANK_ACCOUNTS: BankAccount[] = [];
 
 export function bankAccountById(id: string) {
   return BANK_ACCOUNTS.find((b) => b.id === id);

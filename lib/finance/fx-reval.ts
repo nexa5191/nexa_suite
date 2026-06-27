@@ -116,41 +116,7 @@ export function defaultRateRows(): RateRow[] {
 //   slightly away from the period-end rate so each item revalues with a gain or
 //   a loss.
 // ---------------------------------------------------------------------------
-export const FX_OPEN_ITEMS: FxOpenItem[] = [
-  // ---- Export receivables (AR) — billed in USD / SGD, still open ----
-  {
-    id: "fx-ar-1", type: "AR", party: "Whole Earth Foods (US)", currency: "USD",
-    fcAmount: 48000, bookedRateInr: 82.4, entityId: "ent-nexa-in", docDate: "2026-04-22",
-  },
-  {
-    id: "fx-ar-2", type: "AR", party: "Pacific Pantry (US)", currency: "USD",
-    fcAmount: 21500, bookedRateInr: 83.6, entityId: "ent-nexa-in", docDate: "2026-05-09",
-  },
-  {
-    id: "fx-ar-3", type: "AR", party: "Marina Bay Provisions (SG)", currency: "SGD",
-    fcAmount: 64000, bookedRateInr: 60.8, entityId: "ent-nexa-global", docDate: "2026-04-30",
-  },
-  {
-    id: "fx-ar-4", type: "AR", party: "Lion City Distributors (SG)", currency: "SGD",
-    fcAmount: 38500, bookedRateInr: 62.2, entityId: "ent-nexa-global", docDate: "2026-05-14",
-  },
-
-  // ---- Import payables (AP) — invoiced in USD, still due ----
-  {
-    id: "fx-ap-1", type: "AP", party: "Golden Harvest Grains (US)", currency: "USD",
-    fcAmount: 32000, bookedRateInr: 82.9, entityId: "ent-nexa-in", docDate: "2026-05-03",
-  },
-  {
-    id: "fx-ap-2", type: "AP", party: "Riverside Packaging Co. (US)", currency: "USD",
-    fcAmount: 14200, bookedRateInr: 83.5, entityId: "ent-nexa-trade", docDate: "2026-05-18",
-  },
-
-  // ---- Foreign bank balance — Nexa Global operating account (SGD) ----
-  {
-    id: "fx-bk-1", type: "Bank", party: "DBS Bank · SGD operating a/c", currency: "SGD",
-    fcAmount: 92000, bookedRateInr: 61.0, entityId: "ent-nexa-global", docDate: "2026-05-31",
-  },
-];
+export const FX_OPEN_ITEMS: FxOpenItem[] = [];
 
 // ---------------------------------------------------------------------------
 // Engine

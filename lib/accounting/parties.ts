@@ -26,21 +26,7 @@ const CUSTOMER_PARTIES: Party[] = ACCOUNTS.map((a) => ({
   gstin: a.gstin && a.gstin !== "—" ? a.gstin : undefined,
 }));
 
-export const PARTIES: Party[] = [
-  ...CUSTOMER_PARTIES,
-
-  // Vendors (drive Accounts Payable)
-  { id: "vend-grainco", name: "GrainCo Commodities", kind: "vendor", gstin: "29AAAGV5555E1Z5" },
-  { id: "vend-packwell", name: "PackWell Industries", kind: "vendor", gstin: "27AAAPW6666F1Z6" },
-  { id: "vend-swiftlog", name: "SwiftLog Logistics", kind: "vendor", gstin: "29AAASL7777G1Z7" },
-  { id: "vend-power", name: "State Power Utility", kind: "vendor" },
-  { id: "vend-techsoft", name: "TechSoft Solutions", kind: "vendor", gstin: "27AAATS8888H1Z8" },
-
-  // Other counterparties (loans, statutory, employees, etc.)
-  { id: "other-bank", name: "HDFC Bank Ltd", kind: "other" },
-  { id: "other-gst", name: "GST Department", kind: "other" },
-  { id: "other-employee", name: "Employee Reimbursements", kind: "other" },
-];
+export const PARTIES: Party[] = [...CUSTOMER_PARTIES];
 
 const BY_ID = new Map(PARTIES.map((p) => [p.id, p]));
 

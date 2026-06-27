@@ -18,11 +18,7 @@ export interface Lease {
   annualRate: number; // incremental borrowing rate
 }
 
-export const LEASES: Lease[] = [
-  { id: "ls-1", asset: "Head-office premises", location: "Bengaluru HQ", commencement: "2025-04-01", termMonths: 60, monthlyPayment: 350_000, annualRate: 9.0 },
-  { id: "ls-2", asset: "Distribution warehouse", location: "Mumbai Depot", commencement: "2025-07-01", termMonths: 36, monthlyPayment: 220_000, annualRate: 9.5 },
-  { id: "ls-3", asset: "Delivery fleet (12 vehicles)", location: "Delhi Branch", commencement: "2026-01-01", termMonths: 48, monthlyPayment: 140_000, annualRate: 10.0 },
-];
+export const LEASES: Lease[] = [];
 
 function monthsElapsed(start: string, asOn: string): number {
   const [ys, ms, ds] = start.split("-").map(Number);

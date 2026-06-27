@@ -69,11 +69,7 @@ interface DocApproval {
   entityId: string;
   locationId: string;
 }
-const PENDING_DOCS: DocApproval[] = [
-  { id: "doc-1", name: "FY25-26 Statutory Audit Report.pdf", by: "emp-006", approver: "emp-002", on: "2026-06-02", note: "Final draft from auditors — needs CFO sign-off", entityId: "ent-nexa-in", locationId: "loc-blr" },
-  { id: "doc-2", name: "Vendor Contract — Sterling Foods.pdf", by: "emp-023", approver: "emp-020", on: "2026-06-03", note: "3-year supply agreement renewal", entityId: "ent-nexa-trade", locationId: "loc-mum" },
-  { id: "doc-3", name: "Q1 GST Filing Workings.xlsx", by: "emp-009", approver: "emp-002", on: "2026-06-04", note: "GSTR-3B reconciliation before filing", entityId: "ent-nexa-trade", locationId: "loc-del" },
-];
+const PENDING_DOCS: DocApproval[] = [];
 
 function documentApprovals(): Approval[] {
   return PENDING_DOCS.map((d) => ({

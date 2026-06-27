@@ -240,18 +240,7 @@ interface RawLoan {
   purpose: string;
 }
 
-const RAW_LOANS: RawLoan[] = [
-  // Interest-free salary advances — short tenure.
-  { empId: "emp-007", type: "salary-advance", principal: 100000, annualRatePct: 0, tenureMonths: 6, startMonth: "2026-03", status: "active", purpose: "Salary advance against April–September." },
-  { empId: "emp-022", type: "salary-advance", principal: 45000, annualRatePct: 0, tenureMonths: 5, startMonth: "2026-04", status: "active", purpose: "Short-term advance — medical bridge." },
-  { empId: "emp-013", type: "salary-advance", principal: 40000, annualRatePct: 0, tenureMonths: 4, startMonth: "2025-12", status: "closed", purpose: "Advance for relocation deposit." },
-  // Interest-bearing loans.
-  { empId: "emp-006", type: "personal", principal: 300000, annualRatePct: 10, tenureMonths: 24, startMonth: "2025-09", status: "active", purpose: "Home renovation." },
-  { empId: "emp-016", type: "festival", principal: 120000, annualRatePct: 6, tenureMonths: 12, startMonth: "2025-10", status: "active", purpose: "Diwali festival advance." },
-  { empId: "emp-011", type: "emergency", principal: 250000, annualRatePct: 8, tenureMonths: 18, startMonth: "2026-01", status: "active", purpose: "Family medical emergency." },
-  { empId: "emp-020", type: "personal", principal: 500000, annualRatePct: 11, tenureMonths: 36, startMonth: "2025-06", status: "active", purpose: "Vehicle purchase." },
-  { empId: "emp-024", type: "festival", principal: 50000, annualRatePct: 6, tenureMonths: 10, startMonth: "2026-05", status: "pending", purpose: "Festival advance — awaiting approval." },
-];
+const RAW_LOANS: RawLoan[] = [];
 
 /** Principal capped at 3× monthly gross so seeds stay sensible vs salary. */
 function capPrincipal(empId: string, principal: number): number {

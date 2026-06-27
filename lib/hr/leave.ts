@@ -79,33 +79,7 @@ interface RawRequest {
   appliedOn: string;
 }
 
-const RAW: RawRequest[] = [
-  // ---- pending (upcoming) — these surface in the approvals queue ----
-  { emp: "emp-016", type: "lt-sl", from: "2026-06-08", to: "2026-06-09", unit: "full", status: "pending", reason: "Down with fever", appliedOn: "2026-06-05" },
-  { emp: "emp-021", type: "lt-wfh", from: "2026-06-10", to: "2026-06-10", unit: "full", status: "pending", reason: "Awaiting a home delivery", appliedOn: "2026-06-04" },
-  { emp: "emp-006", type: "lt-cl", from: "2026-06-12", to: "2026-06-12", unit: "half", status: "pending", reason: "Bank work in the afternoon", appliedOn: "2026-06-03" },
-  { emp: "emp-013", type: "lt-cl", from: "2026-06-15", to: "2026-06-16", unit: "full", status: "pending", reason: "Family function", appliedOn: "2026-06-02" },
-  { emp: "emp-018", type: "lt-cl", from: "2026-06-19", to: "2026-06-19", unit: "half", status: "pending", reason: "Doctor appointment", appliedOn: "2026-06-05" },
-  { emp: "emp-010", type: "lt-el", from: "2026-06-22", to: "2026-06-26", unit: "full", status: "pending", reason: "Family vacation to Kerala", appliedOn: "2026-06-01" },
-  { emp: "emp-009", type: "lt-el", from: "2026-07-01", to: "2026-07-03", unit: "full", status: "pending", reason: "Long weekend trip", appliedOn: "2026-06-04" },
-
-  // ---- approved (past) ----
-  { emp: "emp-014", type: "lt-cl", from: "2026-01-22", to: "2026-01-23", unit: "full", status: "approved", reason: "Out-station travel", appliedOn: "2026-01-15" },
-  { emp: "emp-020", type: "lt-el", from: "2026-02-09", to: "2026-02-13", unit: "full", status: "approved", reason: "Annual vacation", appliedOn: "2026-01-20" },
-  { emp: "emp-010", type: "lt-cl", from: "2026-02-17", to: "2026-02-17", unit: "full", status: "approved", reason: "Personal", appliedOn: "2026-02-10" },
-  { emp: "emp-019", type: "lt-sl", from: "2026-03-03", to: "2026-03-03", unit: "half", status: "approved", reason: "Clinic visit", appliedOn: "2026-03-03" },
-  { emp: "emp-006", type: "lt-el", from: "2026-03-10", to: "2026-03-14", unit: "full", status: "approved", reason: "Vacation", appliedOn: "2026-02-20" },
-  { emp: "emp-008", type: "lt-pl", from: "2026-04-01", to: "2026-05-29", unit: "full", status: "approved", reason: "Maternity leave", appliedOn: "2026-03-10" },
-  { emp: "emp-007", type: "lt-sl", from: "2026-04-02", to: "2026-04-03", unit: "full", status: "approved", reason: "Viral infection", appliedOn: "2026-04-01" },
-  { emp: "emp-017", type: "lt-el", from: "2026-04-21", to: "2026-04-25", unit: "full", status: "approved", reason: "Holiday", appliedOn: "2026-03-30" },
-  { emp: "emp-011", type: "lt-el", from: "2026-05-05", to: "2026-05-09", unit: "full", status: "approved", reason: "Cousin's wedding", appliedOn: "2026-04-15" },
-  { emp: "emp-023", type: "lt-cl", from: "2026-05-12", to: "2026-05-12", unit: "full", status: "approved", reason: "Personal errand", appliedOn: "2026-05-08" },
-  { emp: "emp-016", type: "lt-wfh", from: "2026-05-19", to: "2026-05-20", unit: "full", status: "approved", reason: "Remote working days", appliedOn: "2026-05-15" },
-
-  // ---- rejected ----
-  { emp: "emp-022", type: "lt-cl", from: "2026-04-14", to: "2026-04-15", unit: "full", status: "rejected", reason: "Applied on short notice", appliedOn: "2026-04-13" },
-  { emp: "emp-013", type: "lt-el", from: "2026-05-26", to: "2026-05-30", unit: "full", status: "rejected", reason: "Clashes with quarter-end push", appliedOn: "2026-05-10" },
-];
+const RAW: RawRequest[] = [];
 
 export const LEAVE_REQUESTS: LeaveRequest[] = RAW.map((r, i) => ({
   id: `req-${String(i + 1).padStart(3, "0")}`,

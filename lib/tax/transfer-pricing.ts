@@ -29,67 +29,7 @@ export interface TpTransaction {
   masterFile: boolean;       // whether covered under Master File (>₹500 cr group)
 }
 
-export const TP_TRANSACTIONS: TpTransaction[] = [
-  {
-    id: "tp-001",
-    relatedParty: "Nexa Global Pte. Ltd. (Singapore)",
-    country: "SGP",
-    txnCategory: "management-fee",
-    description: "Group management services charge",
-    value: 12000000,
-    alpMethod: "TNMM",
-    benchmarkMargin: 12.5,
-    actualMargin: 11.8,
-    adjustment: 0,          // within tolerance
-    documented: true,
-    localFileSection: "Section 4.2",
-    masterFile: false,
-  },
-  {
-    id: "tp-002",
-    relatedParty: "Nexa Global Pte. Ltd. (Singapore)",
-    country: "SGP",
-    txnCategory: "royalty",
-    description: "Brand royalty on net sales",
-    value: 8500000,
-    alpMethod: "CUP",
-    benchmarkMargin: 2.0,
-    actualMargin: 2.8,
-    adjustment: Math.round(8500000 * (2.8 - 2.0) / 100), // over-payment
-    documented: true,
-    localFileSection: "Section 5.1",
-    masterFile: false,
-  },
-  {
-    id: "tp-003",
-    relatedParty: "Nexa Trading Pvt. Ltd. (India — SDT)",
-    country: "IND",
-    txnCategory: "sale-of-goods",
-    description: "Goods sold to fellow subsidiary at transfer price",
-    value: 85000000,  // SDT — above ₹20 cr threshold
-    alpMethod: "TNMM",
-    benchmarkMargin: 8.0,
-    actualMargin: 7.2,
-    adjustment: Math.round(85000000 * (8.0 - 7.2) / 100),
-    documented: true,
-    localFileSection: "Section 3.1",
-    masterFile: false,
-  },
-  {
-    id: "tp-004",
-    relatedParty: "Nexa Global Pte. Ltd. (Singapore)",
-    country: "SGP",
-    txnCategory: "loan",
-    description: "Inter-company loan advanced @ 8% p.a.",
-    value: 50000000,
-    alpMethod: "CUP",
-    benchmarkMargin: 9.5,  // LIBOR/SOFR + spread benchmark
-    actualMargin: 8.0,
-    adjustment: Math.round(50000000 * (9.5 - 8.0) / 100),
-    documented: false,      // documentation gap — flagged
-    masterFile: false,
-  },
-];
+export const TP_TRANSACTIONS: TpTransaction[] = [];
 
 export interface TpSummary {
   totalTransactions: number;
