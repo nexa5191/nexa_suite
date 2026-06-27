@@ -214,8 +214,8 @@ export function IntercompanyClient() {
 
 function AddIcForm({ created, onAdd }: { created: IcTransaction[]; onAdd: (t: IcTransaction) => void }) {
   const [type, setType] = React.useState<IcType>("sale");
-  const [from, setFrom] = React.useState(ENTITIES[0].id);
-  const [to, setTo] = React.useState(ENTITIES[1].id);
+  const [from, setFrom] = React.useState(ENTITIES[0]?.id ?? "");
+  const [to, setTo] = React.useState(ENTITIES[1]?.id ?? "");
   const [amount, setAmount] = React.useState("");
   const [date, setDate] = React.useState(TODAY);
   const [memo, setMemo] = React.useState("");

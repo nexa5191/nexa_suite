@@ -177,7 +177,7 @@ export function NewJournalEntry({
   const [type, setType] = useState<VoucherType>(defaultType);
   const def = voucherType(type);
 
-  const defaultEntity = prefs.entityId !== ALL ? prefs.entityId : ENTITIES[0].id;
+  const defaultEntity = prefs.entityId !== ALL ? prefs.entityId : (ENTITIES[0]?.id ?? "");
   const [entityId, setEntityId] = useState(defaultEntity);
   const [locationId, setLocationId] = useState(locationsForEntity(defaultEntity)[0]?.id ?? "");
   const [date, setDate] = useState(todayIso());

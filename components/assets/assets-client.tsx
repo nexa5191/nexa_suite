@@ -601,8 +601,8 @@ function Kpi({ label, value, accent }: { label: string; value: number; accent?: 
 function AddAssetForm({ created, onAdd, postError }: { created: FixedAsset[]; onAdd: (a: FixedAsset, funding: string) => void; postError: string[] }) {
   const [name, setName] = React.useState("");
   const [category, setCategory] = React.useState<AssetCategory>("Plant & Machinery");
-  const [entityId, setEntityId] = React.useState(ENTITIES[0].id);
-  const [locationId, setLocationId] = React.useState(locationsForEntity(ENTITIES[0].id)[0].id);
+  const [entityId, setEntityId] = React.useState(ENTITIES[0]?.id ?? "");
+  const [locationId, setLocationId] = React.useState(locationsForEntity(ENTITIES[0]?.id ?? "")[0]?.id ?? "");
   const [date, setDate] = React.useState(TODAY);
   const [cost, setCost] = React.useState("");
   const [salvagePct, setSalvagePct] = React.useState("5");

@@ -54,7 +54,7 @@ export function JournalUploadScreen() {
   const prefs = usePrefs();
   const { entries, postMany } = useJournal();
   const today = React.useMemo(() => todayIso(), []);
-  const defaultEntity = prefs.entityId !== ALL ? prefs.entityId : ENTITIES[0].id;
+  const defaultEntity = prefs.entityId !== ALL ? prefs.entityId : (ENTITIES[0]?.id ?? "");
 
   const [docs, setDocs] = React.useState<EditableDoc[]>(() => [blankDoc(defaultEntity, todayIso())]);
   const [fileName, setFileName] = React.useState<string | null>(null);

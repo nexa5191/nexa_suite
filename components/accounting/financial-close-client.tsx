@@ -24,7 +24,7 @@ function monthLabel(period: string): string {
 
 export function FinancialCloseClient() {
   const [mounted, setMounted] = React.useState(false);
-  const [entityId, setEntityId] = React.useState(ENTITIES[0].id);
+  const [entityId, setEntityId] = React.useState(ENTITIES[0]?.id ?? "");
   const periods = React.useMemo(() => recentPeriods(AS_ON, 6), []);
   const [period, setPeriod] = React.useState(periods[0]);
   const [tick, setTick] = React.useState(0); // bump to recompute persisted state
