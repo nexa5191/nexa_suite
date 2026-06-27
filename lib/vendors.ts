@@ -179,19 +179,7 @@ export function applyPOMutations(
 // The first six vendors are the stable pool the tax dataset fans purchases over
 // (see TAX_VENDOR_POOL) — keep them and their order fixed so the GST/TDS demo
 // data stays deterministic. Capex/Employee vendors are appended after.
-export const VENDORS: Vendor[] = [
-  { id: "ven-1", name: "Sterling Foods Pvt Ltd", category: "Raw Materials", vClass: "Inventory", contact: "Rakesh Iyer", email: "sales@sterlingfoods.in", phone: "+91 98860 11200", city: "Mumbai", gstin: "27AADES1234C1Z2", rating: 5, msme: true, msmeClass: "Small", udyam: "UDYAM-MH-18-0011200", active: true },
-  { id: "ven-2", name: "BlueOcean Packaging", category: "Packaging", vClass: "Inventory", contact: "Sneha Pillai", email: "orders@blueocean.in", phone: "+91 99000 22112", city: "Bengaluru", gstin: "29AAFCB5678D1Z9", rating: 4, msme: true, msmeClass: "Micro", udyam: "UDYAM-KR-03-0022112", active: true },
-  { id: "ven-3", name: "Apex Logistics", category: "Logistics", vClass: "Opex", contact: "Mohan Das", email: "ops@apexlogistics.in", phone: "+91 98450 33445", city: "New Delhi", gstin: "07AAGCA9012E1Z4", rating: 4, msme: false, active: true },
-  { id: "ven-4", name: "TechNova Solutions", category: "IT & Software", vClass: "Opex", contact: "Asha Verma", email: "billing@technova.in", phone: "+91 97400 55667", city: "Bengaluru", gstin: "29AALCT3456F1Z1", rating: 4, msme: false, ldc: { section: "194J", rate: 2, certNo: "197/BLR/2026/00417", validFrom: "2025-04-01", validTo: "2026-03-31" }, active: true },
-  { id: "ven-5", name: "GreenLeaf Agro", category: "Raw Materials", vClass: "Inventory", contact: "Karan Shah", email: "hello@greenleafagro.in", phone: "+91 99300 77889", city: "Mysuru", gstin: "29AAHCG7890G1Z7", rating: 3, msme: true, msmeClass: "Micro", udyam: "UDYAM-KR-29-0077889", active: true },
-  { id: "ven-6", name: "PrintWorks Media", category: "Marketing", vClass: "Opex", contact: "Nisha Reddy", email: "studio@printworks.in", phone: "+91 96320 99001", city: "Mumbai", gstin: "27AAJCP2345H1Z3", rating: 4, msme: true, msmeClass: "Small", udyam: "UDYAM-MH-18-0099001", active: false },
-  // ---- Capex vendors ----
-  { id: "ven-7", name: "Meridian Machine Tools", category: "Capital Equipment", vClass: "Capex", contact: "Suresh Patil", email: "sales@meridiantools.in", phone: "+91 98220 44556", city: "Pune", gstin: "27AAKCM6789J1Z5", rating: 5, msme: false, ldc: { section: "194Q", rate: 0.05, certNo: "197/PN/2026/01188", validFrom: "2025-04-01", validTo: "2026-03-31" }, active: true },
-  { id: "ven-8", name: "Cubix Office Systems", category: "Office Equipment", vClass: "Capex", contact: "Deepa Menon", email: "accounts@cubix.in", phone: "+91 99010 66778", city: "Bengaluru", gstin: "29AALCC4567K1Z2", rating: 4, msme: true, msmeClass: "Small", udyam: "UDYAM-KR-03-0066778", active: true },
-  // ---- Employee-class payee (links to the Reimbursements module) ----
-  { id: "ven-emp", name: "Employee Expense Claims", category: "Employee Claims", vClass: "Employee", contact: "Payroll & Finance", email: "reimbursements@nexa.example", phone: "—", city: "Bengaluru", gstin: "—", rating: 5, msme: false, active: true },
-];
+export const VENDORS: Vendor[] = [];
 
 /** Stable subset the tax dataset fans purchases over (deterministic). */
 export const TAX_VENDOR_POOL: Vendor[] = VENDORS.slice(0, 6);
@@ -218,49 +206,7 @@ interface RawPO {
   paidOn?: string;
 }
 
-const RAW: RawPO[] = [
-  // ---- invoiced, awaiting the SPOC's approval (these drive the approvals queue) ----
-  { id: "PO-2007", vendorId: "ven-1", title: "Wheat & edible oil — June restock", date: "2026-05-28", spocId: "emp-023", entityId: "ent-nexa-trade", locationId: "loc-mum", status: "invoiced", invoiceNo: "STF/26-27/0192", invoiceDate: "2026-06-03",
-    lines: [{ item: "Wheat flour (50kg)", qty: 40, unitPrice: 1850, itemId: "fg-flour50" }, { item: "Sunflower oil (15L)", qty: 30, unitPrice: 1650, itemId: "fg-oil15" }] },
-  { id: "PO-2008", vendorId: "ven-2", title: "Retail cartons & labels", date: "2026-05-30", spocId: "emp-021", entityId: "ent-nexa-trade", locationId: "loc-mum", status: "invoiced", invoiceNo: "BOP-2026-441", invoiceDate: "2026-06-04",
-    lines: [{ item: "Printed carton (12x)", qty: 500, unitPrice: 42, itemId: "pm-carton" }, { item: "Barcode label roll", qty: 60, unitPrice: 320, itemId: "pm-label" }] },
-  { id: "PO-2009", vendorId: "ven-4", title: "Annual ERP license renewal", date: "2026-06-01", spocId: "emp-005", entityId: "ent-nexa-in", locationId: "loc-blr", status: "invoiced", invoiceNo: "TN-2026-1180", invoiceDate: "2026-06-04",
-    lines: [{ item: "ERP subscription (annual)", qty: 1, unitPrice: 480000 }] },
-  { id: "PO-2010", vendorId: "ven-3", title: "Outbound freight — May", date: "2026-05-31", spocId: "emp-020", entityId: "ent-nexa-in", locationId: "loc-mys", status: "invoiced", invoiceNo: "APX/4821", invoiceDate: "2026-06-02",
-    lines: [{ item: "FTL Bengaluru→Delhi", qty: 6, unitPrice: 38000 }] },
-
-  // ---- issued, no invoice yet ----
-  { id: "PO-2011", vendorId: "ven-5", title: "Organic grains — Q2 contract", date: "2026-06-02", spocId: "emp-024", entityId: "ent-nexa-in", locationId: "loc-blr", status: "issued",
-    lines: [{ item: "Organic rice (25kg)", qty: 80, unitPrice: 2200, itemId: "fg-rice25" }] },
-  { id: "PO-2012", vendorId: "ven-2", title: "Stretch wrap & tape", date: "2026-06-04", spocId: "emp-021", entityId: "ent-nexa-trade", locationId: "loc-del", status: "issued",
-    lines: [{ item: "Stretch wrap roll", qty: 100, unitPrice: 280 }, { item: "Packing tape (pk-6)", qty: 40, unitPrice: 210 }] },
-
-  // ---- already paid (history) ----
-  { id: "PO-2001", vendorId: "ven-1", title: "Raw material restock", date: "2026-02-10", spocId: "emp-023", entityId: "ent-nexa-trade", locationId: "loc-mum", status: "paid", invoiceNo: "STF/25-26/0061", invoiceDate: "2026-02-14", payMode: "bank", paidOn: "2026-02-20",
-    lines: [{ item: "Wheat flour (50kg)", qty: 30, unitPrice: 1820, itemId: "fg-flour50" }] },
-  { id: "PO-2002", vendorId: "ven-4", title: "Laptops — engineering", date: "2026-03-05", spocId: "emp-005", entityId: "ent-nexa-in", locationId: "loc-blr", status: "paid", invoiceNo: "TN-2026-880", invoiceDate: "2026-03-08", payMode: "bank", paidOn: "2026-03-15",
-    lines: [{ item: "Laptop 14\" (i7/16GB)", qty: 4, unitPrice: 92000 }] },
-  { id: "PO-2003", vendorId: "ven-6", title: "Brand campaign collateral", date: "2026-04-12", spocId: "emp-003", entityId: "ent-nexa-trade", locationId: "loc-mum", status: "paid", invoiceNo: "PW-3390", invoiceDate: "2026-04-15", payMode: "upi", paidOn: "2026-04-22",
-    lines: [{ item: "Brochure design + print", qty: 2000, unitPrice: 18 }] },
-];
-
-export const PURCHASE_ORDERS: PurchaseOrder[] = RAW.map((r) => ({
-  id: r.id,
-  vendorId: r.vendorId,
-  title: r.title,
-  date: r.date,
-  lines: r.lines,
-  total: sum(r.lines),
-  spocId: r.spocId,
-  entityId: r.entityId,
-  locationId: r.locationId,
-  status: r.status,
-  invoice: r.invoiceNo
-    ? { number: r.invoiceNo, date: r.invoiceDate ?? r.date, amount: sum(r.lines) }
-    : undefined,
-  payMode: r.payMode,
-  paidOn: r.paidOn,
-}));
+export const PURCHASE_ORDERS: PurchaseOrder[] = [];
 
 // ---- lookups ----
 export function vendorById(id: string) {

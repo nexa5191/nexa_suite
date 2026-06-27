@@ -62,53 +62,8 @@ export interface ProjectAssignment {
 // ---------------------------------------------------------------------------
 // Seed
 // ---------------------------------------------------------------------------
-export const SEED_PROJECTS: Project[] = [
-  {
-    id: "proj-001", code: "ENG-001", name: "Quick-commerce supply-chain advisory",
-    accountId: "acc-003", entityId: "ent-nexa-in", partnerId: "emp-003",
-    status: "active", billRate: 4500, startDate: "2026-04-06",
-    conflictStatus: "cleared", opposingParties: ["BlinkBasket Retail"],
-  },
-  {
-    id: "proj-002", code: "ENG-002", name: "Singapore market-entry advisory",
-    accountId: "acc-006", entityId: "ent-nexa-global", partnerId: "emp-012",
-    status: "active", billRate: 6000, startDate: "2026-03-16",
-    conflictStatus: "open", opposingParties: ["Marina Bay Foods Pte Ltd"],
-  },
-  {
-    id: "proj-003", code: "ENG-003", name: "Private-label launch programme",
-    accountId: "acc-004", entityId: "ent-nexa-trade", partnerId: "emp-011",
-    status: "active", billRate: 3800, startDate: "2026-05-04",
-    conflictStatus: "cleared", opposingParties: [],
-  },
-  {
-    id: "proj-004", code: "ENG-004", name: "Retail expansion diligence",
-    accountId: "acc-001", entityId: "ent-nexa-in", partnerId: "emp-003",
-    status: "on-hold", billRate: 5200, startDate: "2026-05-20",
-    // Opposing party collides with an existing client (acc-002 Spencer's) →
-    // the conflict screen flags it and the engagement starts blocked.
-    conflictStatus: "blocked", opposingParties: ["Spencer's Gourmet"],
-  },
-];
-
-interface RawAssign { proj: string; emp: string; bill: number; pay: number; from: string }
-const RAW_ASSIGNMENTS: RawAssign[] = [
-  { proj: "proj-001", emp: "emp-016", bill: 4500, pay: 2100, from: "2026-04-06" },
-  { proj: "proj-001", emp: "emp-008", bill: 5200, pay: 2600, from: "2026-04-06" },
-  { proj: "proj-002", emp: "emp-018", bill: 6000, pay: 2800, from: "2026-03-16" },
-  { proj: "proj-002", emp: "emp-012", bill: 7500, pay: 3400, from: "2026-03-16" },
-  { proj: "proj-003", emp: "emp-017", bill: 3800, pay: 1900, from: "2026-05-04" },
-  { proj: "proj-003", emp: "emp-024", bill: 3200, pay: 1500, from: "2026-05-04" },
-];
-
-export const SEED_ASSIGNMENTS: ProjectAssignment[] = RAW_ASSIGNMENTS.map((a, i) => ({
-  id: `asg-${String(i + 1).padStart(3, "0")}`,
-  projectId: a.proj,
-  employeeId: a.emp,
-  billRate: a.bill,
-  payRate: a.pay,
-  from: a.from,
-}));
+export const SEED_PROJECTS: Project[] = [];
+export const SEED_ASSIGNMENTS: ProjectAssignment[] = [];
 
 // ---------------------------------------------------------------------------
 // Lookups & derived

@@ -59,18 +59,7 @@ export interface Reimbursement {
   seedStatus: ReimbStatus; // starting state for seed/created claims
 }
 
-// ---- seed claims -----------------------------------------------------------
-const SEED: Omit<Reimbursement, "id">[] = [
-  { employeeId: "emp-009", entityId: "ent-nexa-trade", locationId: "loc-del", claimDate: "2026-06-02", expenseDate: "2026-05-29", category: "Travel & lodging", description: "GST council visit — Delhi (2 nights)", amount: 18400, seedStatus: "submitted" },
-  { employeeId: "emp-010", entityId: "ent-nexa-trade", locationId: "loc-mum", claimDate: "2026-06-04", expenseDate: "2026-06-01", category: "Client entertainment", description: "BlueMart account lunch", amount: 6200, seedStatus: "submitted" },
-  { employeeId: "emp-013", entityId: "ent-nexa-in", locationId: "loc-mys", claimDate: "2026-06-05", expenseDate: "2026-06-03", category: "Local conveyance", description: "Field visits — Mysuru distributors", amount: 2750, seedStatus: "submitted" },
-  { employeeId: "emp-016", entityId: "ent-nexa-in", locationId: "loc-blr", claimDate: "2026-05-30", expenseDate: "2026-05-22", category: "Training & development", description: "React conference ticket", amount: 12000, seedStatus: "approved" },
-  { employeeId: "emp-007", entityId: "ent-nexa-trade", locationId: "loc-mum", claimDate: "2026-05-20", expenseDate: "2026-05-14", category: "Mobile & internet", description: "Q1 mobile reimbursement", amount: 3600, seedStatus: "paid" },
-  { employeeId: "emp-024", entityId: "ent-nexa-in", locationId: "loc-blr", claimDate: "2026-05-18", expenseDate: "2026-05-10", category: "Office supplies", description: "Procurement desk stationery", amount: 1450, seedStatus: "paid" },
-  { employeeId: "emp-012", entityId: "ent-nexa-global", locationId: "loc-sg", claimDate: "2026-06-03", expenseDate: "2026-05-28", category: "Meals & refreshments", description: "Team offsite — Singapore", amount: 8900, seedStatus: "draft" },
-];
-
-export const SEED_REIMBURSEMENTS: Reimbursement[] = SEED.map((r, i) => ({ ...r, id: `reimb-${String(i + 1).padStart(3, "0")}` }));
+export const SEED_REIMBURSEMENTS: Reimbursement[] = [];
 
 // ---- workflow state + persistence ------------------------------------------
 export interface ReimbState {

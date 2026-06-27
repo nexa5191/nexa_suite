@@ -36,46 +36,8 @@ export interface TimesheetEntry {
   invoiceId?: string; // set when billed
 }
 
-// ---------------------------------------------------------------------------
-// Seed
-// ---------------------------------------------------------------------------
-interface RawTs { emp: string; proj: string; date: string; hours: number; billable?: boolean; desc: string; status: TimesheetStatus }
-const RAW_TIMESHEETS: RawTs[] = [
-  // proj-001 — cleared, plenty of approved WIP ready to invoice
-  { emp: "emp-016", proj: "proj-001", date: "2026-05-26", hours: 6.5, desc: "Dark-store replenishment model — data pull & cleanup", status: "approved" },
-  { emp: "emp-016", proj: "proj-001", date: "2026-05-27", hours: 7, desc: "Replenishment model build", status: "approved" },
-  { emp: "emp-008", proj: "proj-001", date: "2026-05-27", hours: 4, desc: "Unit-economics review", status: "approved" },
-  { emp: "emp-016", proj: "proj-001", date: "2026-05-28", hours: 3, desc: "Internal sync (non-billable)", billable: false, status: "approved" },
-  { emp: "emp-008", proj: "proj-001", date: "2026-06-02", hours: 5.5, desc: "Scenario analysis for 2-hour SLA", status: "submitted" },
-  { emp: "emp-016", proj: "proj-001", date: "2026-06-03", hours: 6, desc: "Model handover deck", status: "submitted" },
 
-  // proj-002 — conflict OPEN, so time accrues but cannot be billed yet
-  { emp: "emp-018", proj: "proj-002", date: "2026-05-25", hours: 6, desc: "SG market sizing", status: "approved" },
-  { emp: "emp-012", proj: "proj-002", date: "2026-05-29", hours: 4.5, desc: "Regulatory landscape note", status: "approved" },
-  { emp: "emp-018", proj: "proj-002", date: "2026-06-04", hours: 5, desc: "Channel mapping", status: "submitted" },
-
-  // proj-003 — cleared, mix of billed + fresh WIP
-  { emp: "emp-017", proj: "proj-003", date: "2026-05-11", hours: 8, desc: "Private-label spec & supplier shortlist", status: "billed" },
-  { emp: "emp-024", proj: "proj-003", date: "2026-05-12", hours: 6, desc: "Costing sheet", status: "billed" },
-  { emp: "emp-017", proj: "proj-003", date: "2026-05-28", hours: 7, desc: "Packaging vendor evaluation", status: "approved" },
-  { emp: "emp-024", proj: "proj-003", date: "2026-06-01", hours: 5, desc: "Launch timeline", status: "approved" },
-  { emp: "emp-017", proj: "proj-003", date: "2026-06-05", hours: 4, desc: "Draft GTM plan", status: "draft" },
-];
-
-export const SEED_TIMESHEETS: TimesheetEntry[] = RAW_TIMESHEETS.map((r, i) => ({
-  id: `ts-${String(i + 1).padStart(3, "0")}`,
-  employeeId: r.emp,
-  projectId: r.proj,
-  date: r.date,
-  hours: r.hours,
-  billable: r.billable ?? true,
-  description: r.desc,
-  status: r.status,
-  ...(r.status === "approved" || r.status === "billed"
-    ? { approvedById: "emp-003", approvedOn: r.date }
-    : {}),
-  ...(r.status === "billed" ? { invoiceId: "seed" } : {}),
-}));
+export const SEED_TIMESHEETS: TimesheetEntry[] = [];
 
 // ---------------------------------------------------------------------------
 // Derived

@@ -259,17 +259,7 @@ function capPrincipal(empId: string, principal: number): number {
   return Math.min(principal, cap);
 }
 
-export const SEED_LOANS: Loan[] = RAW_LOANS.filter((r) => EMPLOYEES.some((e) => e.id === r.empId)).map((r, i) => ({
-  id: `loan-${String(i + 1).padStart(3, "0")}`,
-  empId: r.empId,
-  type: r.type,
-  principal: capPrincipal(r.empId, r.principal),
-  annualRatePct: r.annualRatePct,
-  tenureMonths: r.tenureMonths,
-  startMonth: r.startMonth,
-  status: r.status,
-  purpose: r.purpose,
-}));
+export const SEED_LOANS: Loan[] = [];
 
 // ---------------------------------------------------------------------------
 // Persistence — created loans + status overrides under one key.

@@ -65,70 +65,7 @@ interface Raw extends Omit<FixedAsset, "id" | "tag" | "method" | "usefulLifeYear
   life?: number;
 }
 
-const R = (
-  seq: number,
-  name: string,
-  category: AssetCategory,
-  entityId: string,
-  locationId: string,
-  acquisitionDate: string,
-  cost: number,
-  salvage: number,
-  annualBenefit: number,
-  supplier: string,
-  opt?: { method?: DepMethod; life?: number; wdvRate?: number },
-): Raw => ({
-  seq,
-  name,
-  category,
-  entityId,
-  locationId,
-  acquisitionDate,
-  cost,
-  salvage,
-  annualBenefit,
-  supplier,
-  method: opt?.method,
-  life: opt?.life,
-  wdvRate: opt?.wdvRate,
-});
-
-const RAW: Raw[] = [
-  R(1, "Flour milling line (50 TPD)", "Plant & Machinery", "ent-nexa-in", "loc-mys", "2021-05-12", 8_400_000, 420_000, 2_600_000, "Buhler India", { wdvRate: 15 }),
-  R(2, "Automated packaging line", "Plant & Machinery", "ent-nexa-in", "loc-mys", "2022-03-08", 5_200_000, 260_000, 1_700_000, "Bosch Packaging", { wdvRate: 15 }),
-  R(3, "Cold storage unit (200 MT)", "Plant & Machinery", "ent-nexa-in", "loc-mys", "2023-08-20", 3_600_000, 180_000, 980_000, "Blue Star", { wdvRate: 15 }),
-  R(4, "Rooftop solar plant (120 kW)", "Plant & Machinery", "ent-nexa-in", "loc-blr", "2024-01-15", 4_800_000, 240_000, 1_150_000, "Tata Power Solar", { method: "SLM", life: 25 }),
-  R(5, "Diesel generator (500 kVA)", "Plant & Machinery", "ent-nexa-in", "loc-mys", "2021-11-02", 1_900_000, 95_000, 320_000, "Cummins", { wdvRate: 15 }),
-  R(6, "Delivery truck — Tata 1109", "Vehicles", "ent-nexa-trade", "loc-mum", "2023-02-18", 2_100_000, 210_000, 720_000, "Tata Motors", { wdvRate: 25 }),
-  R(7, "Delivery van — Mahindra Bolero", "Vehicles", "ent-nexa-trade", "loc-del", "2024-06-10", 1_350_000, 135_000, 540_000, "Mahindra", { wdvRate: 25 }),
-  R(8, "Forklift (3 ton)", "Plant & Machinery", "ent-nexa-trade", "loc-mum", "2022-09-05", 1_200_000, 60_000, 280_000, "Godrej Material Handling", { wdvRate: 15 }),
-  R(9, "ERP server & network stack", "Computers & IT", "ent-nexa-in", "loc-blr", "2024-04-02", 1_450_000, 50_000, 700_000, "Dell EMC", { wdvRate: 40 }),
-  R(10, "Engineering laptops (12)", "Computers & IT", "ent-nexa-in", "loc-blr", "2025-03-15", 1_080_000, 36_000, 460_000, "Lenovo", { wdvRate: 40 }),
-  R(11, "QA lab instruments", "Office Equipment", "ent-nexa-in", "loc-mys", "2023-07-12", 980_000, 49_000, 240_000, "Mettler Toledo", { method: "SLM", life: 7 }),
-  R(12, "HQ office furniture fit-out", "Furniture & Fixtures", "ent-nexa-in", "loc-blr", "2021-04-20", 2_300_000, 115_000, 0, "Featherlite", { method: "SLM", life: 10 }),
-  R(13, "Mumbai depot racking system", "Furniture & Fixtures", "ent-nexa-trade", "loc-mum", "2022-12-01", 1_650_000, 82_500, 300_000, "Godrej Storage", { method: "SLM", life: 10 }),
-  R(14, "Singapore office build-out", "Buildings", "ent-nexa-global", "loc-sg", "2023-05-10", 6_200_000, 620_000, 0, "JTC Contractors", { method: "SLM", life: 20 }),
-];
-
-export const SEED_ASSETS: FixedAsset[] = RAW.map((r) => {
-  const meta = categoryMeta(r.category);
-  return {
-    id: `asset-${String(r.seq).padStart(3, "0")}`,
-    tag: `FA-${String(r.seq).padStart(4, "0")}`,
-    name: r.name,
-    category: r.category,
-    entityId: r.entityId,
-    locationId: r.locationId,
-    acquisitionDate: r.acquisitionDate,
-    cost: r.cost,
-    salvage: r.salvage,
-    usefulLifeYears: r.life ?? meta.defaultLife,
-    method: r.method ?? meta.defaultMethod,
-    wdvRate: r.wdvRate,
-    annualBenefit: r.annualBenefit,
-    supplier: r.supplier,
-  };
-});
+export const SEED_ASSETS: FixedAsset[] = [];
 
 // ---- disposals -------------------------------------------------------------
 export interface Disposal {

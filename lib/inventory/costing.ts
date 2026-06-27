@@ -17,16 +17,7 @@ export const PERIOD_DAYS = Math.round(
 // Seed unit prices — realistic deviations from standard rate for demo data.
 // Keyed as "ref|itemId" for receipts or "opening|itemId" for opening lots.
 // ---------------------------------------------------------------------------
-const SEED_PRICES: Record<string, number> = {
-  "PO-2007|rm-wheat":   30.5,  // std ₹32  — favorable (bought below standard)
-  "PO-2008|pm-carton":  44.0,  // std ₹42  — adverse (market price rose)
-  "PO-2008|pm-label":    4.2,  // std ₹4   — adverse (minor rise)
-  "opening|rm-sunseed": 77.0,  // std ₹75  — adverse (import cost higher)
-  "opening|rm-paddy":   38.5,  // std ₹40  — favorable
-  "opening|rm-durum":   36.5,  // std ₹38  — favorable
-  "opening|pm-tin15":   98.0,  // std ₹95  — adverse (steel cost up)
-  "opening|sfg-oil":   168.0,  // std ₹165 — adverse
-};
+const SEED_PRICES: Record<string, number> = {};
 
 // ---------------------------------------------------------------------------
 // Lot — a single inflow entry in the cost ledger

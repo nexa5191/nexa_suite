@@ -160,9 +160,7 @@ function baseAppraisal(emp: Employee): Appraisal {
 }
 
 // Build the seed map once.
-const SEED_APPRAISALS: Record<string, Appraisal> = Object.fromEntries(
-  EMPLOYEES.map((e) => [e.id, baseAppraisal(e)]),
-);
+const SEED_APPRAISALS: Record<string, Appraisal> = {};
 
 // ---- OKRs -----------------------------------------------------------------
 
@@ -238,7 +236,7 @@ function seedObjectives(emp: Employee): Objective[] {
   return objs;
 }
 
-const SEED_OBJECTIVES: Objective[] = EMPLOYEES.flatMap((e) => seedObjectives(e));
+const SEED_OBJECTIVES: Objective[] = [];
 
 /** Progress % (0–100) for one key result. Targets that go *down* (target &lt; a
  *  baseline) are treated as "lower is better" relative to the current value. */

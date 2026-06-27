@@ -124,9 +124,7 @@ function makeSeedAdvance(seq: number): AdvancePayment {
   };
 }
 
-export const SEED_ADVANCES: AdvancePayment[] = Array.from({ length: 8 }, (_, i) =>
-  makeSeedAdvance(i + 1),
-);
+export const SEED_ADVANCES: AdvancePayment[] = [];
 
 // ---- localStorage ----------------------------------------------------------
 

@@ -210,82 +210,23 @@ function mkLine(
 // ---------------------------------------------------------------------------
 // Seed lines
 // ---------------------------------------------------------------------------
-const SEED_LINES: BudgetLine[] = [
-  // ── HR ───────────────────────────────────────────────────────────────────
-  mkLine("HR","Salaries & wages",       63158000, flat(5500000),          flat(0,{0:5498000,1:5501000})),
-  mkLine("HR","Staff welfare & canteen", 3215000, flat(280000),           flat(0,{0:291000, 1:274000 })),
-  mkLine("HR","Recruitment & hiring",    2124000, flat(180000,{0:420000,6:320000}), flat(0,{0:385000,1:210000})),
-  mkLine("HR","Training & development",  1512000, flat(120000,{5:260000}),flat(0,{0:105000,1:118000})),
-  mkLine("HR","HR travel & conveyance",   517000, flat(45000),            flat(0,{0:38000, 1:52000 })),
-  mkLine("HR","Statutory compliance",   8268000, flat(720000),            flat(0,{0:718000,1:722000})),
+const SEED_LINES: BudgetLine[] = [];
 
-  // ── Operations ───────────────────────────────────────────────────────────
-  mkLine("Operations","Contract labour",        16262000, flat(1450000),                  flat(0,{0:1520000,1:1438000})),
-  mkLine("Operations","Utilities - power",      13552000, flat(1150000,{0:1420000,1:1380000,2:1350000}), flat(0,{0:1461000,1:1392000})),
-  mkLine("Operations","Utilities - fuel & water", 5383000,flat(480000),                  flat(0,{0:497000, 1:463000 })),
-  mkLine("Operations","Quality & testing",       3140000, flat(280000),                  flat(0,{0:265000, 1:288000 })),
-  mkLine("Operations","Operations travel",       1009000, flat(90000),                   flat(0,{0:84000,  1:97000  })),
-  mkLine("Operations","Miscellaneous",           2019000, flat(180000),                  flat(0,{0:195000, 1:162000 })),
-
-  // ── SCM ──────────────────────────────────────────────────────────────────
-  mkLine("SCM","Freight inward",      9752000,  flat(780000,{0:950000,3:900000,6:880000}), flat(0,{0:1020000,1:810000})),
-  mkLine("SCM","Freight outward",    14174000,  flat(1150000,{6:1800000,7:1700000,8:1600000}), flat(0,{0:1080000,1:1195000})),
-  mkLine("SCM","Customs & duties",    2092000,  flat(190000),  flat(0,{0:175000,1:204000})),
-  mkLine("SCM","Warehousing & storage",4183000, flat(380000),  flat(0,{0:372000,1:388000})),
-  mkLine("SCM","SCM travel",           495000,  flat(45000),   flat(0,{0:41000, 1:49000 })),
-  mkLine("SCM","Miscellaneous",        1431000,  flat(130000),  flat(0,{0:118000,1:143000})),
-
-  // ── Maintenance ──────────────────────────────────────────────────────────
-  mkLine("Maintenance","Spares & consumables",  8811000, flat(760000),               flat(0,{0:812000,1:748000})),
-  mkLine("Maintenance","AMC charges",           5894000, flat(480000,{0:820000}),    flat(0,{0:798000,1:492000})),
-  mkLine("Maintenance","Repairs & maintenance", 7004000, flat(550000,{0:1200000}),   flat(0,{0:1340000,1:580000})),
-  mkLine("Maintenance","Calibration & testing", 2087000, flat(180000),               flat(0,{0:165000,1:188000})),
-  mkLine("Maintenance","Safety & PPE",          1507000, flat(130000),               flat(0,{0:142000,1:128000})),
-  mkLine("Maintenance","Miscellaneous",          927000,  flat(80000),               flat(0,{0:73000, 1:86000 })),
-
-  // ── Finance ──────────────────────────────────────────────────────────────
-  mkLine("Finance","Professional fees",  5538000, flat(480000),                                flat(0,{0:460000,1:510000})),
-  mkLine("Finance","Audit & legal fees", 2788000, flat(180000,{9:480000,10:420000,11:380000}), flat(0,{0:170000,1:195000})),
-  mkLine("Finance","Insurance premiums", 3154000, flat(0,{0:820000,3:820000,6:820000,9:820000}),flat(0,{0:815000})),
-  mkLine("Finance","Banking charges",    1615000, flat(140000),  flat(0,{0:132000,1:148000})),
-  mkLine("Finance","Finance travel",      519000, flat(45000),   flat(0,{0:38000, 1:51000 })),
-  mkLine("Finance","Miscellaneous",      1038000, flat(90000),   flat(0,{0:82000, 1:95000 })),
-
-  // ── Marketing ────────────────────────────────────────────────────────────
-  mkLine("Marketing","Advertising & promotion",16271000, flat(1400000,{6:2500000,7:2200000,8:1900000}), flat(0,{0:1350000,1:1480000})),
-  mkLine("Marketing","Events & exhibitions",    8983000, flat(750000,{6:1500000,7:1200000,8:1000000,9:900000}), flat(0,{0:720000,1:810000})),
-  mkLine("Marketing","Digital marketing",       5898000, flat(580000),  flat(0,{0:610000,1:555000})),
-  mkLine("Marketing","Agency fees",             7932000, flat(780000),  flat(0,{0:780000,1:780000})),
-  mkLine("Marketing","Market research",         2119000, flat(180000,{0:380000,6:320000}), flat(0,{0:395000,1:172000})),
-  mkLine("Marketing","Marketing travel",         915000, flat(90000),   flat(0,{0:88000, 1:95000 })),
-
-  // ── IT ───────────────────────────────────────────────────────────────────
-  mkLine("IT","Software licences",   5786000, flat(480000,{0:1200000}), flat(0,{0:1185000,1:495000})),
-  mkLine("IT","Hardware & equipment",3438000, flat(280000,{2:550000,8:500000}), flat(0,{0:265000,1:295000})),
-  mkLine("IT","Cloud & hosting",     4071000, flat(380000),  flat(0,{0:372000,1:391000})),
-  mkLine("IT","IT support & AMC",    3000000, flat(280000),  flat(0,{0:280000,1:280000})),
-  mkLine("IT","Cybersecurity",       1929000, flat(180000),  flat(0,{0:175000,1:182000})),
-  mkLine("IT","IT travel",            482000, flat(45000),   flat(0,{0:38000, 1:51000 })),
-];
-
-// ---------------------------------------------------------------------------
-// Seed assumptions
-// ---------------------------------------------------------------------------
 export const DEPT_ASSUMPTIONS_SEED: Record<Department, DeptAssumptions> = {
-  HR:          { headcountFY25: 8,  headcountFY26: 9,  revenueGrowthPct: 8, areaSqftFY25: 8000,  areaSqftFY26: 8500  },
-  Operations:  { headcountFY25: 35, headcountFY26: 37, revenueGrowthPct: 8, areaSqftFY25: 45000, areaSqftFY26: 45000 },
-  SCM:         { headcountFY25: 12, headcountFY26: 13, revenueGrowthPct: 8, areaSqftFY25: 5000,  areaSqftFY26: 5000  },
-  Maintenance: { headcountFY25: 18, headcountFY26: 18, revenueGrowthPct: 8, areaSqftFY25: 45000, areaSqftFY26: 45000 },
-  Finance:     { headcountFY25: 12, headcountFY26: 12, revenueGrowthPct: 8, areaSqftFY25: 3000,  areaSqftFY26: 3200  },
-  Marketing:   { headcountFY25: 12, headcountFY26: 15, revenueGrowthPct: 8, areaSqftFY25: 4000,  areaSqftFY26: 4000  },
-  IT:          { headcountFY25: 8,  headcountFY26: 10, revenueGrowthPct: 8, areaSqftFY25: 2500,  areaSqftFY26: 2500  },
+  HR:          { headcountFY25: 0, headcountFY26: 0, revenueGrowthPct: 0, areaSqftFY25: 0, areaSqftFY26: 0 },
+  Operations:  { headcountFY25: 0, headcountFY26: 0, revenueGrowthPct: 0, areaSqftFY25: 0, areaSqftFY26: 0 },
+  SCM:         { headcountFY25: 0, headcountFY26: 0, revenueGrowthPct: 0, areaSqftFY25: 0, areaSqftFY26: 0 },
+  Maintenance: { headcountFY25: 0, headcountFY26: 0, revenueGrowthPct: 0, areaSqftFY25: 0, areaSqftFY26: 0 },
+  Finance:     { headcountFY25: 0, headcountFY26: 0, revenueGrowthPct: 0, areaSqftFY25: 0, areaSqftFY26: 0 },
+  Marketing:   { headcountFY25: 0, headcountFY26: 0, revenueGrowthPct: 0, areaSqftFY25: 0, areaSqftFY26: 0 },
+  IT:          { headcountFY25: 0, headcountFY26: 0, revenueGrowthPct: 0, areaSqftFY25: 0, areaSqftFY26: 0 },
 };
 
 export const SEED_STORE: BudgetStore = {
   fy: FY,
   deptStatus: {
-    HR: "approved", Operations: "submitted", SCM: "submitted",
-    Maintenance: "draft", Finance: "approved", Marketing: "draft", IT: "submitted",
+    HR: "draft", Operations: "draft", SCM: "draft",
+    Maintenance: "draft", Finance: "draft", Marketing: "draft", IT: "draft",
   },
   assumptions: DEPT_ASSUMPTIONS_SEED,
   lines: SEED_LINES,

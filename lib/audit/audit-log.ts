@@ -109,48 +109,7 @@ interface RawAudit {
   after?: string;
 }
 
-const RAW_SEED: RawAudit[] = [
-  { timestamp: "2026-05-31T18:30:00", actorId: "emp-002", module: "Payroll", action: "process", record: "Run May 2026", after: "24 employees · net ₹46.2L" },
-  { timestamp: "2026-05-31T18:34:12", actorId: "emp-002", module: "General Ledger", action: "post", record: "JV-2026-0518", after: "Dr Salaries 61.4L / Cr Payable + TDS" },
-  { timestamp: "2026-06-01T09:12:45", actorId: "emp-002", module: "Invoicing", action: "create", record: "NXF/26-27/0105", after: "FreshMart · ₹6.34L" },
-  { timestamp: "2026-06-01T09:15:03", actorId: "emp-009", module: "e-Invoicing", action: "generate", record: "NXF/26-27/0105", after: "IRN ack 112620000128…" },
-  { timestamp: "2026-06-02T11:48:20", actorId: "emp-023", module: "Vendors", action: "create", record: "PO-2011", after: "GreenLeaf Agro · ₹1.76L" },
-  { timestamp: "2026-06-03T14:22:10", actorId: "emp-007", module: "Invoicing", action: "update", record: "NXF/26-27/0102", field: "dueDate", before: "2026-06-17", after: "2026-06-24" },
-  { timestamp: "2026-06-04T10:05:33", actorId: "emp-005", module: "Vendors", action: "approve", record: "PO-2009 invoice", after: "ERP renewal ₹4.80L approved" },
-  { timestamp: "2026-06-04T10:06:01", actorId: null, module: "Payments", action: "process", record: "AUTO-PAY/PO-2009", after: "NEFT ₹4.80L scheduled" },
-  { timestamp: "2026-06-05T16:40:55", actorId: "emp-006", module: "Petty Cash", action: "create", record: "PC-2026-077", after: "Courier ₹1,250" },
-  { timestamp: "2026-06-08T12:18:09", actorId: "emp-009", module: "GSTR-2B", action: "approve", record: "STF/26-27/0192", after: "ITC ₹37,000 accepted" },
-  { timestamp: "2026-06-09T15:33:41", actorId: "emp-004", module: "Payroll", action: "update", record: "EMP-018 CTC", field: "annualCtc", before: "₹20.0L", after: "₹22.0L" },
-  { timestamp: "2026-06-10T09:05:00", actorId: "emp-024", module: "Purchase Requisition", action: "create", record: "PR-0001", after: "RM Durum 15,000 kg · Tin-15 2,000 units — reorder triggered" },
-  { timestamp: "2026-06-10T09:50:27", actorId: "emp-016", module: "Tax Declaration", action: "create", record: "EMP-016 FY25-26", after: "Regime: New · 80C ₹1.5L" },
-  { timestamp: "2026-06-11T10:20:00", actorId: "emp-023", module: "Purchase Requisition", action: "approve", record: "PR-0001", after: "Approved — PO-2010 to be raised with Jain Packaging" },
-  { timestamp: "2026-06-12T08:30:00", actorId: "emp-021", module: "GRN", action: "create", record: "GRN-0001", after: "WHT-2606-A · 50,000 kg rm-wheat · Sterling Foods · PO-2007" },
-  { timestamp: "2026-06-12T14:45:00", actorId: "emp-021", module: "GRN", action: "post", record: "GRN-0001", after: "1 movement posted · +50,000 kg rm-wheat at Mysuru Plant" },
-  { timestamp: "2026-06-12T17:05:14", actorId: "emp-002", module: "Banking", action: "update", record: "HDFC ****4455", field: "reconStatus", before: "unmatched", after: "matched · 142 lines" },
-  { timestamp: "2026-06-14T11:10:00", actorId: "emp-024", module: "Purchase Requisition", action: "create", record: "PR-0002", after: "Wheat 60,000 kg · Bag-50 2,000 · Bag-25 3,000 — monthly restock" },
-  { timestamp: "2026-06-15T11:27:38", actorId: "emp-002", module: "Fixed Assets", action: "post", record: "FA-2026-014", after: "Capitalised plant ₹12.4L" },
-  { timestamp: "2026-06-15T19:02:50", actorId: "emp-004", module: "Onboarding", action: "update", record: "EMP-015 exit", field: "F&F", before: "pending", after: "settled ₹3.1L" },
-  { timestamp: "2026-06-16T10:44:02", actorId: "emp-001", module: "Approvals", action: "approve", record: "Budget FY26-27", after: "Opex plan signed off" },
-  { timestamp: "2026-06-17T13:19:48", actorId: "emp-009", module: "Tax & Compliance", action: "generate", record: "GSTR-3B May 2026", after: "Net GST payable ₹2.18L" },
-  { timestamp: "2026-06-18T08:55:30", actorId: "emp-006", module: "Reimbursements", action: "approve", record: "RM-2026-061", after: "Travel claim ₹18,400" },
-  { timestamp: "2026-06-20T09:15:00", actorId: "emp-021", module: "GRN", action: "create", record: "GRN-0002", after: "1,800 units pm-tin15 · Jain Packaging Co. · PR-0001 · short delivery · pending-qc" },
-];
-
-export const SEED_AUDIT: AuditEntry[] = seal(
-  RAW_SEED.map((r, i) => ({
-    seq: i + 1,
-    timestamp: r.timestamp,
-    actorId: r.actorId,
-    actorName: r.actorId ? employeeById(r.actorId)?.name ?? r.actorId : "System",
-    module: r.module,
-    action: r.action,
-    record: r.record,
-    field: r.field ?? null,
-    before: r.before ?? null,
-    after: r.after ?? null,
-    prevHash: GENESIS_HASH, // overwritten by seal()
-  })),
-);
+export const SEED_AUDIT: AuditEntry[] = [];
 
 // ---------------------------------------------------------------------------
 // Persistence — appended user actions continue the chain after the seed.

@@ -124,47 +124,7 @@ const svcLine = (
   entryIds,
 });
 
-export const SEED_TIME_INVOICES: ServicesInvoice[] = [
-  {
-    id: "svc-proj-003-1",
-    number: "NXT/SVC/26-27/0001",
-    accountId: "acc-004", // Delhi Cash & Carry
-    entityId: "ent-nexa-trade",
-    date: "2026-05-20",
-    dueDate: "2026-06-04",
-    status: "paid",
-    lines: [
-      svcLine("proj-003", "emp-017", 8, 3800, ["ts-010"]),
-      svcLine("proj-003", "emp-024", 6, 3200, ["ts-011"]),
-    ],
-    notes: "Private-label launch — phase 1 advisory.",
-  },
-  {
-    id: "svc-proj-001-1",
-    number: "NXF/SVC/26-27/0001",
-    accountId: "acc-003", // QuickBasket
-    entityId: "ent-nexa-in",
-    date: "2026-04-30",
-    dueDate: "2026-05-15",
-    status: "paid",
-    lines: [svcLine("proj-001", "emp-016", 20, 4500, ["ts-seed-a"])],
-    notes: "Supply-chain advisory — April retainer.",
-  },
-  {
-    id: "svc-proj-001-2",
-    number: "NXF/SVC/26-27/0002",
-    accountId: "acc-003", // QuickBasket
-    entityId: "ent-nexa-in",
-    date: "2026-05-31",
-    dueDate: "2026-06-15",
-    status: "finalized",
-    lines: [
-      svcLine("proj-001", "emp-016", 16.5, 4500, ["ts-seed-b"]),
-      svcLine("proj-001", "emp-008", 9.5, 5200, ["ts-seed-c"]),
-    ],
-    notes: "Supply-chain advisory — May progress bill.",
-  },
-];
+export const SEED_TIME_INVOICES: ServicesInvoice[] = [];
 
 // ---------------------------------------------------------------------------
 // Persistence

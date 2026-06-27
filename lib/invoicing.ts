@@ -242,6 +242,8 @@ export function amountInWords(value: number, currencyCode: string, currencyName:
 // ---------------------------------------------------------------------------
 // Seed invoices
 // ---------------------------------------------------------------------------
+export const SEED_INVOICES: Invoice[] = [];
+
 interface RawInvoice {
   acc: string;
   seq: number;
@@ -351,23 +353,6 @@ const RAW_INVOICES: RawInvoice[] = [
   },
 ];
 
-export const SEED_INVOICES: Invoice[] = RAW_INVOICES.map((r) => {
-  const acc = ACCOUNTS.find((a) => a.id === r.acc)!;
-  return {
-    id: `inv-${r.acc}-${r.seq}`,
-    number: `${entityPrefix(acc.entityId)}/${r.fy ?? FY_LABEL}/${String(r.seq + 100).padStart(4, "0")}`,
-    accountId: r.acc,
-    entityId: acc.entityId,
-    date: r.date,
-    dueDate: r.due,
-    status: r.status,
-    lines: r.lines,
-    discountType: r.discountType ?? "none",
-    discountValue: r.discountValue ?? 0,
-    notes: r.notes ?? "",
-    signatoryId: r.signatory,
-  };
-});
 
 // ---------------------------------------------------------------------------
 // Persistence

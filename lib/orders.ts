@@ -148,7 +148,7 @@ function build(): SalesOrder[] {
   return out;
 }
 
-export const ORDERS: SalesOrder[] = build();
+export const ORDERS: SalesOrder[] = [];
 
 // ---- Aggregations ---------------------------------------------------------
 
