@@ -40,7 +40,7 @@ export interface CapacityPlan {
   status: "planned" | "in-progress" | "completed";
 }
 
-];
+export const WORK_CENTRES: WorkCentre[] = [];
 
 export function availableHoursPerWeek(wc: WorkCentre): number {
   const shifts = wc.shiftPattern === "single" ? 1 : wc.shiftPattern === "double" ? 2 : 3;

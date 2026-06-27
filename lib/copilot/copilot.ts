@@ -1,4 +1,4 @@
-// ---------------------------------------------------------------------------
+﻿// ---------------------------------------------------------------------------
 // NEXA Copilot — a deterministic, offline "AI" finance assistant.
 //
 // Three capabilities, all computed live from the same seed data the rest of the
@@ -139,7 +139,7 @@ export function answer(query: string): CopilotResult {
     kind: "answer",
     title: "Ask me about your finances",
     narrative:
-      “I read live from your ledgers — receivables, payables, GST/ITC and vendor risk. Try one of these, or rephrase with an amount, an age (e.g. “over 60 days”) or an entity name.”,
+      "I read live from your ledgers — receivables, payables, GST/ITC and vendor risk. Try one of these, or rephrase with an amount, an age (e.g. over 60 days) or an entity name.",
     followups: SUGGESTIONS,
   };
 }
