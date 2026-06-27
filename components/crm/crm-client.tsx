@@ -56,7 +56,7 @@ export function CrmClient() {
   const [added, setAdded] = React.useState<JourneyEvent[]>([]);
   const [tagOverrides, setTagOverrides] = React.useState<Record<string, string[]>>({});
   const [stageOverrides, setStageOverrides] = React.useState<Record<string, PipelineStage>>({});
-  const [selectedId, setSelectedId] = React.useState(ACCOUNTS[0].id);
+  const [selectedId, setSelectedId] = React.useState(ACCOUNTS[0]?.id ?? "");
   const [query, setQuery] = React.useState("");
   const [seq, setSeq] = React.useState(1); // deterministic id counter for new events
 

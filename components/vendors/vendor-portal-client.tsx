@@ -59,7 +59,7 @@ const PORTAL_VENDORS = VENDORS.filter((v) => v.vClass !== "Employee");
 // ---- helpers ---------------------------------------------------------------
 
 function usePortalVendor(): readonly [string, (id: string) => void] {
-  const [vendorId, setVendorId] = React.useState<string>(PORTAL_VENDORS[0].id);
+  const [vendorId, setVendorId] = React.useState<string>(PORTAL_VENDORS[0]?.id ?? "");
 
   React.useEffect(() => {
     setVendorId(loadPortalVendor());

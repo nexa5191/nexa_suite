@@ -13,7 +13,7 @@ import { leaseSummary, schedule, LEASES, AS_ON, type Lease } from "@/lib/finance
 
 export function LeasesClient() {
   const { positions, summary } = leaseSummary(AS_ON);
-  const [selId, setSelId] = React.useState(LEASES[0].id);
+  const [selId, setSelId] = React.useState(LEASES[0]?.id ?? "");
   const sel = LEASES.find((l) => l.id === selId)!;
   const selPos = positions.find((p) => p.lease.id === selId)!;
   const sched = schedule(sel);

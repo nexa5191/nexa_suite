@@ -58,10 +58,10 @@ export function InvoiceBuilder() {
   const { currency } = usePrefs();
 
   const entities = billingEntities();
-  const [entityId, setEntityId] = React.useState(entities[0].id);
+  const [entityId, setEntityId] = React.useState(entities[0]?.id ?? "");
 
   const accounts = accountsForEntity(entityId);
-  const [accountId, setAccountId] = React.useState(accounts[0]?.id ?? ACCOUNTS[0].id);
+  const [accountId, setAccountId] = React.useState(accounts[0]?.id ?? ACCOUNTS[0]?.id ?? "");
 
   // overrides
   const [nameOverride, setNameOverride] = React.useState("");

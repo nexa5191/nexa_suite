@@ -28,7 +28,7 @@ const PRODUCIBLE = producibleItems();
 
 export function BomClient() {
   const [selectedId, setSelectedId] = React.useState(
-    PRODUCIBLE.find((i) => i.category === "finished")?.id ?? PRODUCIBLE[0].id,
+    PRODUCIBLE.find((i) => i.category === "finished")?.id ?? PRODUCIBLE[0]?.id ?? "",
   );
   const output = itemById(selectedId)!;
   const bom = bomFor(selectedId);

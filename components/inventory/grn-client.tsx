@@ -541,13 +541,13 @@ function CreateGRNDrawer({ onClose, onCreate, nextRef }: {
   const [locationId, setLocationId] = React.useState("loc-mys");
   const [receivedBy, setReceivedBy] = React.useState("emp-021");
   const [note, setNote] = React.useState("");
-  const [lines, setLines] = React.useState<GRNLine[]>([{ itemId: ITEMS[0].id, qty: 0 }]);
+  const [lines, setLines] = React.useState<GRNLine[]>([{ itemId: ITEMS[0]?.id ?? "", qty: 0 }]);
   const [freightTotal, setFreightTotal] = React.useState<number | "">("");
   const [freightBasis, setFreightBasis] = React.useState<"value" | "qty">("value");
   const [prefetchedTitle, setPrefetchedTitle] = React.useState<string | null>(null);
   const [prefetchError, setPrefetchError] = React.useState<string | null>(null);
 
-  function addLine() { setLines((p) => [...p, { itemId: ITEMS[0].id, qty: 0 }]); }
+  function addLine() { setLines((p) => [...p, { itemId: ITEMS[0]?.id ?? "", qty: 0 }]); }
   function removeLine(i: number) { setLines((p) => p.filter((_, j) => j !== i)); }
   function updateLine(i: number, patch: Partial<GRNLine>) {
     setLines((p) => p.map((l, j) => j === i ? { ...l, ...patch } : l));

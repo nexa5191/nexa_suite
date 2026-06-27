@@ -48,7 +48,7 @@ const blankForm = (role = "") => ({
 
 export function AgencyPortalClient() {
   const { candidates, submit } = useRecruitment();
-  const [agencyId, setAgencyId] = useState(AGENCIES[0].id);
+  const [agencyId, setAgencyId] = useState(AGENCIES[0]?.id ?? "");
   const [target, setTarget] = useState<Opening | null>(null);
   const [form, setForm] = useState(blankForm());
   const [justSubmitted, setJustSubmitted] = useState<string | null>(null);

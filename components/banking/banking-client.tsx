@@ -34,7 +34,7 @@ function rangeOf(m: string) {
 
 export function BankingClient() {
   const [month, setMonth] = React.useState("2026-05");
-  const [accountId, setAccountId] = React.useState(BANK_ACCOUNTS[0].id);
+  const [accountId, setAccountId] = React.useState(BANK_ACCOUNTS[0]?.id ?? "");
   const [matchStore, setMatchStore] = React.useState<MatchStore>({});
   const [bookedStore, setBookedStore] = React.useState<BookedStore>({});
   const [selBook, setSelBook] = React.useState<string | null>(null);

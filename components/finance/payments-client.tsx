@@ -34,7 +34,7 @@ const MODE_TONE: Record<PayMode, "primary" | "warning" | "default"> = {
 };
 
 export function PaymentsClient() {
-  const [entityId, setEntityId] = React.useState(REMITTERS[0].id);
+  const [entityId, setEntityId] = React.useState(REMITTERS[0]?.id ?? "");
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const [valueDate, setValueDate] = React.useState(TODAY);
   const [paymentsTick, setPaymentsTick] = React.useState(0); // bumps after a run settles

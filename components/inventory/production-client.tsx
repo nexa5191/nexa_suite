@@ -46,7 +46,7 @@ export function ProductionClient() {
   const [added, setAdded] = React.useState<Movement[]>([]);
   const [idx, setIdx] = React.useState<StockIndex>(() => buildStockIndex(allMovements([])));
 
-  const [outputId, setOutputId] = React.useState(PRODUCIBLE[0].id);
+  const [outputId, setOutputId] = React.useState(PRODUCIBLE[0]?.id ?? "");
   const [planned, setPlanned] = React.useState("100");
   const [actualOutput, setActualOutput] = React.useState("100");
   const [actuals, setActuals] = React.useState<Record<string, string>>({});

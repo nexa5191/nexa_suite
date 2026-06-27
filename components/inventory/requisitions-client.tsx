@@ -316,9 +316,9 @@ function CreatePRDrawer({
 }) {
   const [requestedBy, setRequestedBy] = React.useState("emp-024");
   const [note, setNote] = React.useState("");
-  const [lines, setLines] = React.useState<PRLine[]>([{ itemId: ITEMS[0].id, qty: 0 }]);
+  const [lines, setLines] = React.useState<PRLine[]>([{ itemId: ITEMS[0]?.id ?? "", qty: 0 }]);
 
-  function addLine() { setLines((p) => [...p, { itemId: ITEMS[0].id, qty: 0 }]); }
+  function addLine() { setLines((p) => [...p, { itemId: ITEMS[0]?.id ?? "", qty: 0 }]); }
   function removeLine(i: number) { setLines((p) => p.filter((_, j) => j !== i)); }
   function updateLine(i: number, patch: Partial<PRLine>) {
     setLines((p) => p.map((l, j) => j === i ? { ...l, ...patch } : l));
