@@ -10,6 +10,7 @@ import { Input, Select } from "@/components/ui/input";
 import { Money } from "@/components/ui/money";
 import { cn, formatDate } from "@/lib/utils";
 import { ENTITIES, ALL, entityById, locationById } from "@/lib/accounting/org";
+import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { filteredPostings } from "@/lib/accounting/ledger";
 import { CHART_OF_ACCOUNTS } from "@/lib/accounting/chart-of-accounts";
 import { EMPLOYEES, departmentName, employeeName, employeeById } from "@/lib/hr/employees";
@@ -593,12 +594,7 @@ export function ReportHubClient() {
                 <Input value={draft.q} onChange={(e) => set({ q: e.target.value })} placeholder="Free text…" />
               </Field>
               <Field label="Entity">
-                <Select value={draft.entity} onChange={(e) => set({ entity: e.target.value })}>
-                  <option value={ALL}>All entities</option>
-                  {ENTITIES.map((en) => (
-                    <option key={en.id} value={en.id}>{en.name}</option>
-                  ))}
-                </Select>
+                <EntityCombobox value={draft.entity} onChange={(id) => set({ entity: id })} showAll />
               </Field>
               <Field label="Status">
                 <Select value={draft.status} onChange={(e) => set({ status: e.target.value })}>

@@ -2,21 +2,39 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ClipboardList, Plus, Trash2, ChevronRight, CheckCircle2, XCircle, ShoppingCart } from "lucide-react";
+import { ClipboardList, Plus, Trash2, ChevronRight, CheckCircle2, XCircle, ShoppingCart, Zap, AlertTriangle, TrendingDown, TrendingUp, Search } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { Drawer } from "@/components/ui/modal";
+import { Money } from "@/components/ui/money";
 import { cn } from "@/lib/utils";
 import { ITEMS, itemById, itemName } from "@/lib/inventory/items";
 import { ACTIVE_EMPLOYEES, employeeName } from "@/lib/hr/employees";
+import { ENTITIES, LOCATIONS } from "@/lib/accounting/org";
+import { EntityCombobox } from "@/components/ui/entity-combobox";
+import { buildBudget, loadOverrides, loadAssumptions } from "@/lib/planning/budget";
 import {
   allPRs, loadPRs, savePRs, nextPRRef,
   PR_STATUS_META,
   type PurchaseRequisition, type PRLine, type PRStatus,
 } from "@/lib/inventory/supply-chain";
+import {
+  VENDORS,
+  PURCHASE_ORDERS,
+  vendorById,
+  loadAddedPOs,
+  saveAddedPOs,
+  allPOs,
+  buildNewPO,
+  CLASS_META,
+  CLASS_COA_SUBTYPES,
+  type PurchaseOrder,
+  type POLine,
+  type VendorClass,
+} from "@/lib/vendors";
 
 function fmtQty(n: number, uom?: string) {
   return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 }).format(n) + (uom ? ` ${uom}` : "");
@@ -27,8 +45,10 @@ const TODAY = "2026-06-22";
 export function RequisitionsClient() {
   const [added, setAdded] = React.useState<PurchaseRequisition[]>([]);
   const [filter, setFilter] = React.useState<PRStatus | "all">("all");
+  const [search, setSearch] = React.useState("");
   const [selected, setSelected] = React.useState<PurchaseRequisition | null>(null);
   const [creating, setCreating] = React.useState(false);
+  const [convertingPR, setConvertingPR] = React.useState<PurchaseRequisition | null>(null);
 
   React.useEffect(() => { setAdded(loadPRs()); }, []);
 
@@ -45,7 +65,17 @@ export function RequisitionsClient() {
     setSelected(next.find((p) => p.id === id) ?? null);
   }
 
-  const shown = filter === "all" ? prs : prs.filter((p) => p.status === filter);
+  const q = search.toLowerCase();
+  const shown = prs.filter((p) => {
+    if (filter !== "all" && p.status !== filter) return false;
+    if (!q) return true;
+    return (
+      p.ref.toLowerCase().includes(q) ||
+      (p.note ?? "").toLowerCase().includes(q) ||
+      employeeName(p.requestedBy).toLowerCase().includes(q) ||
+      p.lines.some((l) => itemName(l.itemId).toLowerCase().includes(q))
+    );
+  });
   const pending = prs.filter((p) => p.status === "submitted").length;
 
   return (
@@ -67,19 +97,30 @@ export function RequisitionsClient() {
         <StatCard label="Approved / ordered" value={String(prs.filter((p) => ["approved","ordered"].includes(p.status)).length)} />
       </div>
 
-      <div className="mb-3 flex flex-wrap gap-1">
-        {(["all","draft","submitted","approved","rejected","ordered"] as const).map((s) => (
-          <button
-            key={s}
-            onClick={() => setFilter(s)}
-            className={cn(
-              "rounded-md px-3 py-1.5 text-sm font-medium transition-colors capitalize",
-              filter === s ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-accent",
-            )}
-          >
-            {s === "all" ? "All" : PR_STATUS_META[s].label}
-          </button>
-        ))}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-48 max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search ref, item, requester…"
+            className="h-8 pl-8 text-xs"
+          />
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {(["all","draft","submitted","approved","rejected","ordered"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setFilter(s)}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors capitalize",
+                filter === s ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-accent",
+              )}
+            >
+              {s === "all" ? "All" : PR_STATUS_META[s].label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <Card className="overflow-hidden">
@@ -146,6 +187,7 @@ export function RequisitionsClient() {
             persist(next);
             setSelected(null);
           }}
+          onConvertToPO={() => { setConvertingPR(selected); setSelected(null); }}
         />
       )}
 
@@ -162,17 +204,33 @@ export function RequisitionsClient() {
           nextRef={nextPRRef(added)}
         />
       )}
+
+      {/* Convert PR → PO */}
+      {convertingPR && (
+        <ConvertToPODrawer
+          pr={convertingPR}
+          onClose={() => setConvertingPR(null)}
+          onConverted={(poIds) => {
+            const next = prs.map((p) => p.id === convertingPR.id
+              ? { ...p, status: "ordered" as PRStatus, poRef: poIds.join(", ") }
+              : p);
+            persist(next);
+            setConvertingPR(null);
+          }}
+        />
+      )}
     </>
   );
 }
 
 function PRDetailDrawer({
-  pr, onClose, onUpdate, onDelete,
+  pr, onClose, onUpdate, onDelete, onConvertToPO,
 }: {
   pr: PurchaseRequisition;
   onClose: () => void;
   onUpdate: (patch: Partial<PurchaseRequisition>) => void;
   onDelete: () => void;
+  onConvertToPO?: () => void;
 }) {
   const meta = PR_STATUS_META[pr.status];
   return (
@@ -234,11 +292,9 @@ function PRDetailDrawer({
             </>
           )}
           {pr.status === "approved" && (
-            <Link href="/vendors">
-              <Button variant="outline">
-                <ShoppingCart className="size-4" /> Create PO in Vendors
-              </Button>
-            </Link>
+            <Button onClick={onConvertToPO}>
+              <Zap className="size-4" /> Convert to PO
+            </Button>
           )}
           {["draft","rejected"].includes(pr.status) && (
             <Button variant="ghost" className="ml-auto text-danger" onClick={onDelete}>
@@ -335,6 +391,249 @@ function CreatePRDrawer({
 
         <div className="flex gap-2 border-t pt-4">
           <Button onClick={submit} disabled={!valid}>Save as draft</Button>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+        </div>
+      </div>
+    </Drawer>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Last rate lookup — last PO for a given itemId across all POs
+// ---------------------------------------------------------------------------
+function lastRateForItem(itemId: string, orders: PurchaseOrder[]): { vendorId: string; vendorName: string; unitPrice: number; poId: string; daysAgo: number } | null {
+  const matches = orders
+    .flatMap((po) => po.lines
+      .filter((l) => l.itemId === itemId && l.unitPrice > 0)
+      .map((l) => ({ vendorId: po.vendorId, vendorName: VENDORS.find((v) => v.id === po.vendorId)?.name ?? "—", unitPrice: l.unitPrice, poId: po.id, date: po.date }))
+    )
+    .sort((a, b) => b.date.localeCompare(a.date));
+  if (!matches.length) return null;
+  const m = matches[0];
+  const msPerDay = 86400000;
+  const daysAgo = Math.round((new Date("2026-06-26").getTime() - new Date(m.date).getTime()) / msPerDay);
+  return { ...m, daysAgo };
+}
+
+// ---------------------------------------------------------------------------
+// ConvertToPODrawer — per-line vendor assignment, splits into one PO per vendor
+// ---------------------------------------------------------------------------
+interface ConvertLine {
+  itemId: string;
+  item: string;
+  qty: number;
+  unitPrice: number;
+  vendorId: string;
+}
+
+function ConvertToPODrawer({
+  pr,
+  onClose,
+  onConverted,
+}: {
+  pr: PurchaseRequisition;
+  onClose: () => void;
+  onConverted: (poIds: string[]) => void;
+}) {
+  const allOrders = allPOs(loadAddedPOs());
+  const activeVendors = VENDORS.filter((v) => v.active);
+  const fallbackVendorId = activeVendors[0]?.id ?? VENDORS[0].id;
+
+  const [entityId, setEntityId] = React.useState("ent-nexa-in");
+  const [locationId, setLocationId] = React.useState("loc-mys");
+  const [spocId, setSpocId] = React.useState(ACTIVE_EMPLOYEES[0]?.id ?? "");
+
+  const [lines, setLines] = React.useState<ConvertLine[]>(() =>
+    pr.lines.map((l) => {
+      const item = itemById(l.itemId);
+      const last = lastRateForItem(l.itemId, allOrders);
+      return {
+        itemId: l.itemId,
+        item: item?.name ?? l.itemId,
+        qty: l.qty,
+        unitPrice: last?.unitPrice ?? item?.rate ?? 0,
+        vendorId: last?.vendorId ?? fallbackVendorId,
+      };
+    })
+  );
+
+  function updateLine(i: number, patch: Partial<ConvertLine>) {
+    setLines((p) => p.map((l, j) => j === i ? { ...l, ...patch } : l));
+  }
+
+  // Group lines by vendorId — live PO preview
+  const groups = React.useMemo(() => {
+    const map = new Map<string, ConvertLine[]>();
+    for (const l of lines) {
+      const existing = map.get(l.vendorId) ?? [];
+      map.set(l.vendorId, [...existing, l]);
+    }
+    return Array.from(map.entries()).map(([vendorId, groupLines]) => ({
+      vendorId,
+      vendorName: VENDORS.find((v) => v.id === vendorId)?.name ?? vendorId,
+      lines: groupLines,
+      total: groupLines.reduce((s, l) => s + l.qty * l.unitPrice, 0),
+    }));
+  }, [lines]);
+
+  const grandTotal = lines.reduce((s, l) => s + l.qty * l.unitPrice, 0);
+  const valid = lines.every((l) => l.qty > 0 && l.vendorId);
+
+  function submit() {
+    let pool = loadAddedPOs();
+    const created: string[] = [];
+    for (const g of groups) {
+      const po = buildNewPO(pool, {
+        vendorId: g.vendorId,
+        title: `From ${pr.ref}${groups.length > 1 ? ` · ${g.vendorName}` : ""}`,
+        date: "2026-06-26",
+        lines: g.lines.map((l) => ({ item: l.item, qty: l.qty, unitPrice: l.unitPrice, itemId: l.itemId })),
+        spocId,
+        entityId,
+        locationId,
+        status: "issued",
+      });
+      pool = [...pool, po];
+      created.push(po.id);
+    }
+    saveAddedPOs(pool);
+    onConverted(created);
+  }
+
+  return (
+    <Drawer
+      open
+      onClose={onClose}
+      title="Convert PR to PO"
+      subtitle={`${pr.ref} · assign a vendor per line`}
+    >
+      <div className="space-y-5">
+
+        {/* Shared PO settings */}
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-muted-foreground">Entity</span>
+            <EntityCombobox value={entityId} onChange={setEntityId} className="h-9" />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-muted-foreground">Delivery location</span>
+            <Select value={locationId} onChange={(e) => setLocationId(e.target.value)} className="h-9">
+              {LOCATIONS.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+            </Select>
+          </label>
+          <label className="block col-span-2">
+            <span className="mb-1 block text-xs font-medium text-muted-foreground">SPOC (approves invoices)</span>
+            <Select value={spocId} onChange={(e) => setSpocId(e.target.value)} className="h-9">
+              {ACTIVE_EMPLOYEES.map((e) => <option key={e.id} value={e.id}>{e.name} — {e.designation}</option>)}
+            </Select>
+          </label>
+        </div>
+
+        {/* Per-line vendor + qty + price */}
+        <div>
+          <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Line items — assign vendor per line
+          </p>
+          <div className="space-y-2">
+            {lines.map((l, i) => {
+              const last = lastRateForItem(l.itemId, allOrders);
+              const item = itemById(l.itemId);
+              return (
+                <div key={i} className="rounded-lg border p-3 space-y-2">
+                  {/* Item name + last rate hint */}
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-xs font-semibold">{l.item}</p>
+                    {last && (
+                      <span className="shrink-0 text-[10px] text-muted-foreground">
+                        Last: <span className="font-medium text-foreground">₹{last.unitPrice.toLocaleString("en-IN")}/{item?.uom}</span> · {last.daysAgo}d ago
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Vendor selector */}
+                  <label className="block">
+                    <span className="text-[10px] text-muted-foreground">Vendor</span>
+                    <Select
+                      value={l.vendorId}
+                      onChange={(e) => {
+                        const newVid = e.target.value;
+                        // Prefill price from last rate for this vendor+item combo
+                        const vendorLast = allOrders
+                          .filter((po) => po.vendorId === newVid)
+                          .flatMap((po) => po.lines.filter((pl) => pl.itemId === l.itemId && pl.unitPrice > 0).map((pl) => pl.unitPrice))
+                          .sort((a, b) => b - a)[0];
+                        updateLine(i, { vendorId: newVid, ...(vendorLast ? { unitPrice: vendorLast } : {}) });
+                      }}
+                      className="mt-0.5 h-8 text-xs"
+                    >
+                      {activeVendors.map((v) => (
+                        <option key={v.id} value={v.id}>{v.name} — {v.category}</option>
+                      ))}
+                    </Select>
+                  </label>
+
+                  {/* Qty + price */}
+                  <div className="flex gap-2">
+                    <label className="block flex-1">
+                      <span className="text-[10px] text-muted-foreground">Qty ({item?.uom})</span>
+                      <Input
+                        type="number" min={1}
+                        value={l.qty || ""}
+                        onChange={(e) => updateLine(i, { qty: Number(e.target.value) })}
+                        className="mt-0.5 h-7 text-right text-xs"
+                      />
+                    </label>
+                    <label className="block flex-1">
+                      <span className="text-[10px] text-muted-foreground">Unit price (₹)</span>
+                      <Input
+                        type="number" min={0}
+                        value={l.unitPrice || ""}
+                        onChange={(e) => updateLine(i, { unitPrice: Number(e.target.value) })}
+                        className="mt-0.5 h-7 text-right text-xs"
+                      />
+                    </label>
+                    <div className="block flex-1 text-right">
+                      <span className="text-[10px] text-muted-foreground">Line total</span>
+                      <p className="mt-0.5 text-xs font-semibold tabular-nums">
+                        <Money value={l.qty * l.unitPrice} />
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* PO split preview */}
+        <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+            <Zap className="size-3.5 text-primary" />
+            Will create {groups.length} PO{groups.length > 1 ? "s" : ""}
+          </p>
+          {groups.map((g) => (
+            <div key={g.vendorId} className="flex items-start gap-3 rounded-md border bg-card px-3 py-2 text-xs">
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold">{g.vendorName}</p>
+                <p className="text-muted-foreground mt-0.5">
+                  {g.lines.map((l) => `${l.item} × ${l.qty}`).join(" · ")}
+                </p>
+              </div>
+              <span className="font-bold tabular-nums shrink-0">
+                <Money value={g.total} compact />
+              </span>
+            </div>
+          ))}
+          <div className="flex items-center justify-between border-t pt-2 mt-1">
+            <span className="text-xs font-medium">Grand total</span>
+            <span className="text-sm font-bold tabular-nums"><Money value={grandTotal} /></span>
+          </div>
+        </div>
+
+        <div className="flex gap-2 border-t pt-4">
+          <Button onClick={submit} disabled={!valid}>
+            <Zap className="size-4" /> Raise {groups.length} PO{groups.length > 1 ? "s" : ""}
+          </Button>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
         </div>
       </div>

@@ -13,6 +13,7 @@ import { usePrefs } from "@/components/prefs/prefs-provider";
 import { useJournal } from "@/components/accounting/journal-provider";
 import { cn, formatDate } from "@/lib/utils";
 import { ENTITIES } from "@/lib/accounting/org";
+import { EntityCombobox } from "@/components/ui/entity-combobox";
 import {
   allIc,
   loadCreatedIc,
@@ -231,14 +232,10 @@ function AddIcForm({ created, onAdd }: { created: IcTransaction[]; onAdd: (t: Ic
           </Select>
         </L>
         <L label="From (provider)">
-          <Select value={from} onChange={(e) => setFrom(e.target.value)}>
-            {ENTITIES.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-          </Select>
+          <EntityCombobox value={from} onChange={setFrom} />
         </L>
         <L label="To (receiver)">
-          <Select value={to} onChange={(e) => setTo(e.target.value)}>
-            {ENTITIES.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-          </Select>
+          <EntityCombobox value={to} onChange={setTo} />
         </L>
         <L label="Amount (₹)"><Input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" placeholder="0" /></L>
         <L label="Date"><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></L>

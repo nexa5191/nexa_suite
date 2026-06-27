@@ -38,13 +38,32 @@ export interface PurchaseRequisition {
 // ---------------------------------------------------------------------------
 // Goods Receipt Note
 // ---------------------------------------------------------------------------
-export type GRNStatus = "draft" | "posted";
+export type GRNStatus = "draft" | "pending-qc" | "qc-passed" | "qc-rejected" | "posted";
 
 export interface GRNLine {
   itemId: string;
   qty: number;
+  unitPrice?: number; // actual purchase price per unit (for WACOG / landed cost)
   batchNo?: string;
   expiry?: string;
+}
+
+// ---------------------------------------------------------------------------
+// QC inspection result (attached to GRN after inspection)
+// ---------------------------------------------------------------------------
+export interface QCLineResult {
+  itemId: string;
+  acceptedQty: number;
+  rejectedQty: number;
+  rejectionReason?: string;
+}
+
+export interface QCResult {
+  inspectedBy: string;   // employee id
+  inspectedDate: string; // ISO date
+  verdict: "passed" | "partial" | "rejected";
+  remarks?: string;
+  lines: QCLineResult[];
 }
 
 export interface GoodsReceiptNote {
@@ -58,6 +77,12 @@ export interface GoodsReceiptNote {
   lines: GRNLine[];
   note?: string;
   status: GRNStatus;
+  /** QC inspection result — present after inspection is submitted */
+  qcResult?: QCResult;
+  /** Total freight / transport charge for this GRN */
+  freightTotal?: number;
+  /** Allocation basis: "value" (qty×rate) or "qty" */
+  freightBasis?: "value" | "qty";
 }
 
 // ---------------------------------------------------------------------------
@@ -159,10 +184,10 @@ export const SEED_GRNS: GoodsReceiptNote[] = [
     vendorName: "Jain Packaging Co.", poRef: "PR-0001",
     locationId: "loc-mys", receivedBy: "emp-021",
     lines: [
-      { itemId: "pm-tin15", qty: 1800 },
+      { itemId: "pm-tin15", qty: 1800, unitPrice: 98 },
     ],
     note: "Short delivery. Balance expected next week.",
-    status: "draft",
+    status: "pending-qc",
   },
 ];
 
@@ -272,20 +297,26 @@ export function allIssues(added: MaterialIssue[]) { return [...SEED_ISSUES, ...a
 // ---------------------------------------------------------------------------
 export function buildGRNMovements(grn: GoodsReceiptNote): Movement[] {
   return grn.lines
-    .filter((l) => l.qty > 0 && itemById(l.itemId))
-    .map((l, i) => ({
-      id: `${grn.ref}-g${i}`,
-      date: grn.date,
-      itemId: l.itemId,
-      locationId: grn.locationId,
-      type: "receipt" as const,
-      qty: l.qty,
-      ref: grn.ref,
-      note: `${grn.vendorName}${grn.poRef ? ` · ${grn.poRef}` : ""}`,
-      byId: grn.receivedBy,
-      batchNo: l.batchNo,
-      expiry: l.expiry,
-    }));
+    .map((l, i) => {
+      // Use QC-accepted qty if inspection has been done; otherwise full qty
+      const qcLine = grn.qcResult?.lines.find((q) => q.itemId === l.itemId);
+      const effectiveQty = qcLine ? qcLine.acceptedQty : l.qty;
+      if (effectiveQty <= 0 || !itemById(l.itemId)) return null;
+      return {
+        id: `${grn.ref}-g${i}`,
+        date: grn.date,
+        itemId: l.itemId,
+        locationId: grn.locationId,
+        type: "receipt" as const,
+        qty: effectiveQty,
+        ref: grn.ref,
+        note: `${grn.vendorName}${grn.poRef ? ` · ${grn.poRef}` : ""}`,
+        byId: grn.receivedBy,
+        batchNo: l.batchNo,
+        expiry: l.expiry,
+      };
+    })
+    .filter(Boolean) as Movement[];
 }
 
 export function buildCountAdjustments(count: StockCount): Movement[] {
@@ -342,9 +373,12 @@ export const PR_STATUS_META: Record<PRStatus, { label: string; variant: "default
   ordered:  { label: "Ordered",  variant: "warning" },
 };
 
-export const GRN_STATUS_META: Record<GRNStatus, { label: string; variant: "default" | "success" }> = {
-  draft:  { label: "Draft",  variant: "default" },
-  posted: { label: "Posted", variant: "success" },
+export const GRN_STATUS_META: Record<GRNStatus, { label: string; variant: "default" | "primary" | "warning" | "success" | "danger" }> = {
+  draft:         { label: "Draft",        variant: "default"  },
+  "pending-qc":  { label: "Pending QC",   variant: "warning"  },
+  "qc-passed":   { label: "QC Passed",    variant: "primary"  },
+  "qc-rejected": { label: "QC Rejected",  variant: "danger"   },
+  posted:        { label: "Posted",       variant: "success"  },
 };
 
 export const COUNT_STATUS_META: Record<CountStatus, { label: string; variant: "default" | "primary" | "warning" | "success" }> = {

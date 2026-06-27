@@ -81,45 +81,39 @@ function KpiCard({ k }: { k: Kpi }) {
 function Flip({ k }: { k: Kpi }) {
   const [flipped, setFlipped] = React.useState(false);
   return (
-    <button
-      type="button"
-      onClick={() => setFlipped((f) => !f)}
-      className="relative block h-[72px] w-full text-left [transform-style:preserve-3d]"
-      aria-label={`${k.label} — show breakdown`}
-    >
-      <span
-        className={cn(
-          "absolute inset-0 transition-transform duration-500 [transform-style:preserve-3d]",
-          flipped && "[transform:rotateY(180deg)]",
-        )}
-      >
-        <span className={cn(SHELL, "absolute inset-0 block [backface-visibility:hidden] hover:border-primary/40")}>
-          <Face k={k} />
-        </span>
-        <span
-          className={cn(
-            SHELL,
-            "absolute inset-0 block overflow-hidden [backface-visibility:hidden] [transform:rotateY(180deg)]",
-          )}
-        >
-          <p className="mb-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {k.detailTitle ?? "Breakdown"}
+    <div className={cn(SHELL, "cursor-pointer hover:border-primary/40")} onClick={() => setFlipped((f) => !f)}>
+      {!flipped ? (
+        <>
+          <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+            {k.label}
+            <RotateCw className="size-3 opacity-0 transition-opacity group-hover:opacity-70" />
           </p>
-          <div className="space-y-0">
-            {k.detail!.slice(0, 3).map((d) => (
+          <p className="mt-0.5 text-lg font-bold leading-tight tracking-tight">
+            <Money value={k.value} compact />
+          </p>
+          {k.sub && <p className="mt-0.5 text-xs text-muted-foreground">{k.sub}</p>}
+        </>
+      ) : (
+        <>
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center justify-between">
+            {k.detailTitle ?? "Breakdown"}
+            <RotateCw className="size-3 opacity-60" />
+          </p>
+          <div className="max-h-36 overflow-y-auto scrollbar-thin space-y-0.5">
+            {k.detail!.map((d) => (
               <div key={d.label} className="flex items-center justify-between gap-2 text-xs">
                 <span className="truncate text-muted-foreground">{d.label}</span>
                 {d.value !== undefined && (
-                  <span className="tabular font-medium">
+                  <span className="tabular font-medium shrink-0">
                     <Money value={d.value} compact />
                   </span>
                 )}
-                {d.hint && d.value === undefined && <span className="font-medium">{d.hint}</span>}
+                {d.hint && d.value === undefined && <span className="font-medium shrink-0">{d.hint}</span>}
               </div>
             ))}
           </div>
-        </span>
-      </span>
-    </button>
+        </>
+      )}
+    </div>
   );
 }

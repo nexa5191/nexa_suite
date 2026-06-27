@@ -10,6 +10,7 @@ import { Select, Label } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { downloadCsv } from "@/lib/export";
 import { ENTITIES } from "@/lib/accounting/org";
+import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { AS_ON } from "@/lib/finance/receivables";
 import { segmentPnl, type SegmentPnl } from "@/lib/accounting/segments";
 
@@ -55,10 +56,7 @@ export function SegmentPnlClient() {
       <Card className="mb-4 flex flex-wrap items-end gap-3 p-4">
         <div className="w-48">
           <Label>Entity</Label>
-          <Select value={entityId} onChange={(e) => setEntityId(e.target.value)} className="mt-1">
-            <option value="all">All entities</option>
-            {ENTITIES.map((en) => <option key={en.id} value={en.id}>{en.name}</option>)}
-          </Select>
+          <EntityCombobox value={entityId} onChange={setEntityId} showAll className="mt-1" />
         </div>
         <div className="w-44">
           <Label>Period</Label>

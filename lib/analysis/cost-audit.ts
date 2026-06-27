@@ -12,7 +12,7 @@
 import type { ReportFilters } from "@/lib/accounting/types";
 import { filteredPostings } from "@/lib/accounting/ledger";
 import { account, accountSafe } from "@/lib/accounting/chart-of-accounts";
-import { ENTITIES, LOCATIONS, entityById, locationById } from "@/lib/accounting/org";
+import { ENTITIES, LOCATIONS, entityById, locationById, resolveEntityIds } from "@/lib/accounting/org";
 import { FINISHED_ITEMS, explodedUnitCost, ownershipOf, unitWorksCost, OWNERSHIP_META } from "@/lib/inventory/items";
 import { SEED_MOVEMENTS } from "@/lib/inventory/movements";
 import type { OwnershipModel, Movement } from "@/lib/inventory/types";
@@ -384,7 +384,7 @@ export function buildCostAudit(
 // ---- Stock movement per finished product, scoped + period-bounded ----------
 function movementInScope(m: Movement, f: ReportFilters): boolean {
   const loc = locationById(m.locationId);
-  if (f.entityId !== "all" && loc?.entityId !== f.entityId) return false;
+  if (f.entityId !== "all" && !resolveEntityIds(f.entityId).includes(loc?.entityId ?? "")) return false;
   if (f.locationId !== "all" && m.locationId !== f.locationId) return false;
   if (f.state !== "all" && loc?.state !== f.state) return false;
   return true;

@@ -13,6 +13,7 @@
 import { CHART_OF_ACCOUNTS, accountSafe } from "./chart-of-accounts";
 import { allPostings } from "./ledger";
 import type { Basis } from "./types";
+import { resolveEntityIds } from "./org";
 
 export interface TrialBalanceLine {
   code: string;
@@ -59,7 +60,7 @@ export function buildTrialBalance(f: TbFilters): TrialBalance {
 
   for (const p of allPostings()) {
     if (p.basis !== f.basis) continue;
-    if (f.entityId !== "all" && p.entityId !== f.entityId) continue;
+    if (f.entityId !== "all" && !resolveEntityIds(f.entityId).includes(p.entityId)) continue;
     if (f.locationId !== "all" && p.locationId !== f.locationId) continue;
 
     const isBeforePeriod = f.from && p.date < f.from;

@@ -11,6 +11,7 @@ import { Select, Label } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { downloadCsv } from "@/lib/export";
 import { ENTITIES } from "@/lib/accounting/org";
+import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { AS_ON } from "@/lib/finance/receivables";
 import { budgetControl, type BudgetControl } from "@/lib/planning/budget-control";
 
@@ -34,10 +35,7 @@ export function BudgetControlClient() {
         subtitle="Commitment accounting — available budget = budget − actual − open commitments (POs)."
         actions={
           <div className="flex items-center gap-2">
-            <Select value={entityId} onChange={(e) => setEntityId(e.target.value)} className="h-9 w-48">
-              <option value="all">All entities</option>
-              {ENTITIES.map((en) => <option key={en.id} value={en.id}>{en.name}</option>)}
-            </Select>
+            <EntityCombobox value={entityId} onChange={setEntityId} showAll className="h-9 w-48" />
             <Button size="sm" variant="outline" onClick={exportCsv} disabled={!bc}><Download className="size-4" /> CSV</Button>
           </div>
         }

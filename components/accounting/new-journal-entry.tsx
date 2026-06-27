@@ -12,6 +12,7 @@ import { useJournal } from "@/components/accounting/journal-provider";
 import { cn } from "@/lib/utils";
 import { CHART_OF_ACCOUNTS, accountSafe } from "@/lib/accounting/chart-of-accounts";
 import { ENTITIES, ALL, locationsForEntity } from "@/lib/accounting/org";
+import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { partiesByKind } from "@/lib/accounting/parties";
 import {
   type EntryBasis,
@@ -400,13 +401,7 @@ export function NewJournalEntry({
           </div>
           <div>
             <Label htmlFor="je-entity">Entity</Label>
-            <Select id="je-entity" value={entityId} onChange={(e) => changeEntity(e.target.value)} className="mt-1">
-              {ENTITIES.map((en) => (
-                <option key={en.id} value={en.id}>
-                  {en.name}
-                </option>
-              ))}
-            </Select>
+            <EntityCombobox id="je-entity" value={entityId} onChange={changeEntity} className="mt-1" />
           </div>
           <div>
             <Label htmlFor="je-loc">Location</Label>

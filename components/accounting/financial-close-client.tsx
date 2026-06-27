@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select, Label } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ENTITIES } from "@/lib/accounting/org";
+import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { AS_ON } from "@/lib/finance/receivables";
 import {
   recentPeriods, statusOf, setPeriodStatus, loadChecklist, saveChecklistFor,
@@ -58,9 +59,7 @@ export function FinancialCloseClient() {
         title="Financial Close"
         subtitle="Open, soft-close and lock accounting periods. A locked period rejects new postings."
         actions={
-          <Select value={entityId} onChange={(e) => setEntityId(e.target.value)} className="h-9 w-52">
-            {ENTITIES.map((en) => <option key={en.id} value={en.id}>{en.name}</option>)}
-          </Select>
+          <EntityCombobox value={entityId} onChange={setEntityId} className="h-9 w-52" />
         }
       />
 
