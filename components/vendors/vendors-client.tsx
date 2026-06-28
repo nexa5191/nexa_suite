@@ -39,9 +39,12 @@ import {
   loadPoPayments,
   loadAddedPOs,
   saveAddedPOs,
+  loadAddedVendors,
+  saveAddedVendors,
   allPOs,
   buildNewPO,
   CLASS_META,
+  CATEGORY_CLASS,
   VENDOR_CLASSES,
   CLASS_COA_SUBTYPES,
   loadPOMutations,
@@ -53,6 +56,7 @@ import {
   type POMutation,
   type POEffectiveStatus,
   type VendorClass,
+  type Vendor,
 } from "@/lib/vendors";
 
 const STATUS_META: Record<POEffectiveStatus, { label: string; variant: "default" | "warning" | "success" | "danger" | "primary" }> = {
@@ -446,7 +450,12 @@ export function VendorsClient() {
               if (v.vClass !== c) return false;
               if (!vendorSearch) return true;
               const q = vendorSearch.toLowerCase();
-              return v.name.toLowerCase().includes(q) || (v.city ?? "").toLowerCase().includes(q) || (v.gstin ?? "").toLowerCase().includes(q) || v.vClass.toLowerCase().includes(q);
+              return v.name.toLowerCase().includes(q)
+                || (v.gstinLegalName ?? "").toLowerCase().includes(q)
+                || (v.gstinTradeName ?? "").toLowerCase().includes(q)
+                || (v.city ?? "").toLowerCase().includes(q)
+                || (v.gstin ?? "").toLowerCase().includes(q)
+                || v.vClass.toLowerCase().includes(q);
             });
             if (vendors.length === 0) return null;
             return (
@@ -1309,7 +1318,34 @@ function OnboardingInbox() {
   if (pending.length === 0) return null;
 
   function approve(id: string) {
+    const reg = regs.find((r) => r.id === id);
     updateOnboardingStatus(id, "approved", "Approved by AP team");
+    // Write vendor into the master so it's searchable and portal-accessible.
+    if (reg) {
+      const added = loadAddedVendors();
+      const exists = added.some((v) => v.gstin === reg.gstin && reg.gstin);
+      if (!exists) {
+        const newVendor: Vendor = {
+          id: `v-ob-${id}`,
+          name: reg.name,
+          gstinLegalName: reg.gstinLegalName,
+          gstinTradeName: reg.gstinTradeName,
+          category: reg.category,
+          vClass: CATEGORY_CLASS[reg.category] ?? "Opex",
+          contact: reg.contact,
+          email: reg.email,
+          phone: reg.phone,
+          city: reg.city,
+          gstin: reg.gstin || "—",
+          rating: 3,
+          msme: reg.msme,
+          msmeClass: reg.msmeClass,
+          udyam: reg.udyam,
+          active: true,
+        };
+        saveAddedVendors([...added, newVendor]);
+      }
+    }
     setRegs(loadOnboardings());
   }
   function reject(id: string) {

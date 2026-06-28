@@ -72,6 +72,8 @@ export interface Vendor {
   phone: string;
   city: string;
   gstin: string;
+  gstinLegalName?: string;   // from GST portal
+  gstinTradeName?: string;   // from GST portal
   rating: number; // 1–5
   msme: boolean;
   msmeClass?: MsmeClass; // Udyam classification
@@ -289,6 +291,16 @@ export const savePoPayments = (p: Record<string, number>) => write(PO_PAYMENTS_K
 export function poOutstanding(po: PurchaseOrder, payments: Record<string, number>): number {
   if (!po.invoice) return 0;
   return Math.max(0, Math.round(po.invoice.amount - (payments[po.id] ?? 0)));
+}
+
+// ---- User-added vendor persistence -----------------------------------------
+const ADDED_VENDORS_KEY = "nexa-added-vendors";
+
+export const loadAddedVendors = (): Vendor[] => read<Vendor[]>(ADDED_VENDORS_KEY, []);
+export const saveAddedVendors = (vs: Vendor[]) => write(ADDED_VENDORS_KEY, vs);
+
+export function allVendors(added: Vendor[] = loadAddedVendors()): Vendor[] {
+  return [...VENDORS, ...added];
 }
 
 // ---- User-created PO persistence -------------------------------------------
