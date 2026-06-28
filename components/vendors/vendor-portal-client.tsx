@@ -889,6 +889,9 @@ function OnboardTab() {
   }, [gstinResult]);
 
   const gstinValid = gstinResult?.valid ?? false;
+  const hasLiveData = gstinValid && !!gstName; // live API returned a legal name
+  // Fallback name — only shown/used when GSTIN is format-valid but live data unavailable.
+  const [fallbackName, setFallbackName] = React.useState("");
   // Non-GST mode: vendor has no GSTIN (unregistered / below threshold / foreign).
   const [nonGst, setNonGst] = React.useState(false);
   // Manual identity fields used only when nonGst = true.
@@ -897,16 +900,17 @@ function OnboardTab() {
   const [manualState, setManualState] = React.useState("");
   const [manualAddress, setManualAddress] = React.useState("");
 
+  const effectiveName = hasLiveData ? gstName : fallbackName.trim();
   const canSubmit = nonGst
-    ? manualName.trim() && contact.trim() && email.trim() && phone.trim() && city.trim()
-    : gstName && gstinValid && gstin.trim().length === 15 && contact.trim() && email.trim() && phone.trim() && city.trim();
+    ? !!(manualName.trim() && contact.trim() && email.trim() && phone.trim() && city.trim())
+    : !!(gstinValid && gstin.trim().length === 15 && effectiveName && contact.trim() && email.trim() && phone.trim() && city.trim());
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
     const entry = submitOnboarding(
       {
-        name: nonGst ? manualName.trim() : gstName,
+        name: nonGst ? manualName.trim() : effectiveName,
         gstin: nonGst ? "" : gstin.trim().toUpperCase(),
         gstinLegalName: nonGst ? undefined : gstName || undefined,
         gstinTradeName: nonGst ? undefined : gstTradeName || undefined,
@@ -1003,29 +1007,26 @@ function OnboardTab() {
               onResult={setGstinResult}
             />
 
-            {/* Verified details card — appears once GSTIN resolves from portal */}
-            {gstinValid && gstName && (
-              <div className="rounded-lg border border-success/30 bg-success/5 p-4 space-y-2.5">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-success flex items-center gap-1.5">
-                  <CheckCircle2 className="size-3.5" /> Verified from GST portal
+            {/* GSTIN details panel — shown as soon as format is valid */}
+            {gstinValid && gstPan && (
+              <div className={cn(
+                "rounded-lg border p-4 space-y-2.5",
+                hasLiveData
+                  ? "border-success/30 bg-success/5"
+                  : "border-amber-300/40 bg-amber-50/50 dark:bg-amber-900/10",
+              )}>
+                <p className={cn(
+                  "text-[11px] font-semibold uppercase tracking-wide flex items-center gap-1.5",
+                  hasLiveData ? "text-success" : "text-amber-600 dark:text-amber-400",
+                )}>
+                  {hasLiveData
+                    ? <><CheckCircle2 className="size-3.5" /> Verified from GST portal</>
+                    : <><AlertTriangle className="size-3.5" /> Format valid — portal data unavailable</>
+                  }
                 </p>
+
                 <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2 text-xs">
-                  <div>
-                    <p className="text-muted-foreground">Legal name</p>
-                    <p className="font-semibold text-foreground">{gstName}</p>
-                  </div>
-                  {gstTradeName && gstTradeName !== gstName && (
-                    <div>
-                      <p className="text-muted-foreground">Trade name</p>
-                      <p className="font-semibold text-foreground">{gstTradeName}</p>
-                    </div>
-                  )}
-                  {gstTaxPayerType && (
-                    <div>
-                      <p className="text-muted-foreground">Taxpayer type</p>
-                      <p className="font-semibold text-foreground">{gstTaxPayerType}</p>
-                    </div>
-                  )}
+                  {/* Always available from format */}
                   <div>
                     <p className="text-muted-foreground">PAN</p>
                     <p className="font-mono font-semibold text-foreground">{gstPan}</p>
@@ -1034,13 +1035,48 @@ function OnboardTab() {
                     <p className="text-muted-foreground">State</p>
                     <p className="font-semibold text-foreground">{gstState}</p>
                   </div>
-                  {gstAddress && (
-                    <div className="sm:col-span-2">
-                      <p className="text-muted-foreground">Principal place of business</p>
-                      <p className="font-semibold text-foreground">{gstAddress}</p>
-                    </div>
+                  {/* Live-only fields */}
+                  {hasLiveData && (
+                    <>
+                      <div>
+                        <p className="text-muted-foreground">Legal name</p>
+                        <p className="font-semibold text-foreground">{gstName}</p>
+                      </div>
+                      {gstTradeName && gstTradeName !== gstName && (
+                        <div>
+                          <p className="text-muted-foreground">Trade name</p>
+                          <p className="font-semibold text-foreground">{gstTradeName}</p>
+                        </div>
+                      )}
+                      {gstTaxPayerType && (
+                        <div>
+                          <p className="text-muted-foreground">Taxpayer type</p>
+                          <p className="font-semibold text-foreground">{gstTaxPayerType}</p>
+                        </div>
+                      )}
+                      {gstAddress && (
+                        <div className="sm:col-span-2">
+                          <p className="text-muted-foreground">Principal place of business</p>
+                          <p className="font-semibold text-foreground">{gstAddress}</p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
+
+                {/* Fallback name when live data unavailable */}
+                {!hasLiveData && (
+                  <div className="border-t border-amber-300/30 pt-2.5">
+                    <Fld label="Legal / Company name * (enter manually — AP team will verify against GST portal)">
+                      <Input
+                        value={fallbackName}
+                        onChange={(e) => setFallbackName(e.target.value)}
+                        placeholder="As registered on GSTIN"
+                        className="h-9"
+                      />
+                    </Fld>
+                  </div>
+                )}
               </div>
             )}
           </>
