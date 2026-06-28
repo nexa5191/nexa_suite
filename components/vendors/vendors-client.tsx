@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, X, RotateCcw, Building2, Info, Star, ArrowRight, Banknote, FileCheck, Users, Sparkles, ShieldCheck, Plus, Trash2, TrendingUp, TrendingDown, AlertTriangle, PackageCheck, BarChart3, Pencil, XOctagon, History, Search } from "lucide-react";
+import { Check, X, RotateCcw, Building2, Info, Star, ArrowRight, Banknote, FileCheck, Users, Sparkles, ShieldCheck, Plus, Trash2, TrendingUp, TrendingDown, AlertTriangle, PackageCheck, BarChart3, Pencil, XOctagon, History, Search, Copy, Link2, ExternalLink, UserPlus, Clock } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card } from "@/components/ui/card";
@@ -13,6 +13,8 @@ import { Drawer } from "@/components/ui/modal";
 import { VoucherButton } from "@/components/accounting/voucher-button";
 import { PayBills } from "./pay-bills";
 import { P2PTrail } from "./p2p-trail";
+import { vendorPortalUrl } from "@/lib/vendors/vendor-portal";
+import { loadOnboardings, updateOnboardingStatus, type VendorOnboarding } from "@/lib/vendors/onboarding";
 import { loadP2P, p2pStage, matchPoInvoice, DEFAULT_MATCH_TOLERANCE_PCT, STAGE_META, STAGE_ORDER, type P2PStore, type P2PStage } from "@/lib/p2p";
 import { cn, formatDate } from "@/lib/utils";
 import { ENTITIES, LOCATIONS, entityById, locationById } from "@/lib/accounting/org";
@@ -418,6 +420,9 @@ export function VendorsClient() {
         </>
       ) : (
         <>
+          {/* Pending onboarding registrations */}
+          <OnboardingInbox />
+
           {/* vendor search + class filter */}
           <div className="mb-3 relative max-w-xs">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -1209,6 +1214,11 @@ function VendorCard({ v, allOrders, grns }: { v: (typeof VENDORS)[number]; allOr
           </Link>
         )}
 
+        {/* Portal link actions */}
+        {!isEmployee && v.active && (
+          <PortalLinkRow vendorId={v.id} />
+        )}
+
         {/* Vendor scorecard */}
         {!isEmployee && scorecard.poCount > 0 && (
           <div className="mt-3 border-t pt-3 space-y-2">
@@ -1247,6 +1257,119 @@ function VendorCard({ v, allOrders, grns }: { v: (typeof VENDORS)[number]; allOr
         )}
       </div>
     </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Portal link row — copy link + open portal buttons
+// ---------------------------------------------------------------------------
+function PortalLinkRow({ vendorId }: { vendorId: string }) {
+  const [copied, setCopied] = React.useState(false);
+
+  function copyLink() {
+    const url = vendorPortalUrl(vendorId);
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  }
+
+  return (
+    <div className="mt-3 border-t pt-3 flex items-center gap-2">
+      <button
+        onClick={copyLink}
+        className="flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+      >
+        {copied ? <Check className="size-3 text-success" /> : <Copy className="size-3" />}
+        {copied ? "Copied!" : "Copy portal link"}
+      </button>
+      <Link
+        href={`/vendor-portal?v=${typeof window !== "undefined" ? btoa(encodeURIComponent(vendorId)) : ""}`}
+        target="_blank"
+        className="flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+      >
+        <ExternalLink className="size-3" /> Preview portal
+      </Link>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Pending onboarding registrations (AP review)
+// ---------------------------------------------------------------------------
+function OnboardingInbox() {
+  const [regs, setRegs] = React.useState<VendorOnboarding[]>([]);
+  const [open, setOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    setRegs(loadOnboardings());
+  }, []);
+
+  const pending = regs.filter((r) => r.status === "pending");
+  if (pending.length === 0) return null;
+
+  function approve(id: string) {
+    updateOnboardingStatus(id, "approved", "Approved by AP team");
+    setRegs(loadOnboardings());
+  }
+  function reject(id: string) {
+    updateOnboardingStatus(id, "rejected", "Rejected by AP team");
+    setRegs(loadOnboardings());
+  }
+
+  return (
+    <div className="mb-4 rounded-lg border border-amber-300/50 bg-amber-50/60 dark:bg-amber-900/10 p-3">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between"
+      >
+        <span className="flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-400">
+          <Clock className="size-4" />
+          {pending.length} pending vendor registration{pending.length > 1 ? "s" : ""} awaiting AP review
+        </span>
+        <span className="text-xs text-amber-600 dark:text-amber-400">{open ? "Hide" : "Review"}</span>
+      </button>
+      {open && (
+        <div className="mt-3 space-y-3">
+          {pending.map((r) => (
+            <div key={r.id} className="rounded-lg border bg-card p-3 text-xs">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-sm">{r.name}</p>
+                  <p className="font-mono text-muted-foreground">{r.gstin}</p>
+                  {r.gstinLegalName && r.gstinLegalName !== r.name && (
+                    <p className="text-muted-foreground">Legal: {r.gstinLegalName}</p>
+                  )}
+                  <p className="mt-0.5 text-muted-foreground">
+                    {r.category} · {r.city}, {r.state}
+                  </p>
+                  <p className="text-muted-foreground">{r.contact} · {r.email}</p>
+                  <div className="mt-1 flex gap-2">
+                    <Badge variant={r.gstinVerified ? "success" : "warning"} className="text-[10px]">
+                      GSTIN {r.gstinVerified ? "verified" : "format-only"}
+                    </Badge>
+                    {r.msme && <Badge variant="primary" className="text-[10px]">MSME {r.msmeClass}</Badge>}
+                  </div>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <Button size="sm" variant="outline" onClick={() => approve(r.id)} className="h-7 text-success border-success/30 hover:bg-success/10">
+                    <Check className="size-3" /> Approve
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => reject(r.id)} className="h-7 text-destructive border-destructive/30 hover:bg-destructive/10">
+                    <X className="size-3" /> Reject
+                  </Button>
+                </div>
+              </div>
+              {r.bankName && (
+                <p className="mt-1.5 text-muted-foreground">
+                  Bank: {r.bankName} · A/c {r.bankAccount} · IFSC {r.ifsc}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

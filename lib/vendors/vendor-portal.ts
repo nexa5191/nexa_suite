@@ -77,6 +77,35 @@ export const loadVendorInvoices = (): VendorInvoice[] =>
 export const saveVendorInvoices = (inv: VendorInvoice[]) =>
   write(VENDOR_INVOICES_KEY, inv);
 
+// ---- portal link tokens -----------------------------------------------------
+// Simple base64 token — enough for a demo portal with no real auth backend.
+// The token encodes the vendorId so the vendor can bookmark their portal URL.
+
+export function vendorPortalToken(vendorId: string): string {
+  if (typeof window === "undefined") return "";
+  return btoa(encodeURIComponent(vendorId));
+}
+
+export function vendorFromToken(token: string): string | null {
+  try {
+    const id = decodeURIComponent(atob(token));
+    if (VENDORS.some((v) => v.id === id)) return id;
+    // also check added vendors (dynamic onboarding)
+    const added: { id: string }[] = JSON.parse(
+      typeof window !== "undefined" ? (localStorage.getItem("nexa-added-vendors") ?? "[]") : "[]",
+    );
+    if (added.some((v) => v.id === id)) return id;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function vendorPortalUrl(vendorId: string): string {
+  if (typeof window === "undefined") return `/vendor-portal?v=${btoa(encodeURIComponent(vendorId))}`;
+  return `${window.location.origin}/vendor-portal?v=${vendorPortalToken(vendorId)}`;
+}
+
 export const INVOICE_STATUS_META: Record<
   VendorInvoiceStatus,
   { label: string; variant: "default" | "warning" | "success" | "primary" }
