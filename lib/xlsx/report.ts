@@ -207,7 +207,12 @@ export function buildReportSheet(spec: ReportSheet, t: ExcelTemplate): XlsxSheet
       const letter = colLetterByIndex(ci);
       if (col.totalText !== undefined) return { value: col.totalText, style };
       if (col.total === "sum") {
-        return { formula: `SUM(${letter}${firstDataRow}:${letter}${lastDataRow})`, style };
+        // Pre-compute so apps that don't auto-recalculate show the right number.
+        const total = spec.rows.reduce((s, row) => {
+          const v = row[col.key ?? col.header];
+          return s + (typeof v === "number" ? v : 0);
+        }, 0);
+        return { formula: `SUM(${letter}${firstDataRow}:${letter}${lastDataRow})`, value: total, style };
       }
       if (typeof col.total === "function") {
         return {
