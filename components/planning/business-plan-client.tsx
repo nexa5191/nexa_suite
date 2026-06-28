@@ -203,7 +203,7 @@ export function BusinessPlanClient() {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
               <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
               <YAxis tickFormatter={(v) => formatCompactInr(v)} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" width={62} />
-              <Tooltip formatter={(v: number) => formatCompactInr(v)} contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid hsl(var(--border))" }} />
+              <Tooltip formatter={(v) => formatCompactInr(v as number)} contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid hsl(var(--border))" }} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Bar dataKey="revenue" name="Revenue" fill="hsl(var(--chart-1))" radius={[3, 3, 0, 0]} />
               <Bar dataKey="net" name="Net profit" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />

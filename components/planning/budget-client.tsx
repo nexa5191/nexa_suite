@@ -392,7 +392,7 @@ function ForecastView({ model, method }: { model: BudgetModel; method: BudgetAss
             <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
             <YAxis tickFormatter={(v) => formatCompactInr(v)} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" width={60} />
             <Tooltip
-              formatter={(v: number) => formatCompactInr(v)}
+              formatter={(v) => formatCompactInr(v as number)}
               contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid hsl(var(--border))" }}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />

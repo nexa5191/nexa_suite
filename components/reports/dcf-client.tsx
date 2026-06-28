@@ -213,7 +213,7 @@ export function DcfClient() {
             <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${FMT.format(v)}`} />
             <Tooltip
-              formatter={(v: number, name: string) => [`₹${FMT.format(v)} Cr`, name === "fcf" ? "FCF" : "PV of FCF"]}
+              formatter={(v, name) => [`₹${FMT.format(v as number)} Cr`, name === "fcf" ? "FCF" : "PV of FCF"]}
               labelStyle={{ fontSize: 11 }}
               contentStyle={{ fontSize: 12 }}
             />

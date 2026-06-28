@@ -223,7 +223,7 @@ export function OrdersClient() {
                 <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" tickLine={false} />
                 <YAxis tickFormatter={fmtAxis} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" tickLine={false} width={56} />
                 <Tooltip
-                  formatter={(v: number, n) => (n === "gmv" ? formatCompact(v, currency) : v)}
+                  formatter={(v, n) => { const num = v as number; return n === "gmv" ? formatCompact(num, currency) : num; }}
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--popover))" }}
                 />
                 <Area type="monotone" dataKey="gmv" name="GMV" stroke="hsl(var(--chart-1))" strokeWidth={2} fill="url(#oGmv)" />
