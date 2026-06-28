@@ -35,10 +35,14 @@ export function TasksClient() {
   const [assignee, setAssignee] = React.useState("all");
   const [project, setProject] = React.useState("all");
   const [showAdd, setShowAdd] = React.useState(false);
+  // Defer localStorage-backed lists until after mount so server and initial
+  // client renders match (both empty), preventing a hydration mismatch.
+  const [employees, setEmployees] = React.useState<typeof EMPLOYEES>([]);
   useNewIntent(() => setShowAdd(true));
 
   React.useEffect(() => {
     setOverrides(loadTaskStatuses());
+    setEmployees(EMPLOYEES);
   }, []);
 
   const allTasks = React.useMemo(() => [...added, ...FIRM_TASKS], [added]);
@@ -75,7 +79,7 @@ export function TasksClient() {
         <span className="text-xs font-medium text-muted-foreground">Filter</span>
         <Select value={assignee} onChange={(e) => setAssignee(e.target.value)} className="h-8 w-48">
           <option value="all">All assignees</option>
-          {EMPLOYEES.map((e) => (<option key={e.id} value={e.id}>{e.name}</option>))}
+          {employees.map((e) => (<option key={e.id} value={e.id}>{e.name}</option>))}
         </Select>
         <Select value={project} onChange={(e) => setProject(e.target.value)} className="h-8 w-44">
           <option value="all">All projects</option>
