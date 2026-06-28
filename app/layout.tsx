@@ -55,6 +55,7 @@ const fontVars = [
 export const metadata: Metadata = {
   title: "NEXA — Accounting",
   description: "Multi-entity, multi-currency accounting platform with cash & accrual basis.",
+  icons: { icon: "/favicon.ico" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
