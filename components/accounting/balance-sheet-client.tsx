@@ -24,30 +24,35 @@ export function BalanceSheetClient() {
     secs.forEach((s) => {
       push({ key: `g-${s.label}`, label: s.label, level: 1, variant: "group" });
       s.rows.forEach((r) =>
-        push({ key: r.code, label: r.name, amount: r.amount, level: 2, variant: "line" }),
+        push({ key: r.code, label: r.name, amount: r.amount, level: 2, variant: "line", drillCodes: [r.code] }),
       );
-      push({ key: `t-${s.label}`, label: `Total ${s.label}`, amount: s.total, level: 1, variant: "subtotal" });
+      const secCodes = s.rows.map((r) => r.code);
+      push({ key: `t-${s.label}`, label: `Total ${s.label}`, amount: s.total, level: 1, variant: "subtotal", drillCodes: secCodes });
     });
+
+  const assetCodes = bs.assets.flatMap((s) => s.rows.map((r) => r.code));
+  const liabCodes = bs.liabilities.flatMap((s) => s.rows.map((r) => r.code));
+  const eqCodes = bs.equity.flatMap((s) => s.rows.map((r) => r.code));
 
   push({ key: "assets", label: "ASSETS", level: 0, variant: "group" });
   renderSections(bs.assets);
-  push({ key: "ta", label: "Total Assets", amount: bs.totalAssets, level: 0, variant: "total" });
+  push({ key: "ta", label: "Total Assets", amount: bs.totalAssets, level: 0, variant: "total", drillCodes: assetCodes });
 
   push({ key: "sp1", label: "", variant: "spacer" });
   push({ key: "liab", label: "LIABILITIES", level: 0, variant: "group" });
   renderSections(bs.liabilities);
-  push({ key: "tl", label: "Total Liabilities", amount: bs.totalLiabilities, level: 0, variant: "subtotal" });
+  push({ key: "tl", label: "Total Liabilities", amount: bs.totalLiabilities, level: 0, variant: "subtotal", drillCodes: liabCodes });
 
   push({ key: "sp2", label: "", variant: "spacer" });
   push({ key: "eq", label: "EQUITY", level: 0, variant: "group" });
   bs.equity.forEach((s) =>
-    s.rows.forEach((r) => push({ key: r.code, label: r.name, amount: r.amount, level: 2, variant: "line" })),
+    s.rows.forEach((r) => push({ key: r.code, label: r.name, amount: r.amount, level: 2, variant: "line", drillCodes: [r.code] })),
   );
   push({ key: "re", label: "Retained Earnings (incl. current period)", amount: bs.retainedEarnings, level: 2, variant: "line" });
-  push({ key: "teq", label: "Total Equity", amount: bs.totalEquity, level: 0, variant: "subtotal" });
+  push({ key: "teq", label: "Total Equity", amount: bs.totalEquity, level: 0, variant: "subtotal", drillCodes: eqCodes });
 
   push({ key: "sp3", label: "", variant: "spacer" });
-  push({ key: "tle", label: "Total Liabilities & Equity", amount: bs.totalLiabAndEquity, level: 0, variant: "total" });
+  push({ key: "tle", label: "Total Liabilities & Equity", amount: bs.totalLiabAndEquity, level: 0, variant: "total", drillCodes: [...assetCodes, ...liabCodes, ...eqCodes] });
 
   const balanced = Math.abs(bs.check) < 1;
 
@@ -114,6 +119,7 @@ export function BalanceSheetClient() {
         periodLabel={`As at ${ctl.periodLabel.split("–")[1].trim()}`}
         basisLabel={ctl.basisLabel}
         rows={rows}
+        filters={ctl.filters}
       />
     </>
   );

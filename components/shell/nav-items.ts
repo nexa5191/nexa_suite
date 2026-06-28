@@ -58,6 +58,7 @@ import {
   Gauge,
   UserPlus,
   PiggyBank,
+  Sliders,
   ShieldCheck,
   ScrollText,
   Gavel,
@@ -204,6 +205,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "payables", href: "/payables", label: "Payables", icon: ArrowUpFromLine },
       { key: "fx-revaluation", href: "/reports/fx-revaluation", label: "FX Revaluation", icon: Globe },
       { key: "dcf", href: "/reports/dcf", label: "DCF Valuation", icon: Activity },
+      { key: "kpi-builder", href: "/reports/kpi-builder", label: "Custom KPIs", icon: Sliders },
     ],
   },
   {

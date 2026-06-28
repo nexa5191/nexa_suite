@@ -253,7 +253,7 @@ function rate(code) {
 // ===========================================================================
 // CONTENT
 // ===========================================================================
-const GENERATED = "2026-06-22";
+const GENERATED = "2026-06-28";
 // Column order: NEXA, then each of these (8 products)
 const PRODUCTS = ["SAP S/4HANA", "Tally", "Tally Prime", "Zoho Books", "Odoo", "QuickBooks", "Oracle NetSuite", "Dynamics 365"];
 

@@ -1,12 +1,18 @@
 "use client";
 
-import { Fragment, useRef, useState } from "react";
+import { Fragment, useMemo, useRef, useState } from "react";
 import { Printer, ChevronRight } from "lucide-react";
 import { usePrefs } from "@/components/prefs/prefs-provider";
 import { Button } from "@/components/ui/button";
 import { ExcelExport } from "@/components/excel/excel-export";
+import { Drawer } from "@/components/ui/modal";
+import { Money } from "@/components/ui/money";
 import type { ReportSheet } from "@/lib/xlsx/report";
-import { formatMoney } from "@/lib/currency";
+import type { ReportFilters } from "@/lib/accounting/types";
+import { filteredPostings } from "@/lib/accounting/ledger";
+import { accountSafe } from "@/lib/accounting/chart-of-accounts";
+import { formatMoney, type Currency } from "@/lib/currency";
+import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 export interface StatementDetail {
@@ -24,6 +30,8 @@ export interface StatementRow {
   hint?: string;
   /** Contributing lines revealed when the row is expanded (drill-down). */
   detail?: StatementDetail[];
+  /** GL account codes whose postings compose this row's amount — enables drill-through. */
+  drillCodes?: string[];
 }
 
 export function StatementView({
@@ -33,6 +41,7 @@ export function StatementView({
   periodLabel,
   basisLabel,
   rows,
+  filters,
 }: {
   title: string;
   subtitle?: string;
@@ -40,10 +49,13 @@ export function StatementView({
   periodLabel: string;
   basisLabel?: string;
   rows: StatementRow[];
+  /** When provided, amounts with drillCodes become clickable and open a GL drill-through drawer. */
+  filters?: ReportFilters;
 }) {
   const { currency } = usePrefs();
   const tableRef = useRef<HTMLTableElement>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [drill, setDrill] = useState<{ codes: string[]; label: string } | null>(null);
   const fmt = (n: number) => formatMoney(n, currency);
   const toggle = (key: string) =>
     setExpanded((prev) => {
@@ -51,6 +63,12 @@ export function StatementView({
       next.has(key) ? next.delete(key) : next.add(key);
       return next;
     });
+
+  const drillPostings = useMemo(() => {
+    if (!drill || !filters) return [];
+    const set = new Set(drill.codes);
+    return filteredPostings(filters).filter((p) => set.has(p.accountCode));
+  }, [drill, filters]);
 
   // Excel export through the shared formatting tool. Amounts are converted to the
   // active display currency; scope, period and basis ride along as meta lines.
@@ -121,6 +139,7 @@ export function StatementView({
   }
 
   return (
+    <>
     <div className="rounded-lg border bg-card shadow-sm">
       <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -187,7 +206,15 @@ export function StatementView({
                         isNote && "text-xs text-muted-foreground",
                       )}
                     >
-                      {r.amount === undefined ? "" : fmt(r.amount)}
+                      {r.amount === undefined ? "" : r.drillCodes && filters ? (
+                        <button
+                          className="tabular hover:text-primary hover:underline decoration-dashed underline-offset-2 cursor-pointer"
+                          onClick={(e) => { e.stopPropagation(); setDrill({ codes: r.drillCodes!, label: r.label }); }}
+                          title="View transactions"
+                        >
+                          {fmt(r.amount)}
+                        </button>
+                      ) : fmt(r.amount)}
                     </td>
                   </tr>
                   {hasDetail && isOpen &&
@@ -206,6 +233,79 @@ export function StatementView({
               );
             })}
           </tbody>
+        </table>
+      </div>
+    </div>
+
+    {/* ---- GL Drill-through drawer ---------------------------------------- */}
+    <Drawer
+      open={!!drill}
+      onClose={() => setDrill(null)}
+      title={drill ? `Transactions: ${drill.label}` : ""}
+      subtitle={drill ? `${scopeLabel} · ${periodLabel}` : ""}
+      width="max-w-2xl"
+    >
+      {drill && (
+        <DrillTable postings={drillPostings} currency={currency} />
+      )}
+    </Drawer>
+    </>
+  );
+}
+
+function DrillTable({
+  postings,
+  currency,
+}: {
+  postings: ReturnType<typeof filteredPostings>;
+  currency: Currency;
+}) {
+  const fmt = (n: number) => formatMoney(n, currency);
+  if (postings.length === 0) {
+    return <p className="py-8 text-center text-sm text-muted-foreground">No transactions in this period.</p>;
+  }
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-muted-foreground">{postings.length} posting{postings.length !== 1 ? "s" : ""}</p>
+      <div className="overflow-x-auto rounded-lg border">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b bg-muted/40">
+              <th className="px-3 py-2 text-left font-medium text-muted-foreground">Date</th>
+              <th className="px-3 py-2 text-left font-medium text-muted-foreground">Account</th>
+              <th className="px-3 py-2 text-left font-medium text-muted-foreground">Narration</th>
+              <th className="px-3 py-2 text-right font-medium text-muted-foreground">Dr</th>
+              <th className="px-3 py-2 text-right font-medium text-muted-foreground">Cr</th>
+            </tr>
+          </thead>
+          <tbody>
+            {postings.map((p) => {
+              const acct = accountSafe(p.accountCode);
+              return (
+                <tr key={p.id} className="border-b border-border/40 last:border-0 hover:bg-accent/30">
+                  <td className="px-3 py-1.5 tabular text-muted-foreground whitespace-nowrap">{formatDate(p.date)}</td>
+                  <td className="px-3 py-1.5">
+                    <span className="text-muted-foreground">{p.accountCode}</span>
+                    {acct && <span className="ml-1">{acct.name}</span>}
+                  </td>
+                  <td className="px-3 py-1.5 text-muted-foreground max-w-48 truncate">{p.memo || "—"}</td>
+                  <td className="px-3 py-1.5 text-right tabular">{p.debit > 0 ? fmt(p.debit) : ""}</td>
+                  <td className="px-3 py-1.5 text-right tabular">{p.credit > 0 ? fmt(p.credit) : ""}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+          <tfoot>
+            <tr className="border-t bg-muted/40">
+              <td colSpan={3} className="px-3 py-1.5 text-xs font-medium text-muted-foreground">Total</td>
+              <td className="px-3 py-1.5 text-right tabular font-medium">
+                {fmt(postings.reduce((s, p) => s + p.debit, 0))}
+              </td>
+              <td className="px-3 py-1.5 text-right tabular font-medium">
+                {fmt(postings.reduce((s, p) => s + p.credit, 0))}
+              </td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     </div>

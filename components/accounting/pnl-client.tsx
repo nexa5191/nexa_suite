@@ -21,46 +21,55 @@ export function PnlClient() {
       : undefined;
   };
 
+  // Collect codes per category for drill-through.
+  const revCodes = pnl.revenue.flatMap((s) => s.rows.map((r) => r.code));
+  const cogsCodes = pnl.cogs.flatMap((s) => s.rows.map((r) => r.code));
+  const opexCodes = pnl.opex.flatMap((s) => s.rows.map((r) => r.code));
+  const oiCodes = pnl.otherIncome.flatMap((s) => s.rows.map((r) => r.code));
+  const finCodes = pnl.finance.flatMap((s) => s.rows.map((r) => r.code));
+  const allIncomeCodes = [...revCodes, ...oiCodes];
+  const allCostCodes = [...cogsCodes, ...opexCodes, ...finCodes];
+
   const rows: StatementRow[] = [];
   const push = (r: StatementRow) => rows.push(r);
   const sections = (secs: Section[], baseLevel = 1) =>
     secs.forEach((s) =>
       s.rows.forEach((r) =>
-        push({ key: r.code, label: r.name, amount: r.amount, level: baseLevel, variant: "line", detail: detailFor(r.code) }),
+        push({ key: r.code, label: r.name, amount: r.amount, level: baseLevel, variant: "line", detail: detailFor(r.code), drillCodes: [r.code] }),
       ),
     );
 
   push({ key: "rev-h", label: "Revenue", level: 0, variant: "group" });
   sections(pnl.revenue);
-  push({ key: "rev-t", label: "Total Revenue", amount: pnl.totalRevenue, level: 0, variant: "subtotal" });
+  push({ key: "rev-t", label: "Total Revenue", amount: pnl.totalRevenue, level: 0, variant: "subtotal", drillCodes: revCodes });
 
   if (pnl.totalCogs) {
     push({ key: "sp1", label: "", variant: "spacer" });
     push({ key: "cogs-h", label: "Cost of Sales", level: 0, variant: "group" });
     sections(pnl.cogs);
-    push({ key: "cogs-t", label: "Total Cost of Sales", amount: pnl.totalCogs, level: 0, variant: "subtotal" });
+    push({ key: "cogs-t", label: "Total Cost of Sales", amount: pnl.totalCogs, level: 0, variant: "subtotal", drillCodes: cogsCodes });
   }
-  push({ key: "gp", label: "Gross Profit", amount: pnl.grossProfit, level: 0, variant: "subtotal", hint: pct(pnl.grossMargin) });
+  push({ key: "gp", label: "Gross Profit", amount: pnl.grossProfit, level: 0, variant: "subtotal", hint: pct(pnl.grossMargin), drillCodes: [...revCodes, ...cogsCodes] });
 
   push({ key: "sp2", label: "", variant: "spacer" });
   push({ key: "opex-h", label: "Operating Expenses", level: 0, variant: "group" });
   sections(pnl.opex);
-  push({ key: "opex-t", label: "Total Operating Expenses", amount: pnl.totalOpex, level: 0, variant: "subtotal" });
-  push({ key: "op", label: "Operating Profit (EBIT)", amount: pnl.operatingProfit, level: 0, variant: "subtotal" });
+  push({ key: "opex-t", label: "Total Operating Expenses", amount: pnl.totalOpex, level: 0, variant: "subtotal", drillCodes: opexCodes });
+  push({ key: "op", label: "Operating Profit (EBIT)", amount: pnl.operatingProfit, level: 0, variant: "subtotal", drillCodes: [...revCodes, ...cogsCodes, ...opexCodes] });
 
   if (pnl.totalOtherIncome) {
     push({ key: "sp3", label: "", variant: "spacer" });
     push({ key: "oi-h", label: "Other Income", level: 0, variant: "group" });
     sections(pnl.otherIncome);
-    push({ key: "oi-t", label: "Total Other Income", amount: pnl.totalOtherIncome, level: 0, variant: "subtotal" });
+    push({ key: "oi-t", label: "Total Other Income", amount: pnl.totalOtherIncome, level: 0, variant: "subtotal", drillCodes: oiCodes });
   }
   if (pnl.totalFinance) {
     push({ key: "fin-h", label: "Finance Costs", level: 0, variant: "group" });
     sections(pnl.finance);
-    push({ key: "fin-t", label: "Total Finance Costs", amount: pnl.totalFinance, level: 0, variant: "subtotal" });
+    push({ key: "fin-t", label: "Total Finance Costs", amount: pnl.totalFinance, level: 0, variant: "subtotal", drillCodes: finCodes });
   }
 
-  push({ key: "np", label: "Net Profit", amount: pnl.netProfit, level: 0, variant: "total", hint: pct(pnl.netMargin) });
+  push({ key: "np", label: "Net Profit", amount: pnl.netProfit, level: 0, variant: "total", hint: pct(pnl.netMargin), drillCodes: [...allIncomeCodes, ...allCostCodes] });
 
   return (
     <>
@@ -100,6 +109,7 @@ export function PnlClient() {
         periodLabel={ctl.periodLabel}
         basisLabel={ctl.basisLabel}
         rows={rows}
+        filters={ctl.filters}
       />
     </>
   );
