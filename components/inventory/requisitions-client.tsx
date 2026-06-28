@@ -437,7 +437,7 @@ function ConvertToPODrawer({
 }) {
   const allOrders = allPOs(loadAddedPOs());
   const activeVendors = VENDORS.filter((v) => v.active);
-  const fallbackVendorId = activeVendors[0]?.id ?? VENDORS[0].id;
+  const fallbackVendorId = activeVendors[0]?.id ?? VENDORS[0]?.id ?? "";
 
   const [entityId, setEntityId] = React.useState("ent-nexa-in");
   const [locationId, setLocationId] = React.useState("loc-mys");

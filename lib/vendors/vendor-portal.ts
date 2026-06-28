@@ -14,7 +14,7 @@ import { VENDORS } from "@/lib/vendors";
 // ---- session ---------------------------------------------------------------
 
 export const VENDOR_PORTAL_SESSION_KEY = "nexa-vendor-portal-session";
-export const DEFAULT_PORTAL_VENDOR = VENDORS.find((v) => v.active && v.vClass !== "Employee")?.id ?? VENDORS[0].id;
+export const DEFAULT_PORTAL_VENDOR = VENDORS.find((v) => v.active && v.vClass !== "Employee")?.id ?? VENDORS[0]?.id ?? "";
 
 function read<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;

@@ -854,9 +854,11 @@ function OnboardTab() {
   const [category, setCategory] = React.useState<VendorCategory>("Services");
   const [msme, setMsme] = React.useState(false);
   const [msmeClass, setMsmeClass] = React.useState<"Micro" | "Small" | "Medium">("Small");
+  const [udyam, setUdyam] = React.useState("");
   const [bankName, setBankName] = React.useState("");
   const [bankAccount, setBankAccount] = React.useState("");
   const [ifsc, setIfsc] = React.useState("");
+  const [swift, setSwift] = React.useState("");
   const [submitted, setSubmitted] = React.useState(false);
   const [submittedId, setSubmittedId] = React.useState("");
 
@@ -898,9 +900,11 @@ function OnboardTab() {
         category,
         msme,
         msmeClass: msme ? msmeClass : undefined,
+        udyam: msme && udyam.trim() ? udyam.trim().toUpperCase() : undefined,
         bankName: bankName.trim() || undefined,
         bankAccount: bankAccount.trim() || undefined,
         ifsc: ifsc.trim() || undefined,
+        swift: swift.trim() || undefined,
       },
       gstinValid,
     );
@@ -990,6 +994,15 @@ function OnboardTab() {
                 </Select>
               )}
             </div>
+            {msme && (
+              <Input
+                value={udyam}
+                onChange={(e) => setUdyam(e.target.value.toUpperCase())}
+                placeholder="UDYAM-XX-00-0000000"
+                maxLength={19}
+                className="mt-2 h-9 font-mono uppercase"
+              />
+            )}
           </Fld>
         </div>
       </Card>
@@ -1007,6 +1020,18 @@ function OnboardTab() {
             <Input value={ifsc} onChange={(e) => setIfsc(e.target.value.toUpperCase())} placeholder="HDFC0001234" maxLength={11} className="h-9 font-mono uppercase" />
           </Fld>
         </div>
+        <Fld label="SWIFT / BIC (international vendors)">
+          <Input
+            value={swift}
+            onChange={(e) => setSwift(e.target.value.toUpperCase())}
+            placeholder="HDFCINBBXXX"
+            maxLength={11}
+            className="h-9 font-mono uppercase sm:max-w-[16rem]"
+          />
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            8 or 11 characters — required only for international wire transfers.
+          </p>
+        </Fld>
       </Card>
 
       <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3">

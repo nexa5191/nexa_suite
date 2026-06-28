@@ -39,6 +39,7 @@ export interface VendorOnboarding {
   bankName?: string;
   bankAccount?: string;
   ifsc?: string;
+  swift?: string;            // SWIFT/BIC for international wire transfers
 }
 
 const KEY = "nexa-vendor-onboarding";

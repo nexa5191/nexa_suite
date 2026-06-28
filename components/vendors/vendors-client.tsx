@@ -888,7 +888,7 @@ function CreatePODrawer({
   onCreate: (po: PurchaseOrder) => void;
 }) {
   const allOrders = allPOs(addedPOs);
-  const [vid, setVid] = React.useState(VENDORS.find((v) => v.active)?.id ?? VENDORS[0].id);
+  const [vid, setVid] = React.useState(VENDORS.find((v) => v.active)?.id ?? VENDORS[0]?.id ?? "");
   const [title, setTitle] = React.useState("");
   const [entityId, setEntityId] = React.useState("ent-nexa-in");
   const [locationId, setLocationId] = React.useState("loc-mys");
