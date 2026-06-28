@@ -36,11 +36,11 @@ export function ContextBar({ className }: { className?: string }) {
   );
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-2", className)}>
+    <div className={cn("flex flex-nowrap items-center gap-2", className)}>
       <EntityPicker value={p.entityId} onChange={p.setEntity} entities={entities} />
 
       <Field icon={<MapPin className="size-3.5" />}>
-        <Select value={p.locationId} onChange={(e) => p.setLocation(e.target.value)} className="h-8 min-w-[140px] border-0 bg-transparent pl-1 shadow-none">
+        <Select value={p.locationId} onChange={(e) => p.setLocation(e.target.value)} className="h-8 min-w-[110px] border-0 bg-transparent pl-1 shadow-none">
           <option value={ALL}>All locations</option>
           {locations.map((l) => (
             <option key={l.id} value={l.id}>{l.name}</option>
@@ -49,7 +49,7 @@ export function ContextBar({ className }: { className?: string }) {
       </Field>
 
       <Field icon={<MapIcon className="size-3.5" />}>
-        <Select value={p.state} onChange={(e) => p.setState(e.target.value)} className="h-8 min-w-[120px] border-0 bg-transparent pl-1 shadow-none">
+        <Select value={p.state} onChange={(e) => p.setState(e.target.value)} className="h-8 min-w-[100px] border-0 bg-transparent pl-1 shadow-none">
           <option value={ALL}>All states</option>
           {states.map((s) => (
             <option key={s} value={s}>{s}</option>

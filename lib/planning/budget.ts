@@ -138,8 +138,6 @@ export function buildBudget(
       const seed = prior[i] * (1 + growth);
       return Math.round(seed);
     });
-    if (budget.every((v) => v === 0) && actual.every((v) => v === 0) && prior.every((v) => v === 0))
-      continue;
     lines.push({ code: a.code, name: a.name, type: a.type, subtype: a.subtype, budget, actual, prior });
   }
 

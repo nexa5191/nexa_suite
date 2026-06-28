@@ -234,7 +234,7 @@ export function BudgetDeptClient({ dept }: { dept: Department }) {
     <>
       <PageHeader
         title={`${dept} — Budget FY ${FY}`}
-        subtitle={`FY${FY_PREV} actuals shown for reference · ${lines.length} cost heads`}
+        subtitle={`FY${FY_PREV} actuals shown for reference · ${lines.length} P&L accounts`}
         actions={
           <div className="flex items-center gap-2">
             <Link href="/finance/budgetbuilder">
@@ -430,7 +430,7 @@ function BudgetTable({
         <table className="w-full text-xs border-collapse">
           <thead>
             <tr className="border-b bg-muted/50 text-left text-[10px] uppercase tracking-wide text-muted-foreground">
-              <th className="sticky left-0 z-10 bg-muted/50 px-3 py-2.5 font-medium w-52 min-w-52 border-r">Cost head</th>
+              <th className="sticky left-0 z-10 bg-muted/50 px-3 py-2.5 font-medium w-52 min-w-52 border-r">P&amp;L Account</th>
               <th className="px-2 py-2.5 text-right font-medium w-20 min-w-20 bg-muted/30 border-r">
                 FY25 Actual
               </th>
@@ -622,7 +622,7 @@ function ActualsTable({ store, dept, lines }: {
         <table className="w-full text-xs border-collapse">
           <thead>
             <tr className="bg-muted/60 text-[10px] uppercase tracking-wide text-muted-foreground">
-              <th className="sticky left-0 z-10 bg-muted/60 px-3 py-2 font-medium w-44 min-w-44 border-b border-r" rowSpan={2}>Cost head</th>
+              <th className="sticky left-0 z-10 bg-muted/60 px-3 py-2 font-medium w-44 min-w-44 border-b border-r" rowSpan={2}>P&amp;L Account</th>
               {actualMonths.map((mi) => (
                 <th key={mi} colSpan={2} className="px-2 py-1.5 text-center font-semibold border-b border-r border-border/50">{MONTHS[mi]}</th>
               ))}

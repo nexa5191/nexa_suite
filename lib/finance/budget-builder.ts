@@ -11,14 +11,45 @@ export const DEPARTMENTS: Department[] = [
   "HR", "Operations", "SCM", "Maintenance", "Finance", "Marketing", "IT",
 ];
 
+// GL heads = P&L account names from the chart of accounts.
+// Each account is assigned to exactly one owning department.
 export const DEPT_HEADS: Record<Department, string[]> = {
-  HR:          ["Salaries & wages", "Staff welfare & canteen", "Recruitment & hiring", "Training & development", "HR travel & conveyance", "Statutory compliance"],
-  Operations:  ["Contract labour", "Utilities - power", "Utilities - fuel & water", "Quality & testing", "Operations travel", "Miscellaneous"],
-  SCM:         ["Freight inward", "Freight outward", "Customs & duties", "Warehousing & storage", "SCM travel", "Miscellaneous"],
-  Maintenance: ["Spares & consumables", "AMC charges", "Repairs & maintenance", "Calibration & testing", "Safety & PPE", "Miscellaneous"],
-  Finance:     ["Professional fees", "Audit & legal fees", "Insurance premiums", "Banking charges", "Finance travel", "Miscellaneous"],
-  Marketing:   ["Advertising & promotion", "Events & exhibitions", "Digital marketing", "Agency fees", "Market research", "Marketing travel"],
-  IT:          ["Software licences", "Hardware & equipment", "Cloud & hosting", "IT support & AMC", "Cybersecurity", "IT travel"],
+  Operations: [
+    // Revenue
+    "Product Sales",
+    "Service Revenue",
+    "Export Sales",
+    "Sales Returns & Allowances",
+    // Cost of Sales
+    "Cost of Goods Sold",
+    "Loan Licence / Job-work Charges",
+    "Third-party FG Purchases",
+  ],
+  SCM: [
+    "Freight Inward",
+    "Purchase Returns",
+  ],
+  HR: [
+    "Salaries & Wages",
+    "Travel & Conveyance",
+  ],
+  Maintenance: [
+    "Rent",
+    "Utilities",
+    "Depreciation",
+  ],
+  Finance: [
+    "Other Income",
+    "Office & Admin Expenses",
+    "Professional Fees",
+    "Bank Charges & Interest",
+  ],
+  Marketing: [
+    "Marketing & Advertising",
+  ],
+  IT: [
+    "Software & Subscriptions",
+  ],
 };
 
 // Apr=0 … Mar=11
@@ -132,61 +163,39 @@ export function deptAnnualTotal(store: BudgetStore, dept: Department, field: "bu
 // Default driver assignments per dept/head
 // ---------------------------------------------------------------------------
 const DEFAULT_DRIVERS: Record<Department, Record<string, { type: DriverType; manualPct: number }>> = {
-  HR: {
-    "Salaries & wages":       { type: "headcount", manualPct: 0  },
-    "Staff welfare & canteen":{ type: "headcount", manualPct: 0  },
-    "Recruitment & hiring":   { type: "manual",    manualPct: 8  },
-    "Training & development": { type: "manual",    manualPct: 5  },
-    "HR travel & conveyance": { type: "headcount", manualPct: 0  },
-    "Statutory compliance":   { type: "headcount", manualPct: 0  },
-  },
   Operations: {
-    "Contract labour":        { type: "revenue",   manualPct: 0  },
-    "Utilities - power":      { type: "area",      manualPct: 0  },
-    "Utilities - fuel & water":{ type: "manual",   manualPct: 7  },
-    "Quality & testing":      { type: "revenue",   manualPct: 0  },
-    "Operations travel":      { type: "manual",    manualPct: 5  },
-    "Miscellaneous":          { type: "manual",    manualPct: 5  },
+    "Product Sales":                   { type: "revenue",   manualPct: 0 },
+    "Service Revenue":                 { type: "revenue",   manualPct: 0 },
+    "Export Sales":                    { type: "revenue",   manualPct: 0 },
+    "Sales Returns & Allowances":      { type: "revenue",   manualPct: 0 },
+    "Cost of Goods Sold":              { type: "revenue",   manualPct: 0 },
+    "Loan Licence / Job-work Charges": { type: "revenue",   manualPct: 0 },
+    "Third-party FG Purchases":        { type: "revenue",   manualPct: 0 },
   },
   SCM: {
-    "Freight inward":         { type: "revenue",   manualPct: 0  },
-    "Freight outward":        { type: "revenue",   manualPct: 0  },
-    "Customs & duties":       { type: "revenue",   manualPct: 0  },
-    "Warehousing & storage":  { type: "revenue",   manualPct: 0  },
-    "SCM travel":             { type: "manual",    manualPct: 5  },
-    "Miscellaneous":          { type: "manual",    manualPct: 5  },
+    "Freight Inward":                  { type: "revenue",   manualPct: 0 },
+    "Purchase Returns":                { type: "revenue",   manualPct: 0 },
+  },
+  HR: {
+    "Salaries & Wages":                { type: "headcount", manualPct: 0 },
+    "Travel & Conveyance":             { type: "headcount", manualPct: 0 },
   },
   Maintenance: {
-    "Spares & consumables":   { type: "fixed",     manualPct: 0  },
-    "AMC charges":            { type: "fixed",     manualPct: 0  },
-    "Repairs & maintenance":  { type: "fixed",     manualPct: 0  },
-    "Calibration & testing":  { type: "fixed",     manualPct: 0  },
-    "Safety & PPE":           { type: "headcount", manualPct: 0  },
-    "Miscellaneous":          { type: "manual",    manualPct: 5  },
+    "Rent":                            { type: "area",      manualPct: 0 },
+    "Utilities":                       { type: "area",      manualPct: 0 },
+    "Depreciation":                    { type: "fixed",     manualPct: 0 },
   },
   Finance: {
-    "Professional fees":      { type: "fixed",     manualPct: 0  },
-    "Audit & legal fees":     { type: "fixed",     manualPct: 0  },
-    "Insurance premiums":     { type: "fixed",     manualPct: 0  },
-    "Banking charges":        { type: "revenue",   manualPct: 0  },
-    "Finance travel":         { type: "headcount", manualPct: 0  },
-    "Miscellaneous":          { type: "manual",    manualPct: 5  },
+    "Other Income":                    { type: "manual",    manualPct: 5 },
+    "Office & Admin Expenses":         { type: "fixed",     manualPct: 0 },
+    "Professional Fees":               { type: "fixed",     manualPct: 0 },
+    "Bank Charges & Interest":         { type: "revenue",   manualPct: 0 },
   },
   Marketing: {
-    "Advertising & promotion":{ type: "revenue",   manualPct: 0  },
-    "Events & exhibitions":   { type: "revenue",   manualPct: 0  },
-    "Digital marketing":      { type: "revenue",   manualPct: 0  },
-    "Agency fees":            { type: "manual",    manualPct: 10 },
-    "Market research":        { type: "manual",    manualPct: 8  },
-    "Marketing travel":       { type: "headcount", manualPct: 0  },
+    "Marketing & Advertising":         { type: "revenue",   manualPct: 0 },
   },
   IT: {
-    "Software licences":      { type: "headcount", manualPct: 0  },
-    "Hardware & equipment":   { type: "headcount", manualPct: 0  },
-    "Cloud & hosting":        { type: "revenue",   manualPct: 0  },
-    "IT support & AMC":       { type: "headcount", manualPct: 0  },
-    "Cybersecurity":          { type: "manual",    manualPct: 10 },
-    "IT travel":              { type: "headcount", manualPct: 0  },
+    "Software & Subscriptions":        { type: "headcount", manualPct: 0 },
   },
 };
 
@@ -208,9 +217,13 @@ function mkLine(
 }
 
 // ---------------------------------------------------------------------------
-// Seed lines
+// Seed lines — one BudgetLine per GL head, per department, all zeros.
 // ---------------------------------------------------------------------------
-const SEED_LINES: BudgetLine[] = [];
+const SEED_LINES: BudgetLine[] = DEPARTMENTS.flatMap((dept) =>
+  (DEPT_HEADS[dept] ?? []).map((glHead) =>
+    mkLine(dept, glHead, 0, Array(12).fill(0)),
+  ),
+);
 
 export const DEPT_ASSUMPTIONS_SEED: Record<Department, DeptAssumptions> = {
   HR:          { headcountFY25: 0, headcountFY26: 0, revenueGrowthPct: 0, areaSqftFY25: 0, areaSqftFY26: 0 },
@@ -235,7 +248,7 @@ export const SEED_STORE: BudgetStore = {
 // ---------------------------------------------------------------------------
 // Persistence
 // ---------------------------------------------------------------------------
-const BUDGET_KEY = "nexa-budget-builder-v2";
+const BUDGET_KEY = "nexa-budget-builder-v3";
 
 export function loadBudgetStore(): BudgetStore {
   if (typeof window === "undefined") return SEED_STORE;
@@ -244,9 +257,9 @@ export function loadBudgetStore(): BudgetStore {
     if (raw) {
       const parsed = JSON.parse(raw) as BudgetStore;
       // Back-fill any lines missing fy25Actual (migration from v1)
-      parsed.lines = parsed.lines.map((l, i) => ({
+      parsed.lines = parsed.lines.map((l) => ({
         ...l,
-        fy25Actual:   l.fy25Actual ?? SEED_LINES[i]?.fy25Actual ?? 0,
+        fy25Actual:   l.fy25Actual ?? 0,
         driverType:   l.driverType ?? "manual",
         manualPct:    l.manualPct  ?? 5,
         cellFormulas: (l as BudgetLine).cellFormulas ?? Array(12).fill(null),
@@ -255,6 +268,12 @@ export function loadBudgetStore(): BudgetStore {
           formulas: sl.formulas ?? Array(12).fill(null),
         })),
       }));
+      // Back-fill any GL heads that are in SEED_LINES but missing from the saved store.
+      for (const seed of SEED_LINES) {
+        if (!parsed.lines.some((l) => l.dept === seed.dept && l.glHead === seed.glHead)) {
+          parsed.lines.push({ ...seed });
+        }
+      }
       parsed.assumptions = parsed.assumptions ?? DEPT_ASSUMPTIONS_SEED;
       return parsed;
     }
