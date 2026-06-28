@@ -7,6 +7,7 @@ import {
   CreditCard,
   ChevronDown,
   ChevronRight,
+  Search,
   LogIn,
   FileText,
   CheckCircle2,
@@ -196,15 +197,11 @@ export function VendorPortalClient({
             ) : (
               <>
                 <LogIn className="size-4 text-muted-foreground shrink-0" />
-                <Select
+                <VendorPicker
+                  vendors={PORTAL_VENDORS}
                   value={vendorId}
-                  onChange={(e) => setVendorId(e.target.value)}
-                  className="h-8 text-xs"
-                >
-                  {PORTAL_VENDORS.map((v) => (
-                    <option key={v.id} value={v.id}>{v.name}</option>
-                  ))}
-                </Select>
+                  onChange={setVendorId}
+                />
               </>
             )}
           </div>
@@ -1169,6 +1166,128 @@ function OnboardTab() {
         </Button>
       </div>
     </form>
+  );
+}
+
+// ── Searchable vendor picker (replaces native <select> in portal header) ─────
+
+type PickerVendor = { id: string; name: string; gstinLegalName?: string; gstinTradeName?: string; gstin?: string };
+
+function VendorPicker({
+  vendors, value, onChange,
+}: {
+  vendors: PickerVendor[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState("");
+  const ref = React.useRef<HTMLDivElement>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+
+  React.useEffect(() => {
+    if (open) { setQuery(""); setTimeout(() => inputRef.current?.focus(), 0); }
+  }, [open]);
+
+  const current = vendors.find((v) => v.id === value);
+  const q = query.toLowerCase().trim();
+  const filtered = q
+    ? vendors.filter((v) =>
+        v.name.toLowerCase().includes(q) ||
+        (v.gstinLegalName ?? "").toLowerCase().includes(q) ||
+        (v.gstinTradeName ?? "").toLowerCase().includes(q) ||
+        (v.gstin ?? "").toLowerCase().includes(q),
+      )
+    : vendors;
+
+  function select(id: string) { onChange(id); setOpen(false); }
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex h-8 min-w-[180px] max-w-[260px] items-center justify-between gap-1.5 rounded-md border bg-card px-2.5 text-xs shadow-sm hover:bg-accent/50 transition-colors"
+      >
+        <span className="flex-1 truncate text-left">{current?.name ?? "Select vendor"}</span>
+        <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full z-50 mt-1 w-72 rounded-lg border bg-card shadow-xl">
+          {/* Search input */}
+          <div className="flex items-center gap-2 border-b px-3 py-2">
+            <Search className="size-3.5 shrink-0 text-muted-foreground" />
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
+              placeholder="Name, legal name, GSTIN…"
+              className="h-5 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/60"
+            />
+            {query && (
+              <button onClick={() => setQuery("")} className="text-[10px] text-muted-foreground hover:text-foreground">✕</button>
+            )}
+          </div>
+
+          <div className="max-h-60 overflow-y-auto py-1 scrollbar-thin">
+            {filtered.length === 0 ? (
+              <p className="px-3 py-4 text-center text-xs text-muted-foreground">No vendors match "{query}"</p>
+            ) : (
+              filtered.map((v) => {
+                const sub = v.gstinLegalName && v.gstinLegalName !== v.name ? v.gstinLegalName : v.gstinTradeName && v.gstinTradeName !== v.name ? v.gstinTradeName : undefined;
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => select(v.id)}
+                    className={cn(
+                      "flex w-full flex-col items-start gap-0.5 rounded px-3 py-2 text-left text-xs transition-colors",
+                      v.id === value
+                        ? "bg-primary/10 text-primary"
+                        : "text-foreground hover:bg-accent/50",
+                    )}
+                  >
+                    <span className="font-medium leading-tight">
+                      {q ? <VendorHighlight text={v.name} q={q} /> : v.name}
+                    </span>
+                    {sub && (
+                      <span className="text-[10px] text-muted-foreground leading-tight">
+                        {q ? <VendorHighlight text={sub} q={q} /> : sub}
+                      </span>
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VendorHighlight({ text, q }: { text: string; q: string }) {
+  const idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if (idx === -1) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark className="rounded-sm bg-primary/20 px-0.5 font-semibold text-primary not-italic">
+        {text.slice(idx, idx + q.length)}
+      </mark>
+      {text.slice(idx + q.length)}
+    </>
   );
 }
 
