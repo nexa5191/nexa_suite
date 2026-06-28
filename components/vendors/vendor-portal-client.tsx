@@ -842,15 +842,22 @@ function PaymentsTab({
 // ============================================================
 
 function OnboardTab() {
-  const [name, setName] = React.useState("");
+  // Identity fields — populated from GST portal, not typed by vendor.
   const [gstin, setGstin] = React.useState("");
   const [gstinResult, setGstinResult] = React.useState<GstLookupResponse | null>(null);
-  const [pan, setPan] = React.useState("");
+  // Derived from gstinResult — set automatically, never manually edited.
+  const [gstName, setGstName] = React.useState("");
+  const [gstTradeName, setGstTradeName] = React.useState("");
+  const [gstAddress, setGstAddress] = React.useState("");
+  const [gstTaxPayerType, setGstTaxPayerType] = React.useState("");
+  const [gstPan, setGstPan] = React.useState("");
+  const [gstState, setGstState] = React.useState("");
+
+  // Contact & delivery details — vendor-entered.
   const [contact, setContact] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [phone, setPhone] = React.useState("");
   const [city, setCity] = React.useState("");
-  const [state, setState] = React.useState("");
   const [category, setCategory] = React.useState<VendorCategory>("Services");
   const [msme, setMsme] = React.useState(false);
   const [msmeClass, setMsmeClass] = React.useState<"Micro" | "Small" | "Medium">("Small");
@@ -862,41 +869,56 @@ function OnboardTab() {
   const [submitted, setSubmitted] = React.useState(false);
   const [submittedId, setSubmittedId] = React.useState("");
 
-  // Auto-fill from GSTIN lookup
+  // Populate all identity fields from the live GST portal response.
   React.useEffect(() => {
     if (gstinResult?.valid) {
-      if (gstinResult.legalName && !name) setName(gstinResult.legalName);
-      if (gstinResult.pan && !pan) setPan(gstinResult.pan);
-      if (gstinResult.stateName && !state) setState(gstinResult.stateName);
+      setGstName(gstinResult.legalName ?? "");
+      setGstTradeName(gstinResult.tradeName ?? "");
+      setGstAddress(gstinResult.address ?? "");
+      setGstTaxPayerType(gstinResult.taxPayerType ?? "");
+      setGstPan(gstinResult.pan ?? "");
+      setGstState(gstinResult.stateName ?? "");
+    } else {
+      setGstName("");
+      setGstTradeName("");
+      setGstAddress("");
+      setGstTaxPayerType("");
+      setGstPan("");
+      setGstState("");
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gstinResult]);
 
   const gstinValid = gstinResult?.valid ?? false;
-  const canSubmit =
-    name.trim() &&
-    gstinValid &&
-    gstin.trim().length === 15 &&
-    contact.trim() &&
-    email.trim() &&
-    phone.trim() &&
-    city.trim();
+  // Non-GST mode: vendor has no GSTIN (unregistered / below threshold / foreign).
+  const [nonGst, setNonGst] = React.useState(false);
+  // Manual identity fields used only when nonGst = true.
+  const [manualName, setManualName] = React.useState("");
+  const [manualPan, setManualPan] = React.useState("");
+  const [manualState, setManualState] = React.useState("");
+  const [manualAddress, setManualAddress] = React.useState("");
+
+  const canSubmit = nonGst
+    ? manualName.trim() && contact.trim() && email.trim() && phone.trim() && city.trim()
+    : gstName && gstinValid && gstin.trim().length === 15 && contact.trim() && email.trim() && phone.trim() && city.trim();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
     const entry = submitOnboarding(
       {
-        name: name.trim(),
-        gstin: gstin.trim().toUpperCase(),
-        gstinLegalName: gstinResult?.legalName,
-        gstinStatus: gstinResult?.status,
-        pan: (gstinResult?.pan ?? pan).trim().toUpperCase(),
+        name: nonGst ? manualName.trim() : gstName,
+        gstin: nonGst ? "" : gstin.trim().toUpperCase(),
+        gstinLegalName: nonGst ? undefined : gstName || undefined,
+        gstinTradeName: nonGst ? undefined : gstTradeName || undefined,
+        gstinPrincipalAddress: nonGst ? manualAddress.trim() || undefined : gstAddress || undefined,
+        gstinTaxPayerType: nonGst ? undefined : gstTaxPayerType || undefined,
+        gstinStatus: nonGst ? undefined : gstinResult?.status,
+        pan: nonGst ? manualPan.trim().toUpperCase() : gstPan,
         contact: contact.trim(),
         email: email.trim(),
         phone: phone.trim(),
         city: city.trim(),
-        state: gstinResult?.stateName ?? state.trim(),
+        state: nonGst ? manualState.trim() : gstState,
         category,
         msme,
         msmeClass: msme ? msmeClass : undefined,
@@ -906,7 +928,7 @@ function OnboardTab() {
         ifsc: ifsc.trim() || undefined,
         swift: swift.trim() || undefined,
       },
-      gstinValid,
+      nonGst ? false : gstinValid,
     );
     setSubmittedId(entry.id);
     setSubmitted(true);
@@ -936,22 +958,93 @@ function OnboardTab() {
           </p>
         </div>
 
-        {/* GSTIN — primary field, auto-fills others */}
-        <GstinField
-          label="GSTIN"
-          value={gstin}
-          onChange={setGstin}
-          onResult={setGstinResult}
-        />
+        {/* Non-GST toggle */}
+        <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={nonGst}
+            onChange={(e) => {
+              setNonGst(e.target.checked);
+              setGstinResult(null);
+              setGstin("");
+            }}
+            className="rounded"
+          />
+          We are not GST registered (unregistered / composition below threshold / foreign vendor)
+        </label>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Fld label="Legal / Company name *">
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="As on GST registration" className="h-9" />
-          </Fld>
-          <Fld label="PAN">
-            <Input value={pan} onChange={(e) => setPan(e.target.value.toUpperCase())} placeholder="AACN1001P" maxLength={10} className="h-9 font-mono uppercase" />
-          </Fld>
-        </div>
+        {nonGst ? (
+          /* Manual identity fields for non-GST vendors */
+          <>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Fld label="Legal / Company name *">
+                <Input value={manualName} onChange={(e) => setManualName(e.target.value)} placeholder="Registered business name" className="h-9" />
+              </Fld>
+              <Fld label="PAN">
+                <Input value={manualPan} onChange={(e) => setManualPan(e.target.value.toUpperCase())} placeholder="AACN1001P" maxLength={10} className="h-9 font-mono uppercase" />
+              </Fld>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Fld label="State">
+                <Input value={manualState} onChange={(e) => setManualState(e.target.value)} placeholder="Maharashtra" className="h-9" />
+              </Fld>
+              <Fld label="Principal address">
+                <Input value={manualAddress} onChange={(e) => setManualAddress(e.target.value)} placeholder="Registered office address" className="h-9" />
+              </Fld>
+            </div>
+          </>
+        ) : (
+          /* GSTIN — primary field, auto-populates identity from GST portal */
+          <>
+            <GstinField
+              label="GSTIN"
+              value={gstin}
+              onChange={setGstin}
+              onResult={setGstinResult}
+            />
+
+            {/* Verified details card — appears once GSTIN resolves from portal */}
+            {gstinValid && gstName && (
+              <div className="rounded-lg border border-success/30 bg-success/5 p-4 space-y-2.5">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-success flex items-center gap-1.5">
+                  <CheckCircle2 className="size-3.5" /> Verified from GST portal
+                </p>
+                <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2 text-xs">
+                  <div>
+                    <p className="text-muted-foreground">Legal name</p>
+                    <p className="font-semibold text-foreground">{gstName}</p>
+                  </div>
+                  {gstTradeName && gstTradeName !== gstName && (
+                    <div>
+                      <p className="text-muted-foreground">Trade name</p>
+                      <p className="font-semibold text-foreground">{gstTradeName}</p>
+                    </div>
+                  )}
+                  {gstTaxPayerType && (
+                    <div>
+                      <p className="text-muted-foreground">Taxpayer type</p>
+                      <p className="font-semibold text-foreground">{gstTaxPayerType}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-muted-foreground">PAN</p>
+                    <p className="font-mono font-semibold text-foreground">{gstPan}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">State</p>
+                    <p className="font-semibold text-foreground">{gstState}</p>
+                  </div>
+                  {gstAddress && (
+                    <div className="sm:col-span-2">
+                      <p className="text-muted-foreground">Principal place of business</p>
+                      <p className="font-semibold text-foreground">{gstAddress}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Fld label="Contact person *">
@@ -962,15 +1055,12 @@ function OnboardTab() {
           </Fld>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           <Fld label="Phone *">
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 98765 43210" className="h-9" />
           </Fld>
           <Fld label="City *">
             <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Mumbai" className="h-9" />
-          </Fld>
-          <Fld label="State">
-            <Input value={state} onChange={(e) => setState(e.target.value)} placeholder="Maharashtra" className="h-9" />
           </Fld>
         </div>
 

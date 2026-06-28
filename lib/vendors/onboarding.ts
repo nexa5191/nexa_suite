@@ -17,13 +17,16 @@ export interface VendorOnboarding {
   reviewedAt?: string;
   reviewNote?: string;
 
-  // Vendor details (filled by the vendor themselves)
-  name: string;
+  // Vendor details — identity fields come directly from GST portal (no manual entry).
+  name: string;                     // = gstinLegalName; used as vendor display name
   gstin: string;
-  gstinLegalName?: string;      // fetched from GST API
-  gstinStatus?: string;         // ACTIVE / CANCELLED
+  gstinLegalName?: string;          // legal name as on GST registration
+  gstinTradeName?: string;          // trade name from GST portal
+  gstinPrincipalAddress?: string;   // principal place of business (pradr.adr)
+  gstinTaxPayerType?: string;       // Regular / Composition / SEZ / ISD etc.
+  gstinStatus?: string;             // Active / Cancelled / Suspended
   gstinVerified: boolean;
-  pan: string;
+  pan: string;                      // derived from GSTIN (chars 3-12)
 
   contact: string;
   email: string;
