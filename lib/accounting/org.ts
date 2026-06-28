@@ -5,13 +5,20 @@ import type { Entity, Location } from "./types";
 // resolveEntityIds() expands a group ID to include itself + all children,
 // so any filter that calls it automatically handles rollup.
 
-function readLS<T>(key: string): T[] {
-  if (typeof window === "undefined") return [];
-  try { const r = localStorage.getItem(key); return r ? (JSON.parse(r) as T[]) : []; } catch { return []; }
-}
+// ENTITIES and LOCATIONS are always [] at module-level so SSR and client
+// initial renders agree (no hydration mismatch). Call loadEntities() /
+// loadLocations() inside useEffect or event handlers to get live data.
+export const ENTITIES: Entity[] = [];
+export const LOCATIONS: Location[] = [];
 
-export const ENTITIES: Entity[] = readLS<Entity>("nexa-entities");
-export const LOCATIONS: Location[] = readLS<Location>("nexa-locations");
+export function loadEntities(): Entity[] {
+  if (typeof window === "undefined") return [];
+  try { const r = localStorage.getItem("nexa-entities"); return r ? (JSON.parse(r) as Entity[]) : []; } catch { return []; }
+}
+export function loadLocations(): Location[] {
+  if (typeof window === "undefined") return [];
+  try { const r = localStorage.getItem("nexa-locations"); return r ? (JSON.parse(r) as Location[]) : []; } catch { return []; }
+}
 
 export const ALL = "all";
 

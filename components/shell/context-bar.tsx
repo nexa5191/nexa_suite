@@ -5,21 +5,39 @@ import { Building2, MapPin, Map as MapIcon, Layers, ChevronDown, ChevronRight } 
 import { usePrefs } from "@/components/prefs/prefs-provider";
 import { Select } from "@/components/ui/input";
 import { CURRENCIES } from "@/lib/currency";
-import {
-  ENTITIES, ALL, locationsForEntity, statesForEntity,
-  topLevelEntities, childEntities, isGroupEntity,
-} from "@/lib/accounting/org";
+import { ALL, loadEntities, loadLocations } from "@/lib/accounting/org";
+import type { Entity, Location } from "@/lib/accounting/types";
 import { cn } from "@/lib/utils";
 
 // The accounting "scope" bar — entity / location / state / basis / currency.
 export function ContextBar({ className }: { className?: string }) {
   const p = usePrefs();
-  const locations = locationsForEntity(p.entityId);
-  const states = statesForEntity(p.entityId);
+  // Load org data after mount so SSR and client initial renders both start
+  // with [] — avoiding the hydration mismatch from module-level localStorage reads.
+  const [entities, setEntities] = React.useState<Entity[]>([]);
+  const [allLocations, setAllLocations] = React.useState<Location[]>([]);
+  React.useEffect(() => {
+    const ents = loadEntities();
+    const locs = loadLocations();
+    setEntities(ents);
+    setAllLocations(locs);
+  }, []);
+
+  const locations = React.useMemo(() => {
+    if (p.entityId === ALL) return allLocations;
+    const children = entities.filter((e) => e.parentId === p.entityId).map((e) => e.id);
+    const ids = new Set(children.length > 0 ? [p.entityId, ...children] : [p.entityId]);
+    return allLocations.filter((l) => ids.has(l.entityId));
+  }, [p.entityId, entities, allLocations]);
+
+  const states = React.useMemo(
+    () => Array.from(new Set(locations.map((l) => l.state))),
+    [locations],
+  );
 
   return (
     <div className={cn("flex flex-wrap items-center gap-2", className)}>
-      <EntityPicker value={p.entityId} onChange={p.setEntity} />
+      <EntityPicker value={p.entityId} onChange={p.setEntity} entities={entities} />
 
       <Field icon={<MapPin className="size-3.5" />}>
         <Select value={p.locationId} onChange={(e) => p.setLocation(e.target.value)} className="h-8 min-w-[140px] border-0 bg-transparent pl-1 shadow-none">
@@ -68,7 +86,7 @@ export function ContextBar({ className }: { className?: string }) {
 }
 
 // ── Hierarchical entity picker ─────────────────────────────────────────────────
-function EntityPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
+function EntityPicker({ value, onChange, entities }: { value: string; onChange: (id: string) => void; entities: Entity[] }) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(new Set(["ent-nexa-in"]));
@@ -90,9 +108,9 @@ function EntityPicker({ value, onChange }: { value: string; onChange: (id: strin
     if (open) { setQuery(""); setTimeout(() => inputRef.current?.focus(), 0); }
   }, [open]);
 
-  const current = value === ALL ? null : ENTITIES.find((e) => e.id === value);
+  const current = value === ALL ? null : entities.find((e) => e.id === value);
   const currentLabel = value === ALL ? "All entities" : current?.name ?? "All entities";
-  const isGroup = current ? isGroupEntity(current.id) : false;
+  const isGroup = current ? entities.some((e) => e.parentId === current.id) : false;
 
   const select = (id: string) => { onChange(id); setOpen(false); };
 
@@ -106,13 +124,12 @@ function EntityPicker({ value, onChange }: { value: string; onChange: (id: strin
   };
 
   const q = query.toLowerCase().trim();
-  const topLevel = topLevelEntities();
+  const topLevel = entities.filter((e) => !e.parentId);
 
   // When searching: flatten all entities and filter by name; highlight matches
   const isSearching = q.length > 0;
-  const allEntities = ENTITIES; // includes outlets
   const matchAll = isSearching
-    ? allEntities.filter((e) => e.name.toLowerCase().includes(q))
+    ? entities.filter((e) => e.name.toLowerCase().includes(q))
     : [];
 
   // Auto-expand parent groups whose children match the search
@@ -163,12 +180,13 @@ function EntityPicker({ value, onChange }: { value: string; onChange: (id: strin
                   <p className="px-3 py-4 text-center text-xs text-muted-foreground">No matches</p>
                 )}
                 {matchAll.map((ent) => {
-                  const parent = ent.parentId ? ENTITIES.find((e) => e.id === ent.parentId) : null;
+                  const parent = ent.parentId ? entities.find((e) => e.id === ent.parentId) : null;
+                  const hasKids = entities.some((e) => e.parentId === ent.id);
                   return (
                     <PickerRow
                       key={ent.id}
                       label={ent.name}
-                      sublabel={parent ? parent.name : isGroupEntity(ent.id) ? "rollup" : ent.country !== "India" ? ent.country : undefined}
+                      sublabel={parent ? parent.name : hasKids ? "rollup" : ent.country !== "India" ? ent.country : undefined}
                       selected={value === ent.id}
                       onClick={() => select(ent.id)}
                       highlight={q}
@@ -183,8 +201,7 @@ function EntityPicker({ value, onChange }: { value: string; onChange: (id: strin
                 <div className="my-1 mx-2 border-t" />
 
                 {topLevel.map((ent) => {
-                  const children = childEntities(ent.id);
-                  const hasChildren = children.length > 0;
+                  const hasChildren = entities.some((e) => e.parentId === ent.id);
                   const expanded = expandedGroups.has(ent.id) || matchParents.has(ent.id);
                   return (
                     <React.Fragment key={ent.id}>
@@ -210,7 +227,7 @@ function EntityPicker({ value, onChange }: { value: string; onChange: (id: strin
 
                       {hasChildren && expanded && (
                         <div className="ml-6">
-                          {children.map((child) => (
+                          {entities.filter((e) => e.parentId === ent.id).map((child) => (
                             <PickerRow
                               key={child.id}
                               label={child.name}
