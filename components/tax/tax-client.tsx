@@ -22,6 +22,8 @@ import { Money } from "@/components/ui/money";
 import { usePrefs } from "@/components/prefs/prefs-provider";
 import { cn, formatDate } from "@/lib/utils";
 import { entityById } from "@/lib/accounting/org";
+import { periodMovement } from "@/lib/accounting/ledger";
+import type { ReportFilters } from "@/lib/accounting/types";
 import { EMPLOYEES, employeeName } from "@/lib/hr/employees";
 import { downloadCsv } from "@/lib/export";
 import {
@@ -74,6 +76,7 @@ type ReportKey =
   | "gstr2b"
   | "gstr3b"
   | "gstr9"
+  | "gstr9c"
   | "tdsPayable"
   | "tdsReceivable"
   | "msme"
@@ -84,7 +87,7 @@ type ReportKey =
   | "review";
 
 const GROUPS: { key: string; label: string; reports: ReportKey[] }[] = [
-  { key: "gst", label: "GST returns", reports: ["gstr1", "hsn", "gstr2b", "gstr3b", "gstr9"] },
+  { key: "gst", label: "GST returns", reports: ["gstr1", "hsn", "gstr2b", "gstr3b", "gstr9", "gstr9c"] },
   { key: "tds", label: "TDS & MSME", reports: ["tdsPayable", "tdsReceivable", "msme"] },
   { key: "other", label: "RCM & recon", reports: ["rcm", "recon"] },
   { key: "ledger", label: "Ledgers", reports: ["cashLedger", "creditLedger"] },
@@ -97,6 +100,7 @@ const REPORT_META: Record<ReportKey, { label: string; blurb: string }> = {
   gstr2b: { label: "GSTR-2B (ITC)", blurb: "Inward supplies from registered vendors — eligible input tax credit." },
   gstr3b: { label: "GSTR-3B", blurb: "Monthly summary — output tax less ITC, with statutory set-off." },
   gstr9: { label: "GSTR-9 (annual)", blurb: "Annual consolidation of outward supplies, ITC and net liability." },
+  gstr9c: { label: "GSTR-9C (reconciliation)", blurb: "Reconcile annual return turnover & ITC with audited P&L and books." },
   tdsPayable: { label: "TDS payable (26Q)", blurb: "TDS deducted on vendor payments — incl. sec.197 lower-deduction certificates." },
   tdsReceivable: { label: "TDS receivable (26AS)", blurb: "TDS withheld by customers on our fees — Form 16A credit." },
   msme: { label: "MSME vendors", blurb: "Micro & Small vendor dues — 45-day payment rule (MSMED sec.15 / 43B(h))." },
@@ -333,6 +337,8 @@ export function TaxClient() {
         return renderGstr3b();
       case "gstr9":
         return renderGstr9();
+      case "gstr9c":
+        return renderGstr9c();
       case "tdsPayable":
         return renderTdsPayable();
       case "tdsReceivable":
@@ -594,36 +600,260 @@ export function TaxClient() {
     );
   }
 
-  // ---- GSTR-9 --------------------------------------------------------------
+  // ---- GSTR-9 (expanded annual return) ------------------------------------
   function renderGstr9() {
     const fy = sel.kind === "fy" ? sel.value : "2025-26";
     const g = gstr9For(scope, fy);
+    const { from, to } = periodRange("fy:" + fy);
+    const out = scopeRows(inRange(outwardRows(), from, to), scope);
+    const inw = scopeRows(inRange(inwardRows(), from, to), scope);
+
+    const b2b = out.filter((r) => r.supplyType === "B2B");
+    const b2c = out.filter((r) => r.supplyType === "B2C");
+    const exports = out.filter((r) => r.nature === "export");
+    const rcmRows = inw.filter((r) => r.rcm);
+    const itcRows = inw.filter((r) => r.itcEligible);
+    const itcBlocked = inw.filter((r) => !r.itcEligible);
+    const hsnOut = hsnSummary(out);
+
+    const t = sumHeads(out);
+    const itcT = sumHeads(itcRows);
+    const rcmT = sumHeads(rcmRows);
+
     return (
-      <Card className="overflow-hidden">
-        <div className="flex items-center justify-between border-b bg-muted/40 px-4 py-2.5">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Annual return — FY {fy}</h3>
-          {sel.kind !== "fy" && <span className="text-xs text-muted-foreground">Pick a financial year above to change.</span>}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Annual return — FY <strong className="text-foreground">{fy}</strong>.
+            {sel.kind !== "fy" && " Select a financial year above to switch."}
+          </p>
+          <Button variant="outline" size="sm" onClick={async () => { const { downloadGstr3bPdf } = await import("@/lib/pdf/gstr3b-pdf"); downloadGstr3bPdf({ scopeName, periodLabel: `FY ${fy}`, gstin: scope.entityId === "all" ? undefined : entityById(scope.entityId)?.gstin, r: gstr3bFor(scope, monthsInRange(from, to)[0] ?? "2026-01", itcHeld) }); }}>
+            <Download className="size-4" /> PDF
+          </Button>
         </div>
-        <table className="w-full text-sm">
-          <THead cols={["Description", "Taxable", "IGST", "CGST", "SGST"]} numFrom={1} />
-          <tbody>
-            {g.rows.map((row) => (
-              <tr key={row.label} className="border-b last:border-0 hover:bg-accent/40">
-                <td className="px-4 py-2">{row.label}</td>
-                <Num v={row.taxable} />
-                <Num v={row.igst} />
-                <Num v={row.cgst} />
-                <Num v={row.sgst} />
+
+        {/* Part II — Outward supplies */}
+        <Card className="overflow-hidden">
+          <div className="border-b bg-muted/40 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Part II — Outward supplies declared in FY {fy}
+          </div>
+          <table className="w-full text-sm">
+            <THead cols={["Supply type", "Invoices", "Taxable value", "IGST", "CGST", "SGST/UTGST"]} numFrom={1} />
+            <tbody>
+              <tr className="border-b hover:bg-accent/40">
+                <td className="px-4 py-2">4A — B2B taxable (excl. zero-rated)</td>
+                <td className="px-4 py-2 text-right tabular">{b2b.length}</td>
+                <Num v={sumHeads(b2b).taxable} />
+                <Num v={sumHeads(b2b).igst} />
+                <Num v={sumHeads(b2b).cgst} />
+                <Num v={sumHeads(b2b).sgst + sumHeads(b2b).utgst} />
               </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="grid grid-cols-3 gap-px bg-border text-sm">
-          <Stat label="Output tax" v={g.outputTax} />
-          <Stat label="ITC availed" v={g.itc} />
-          <Stat label="Net tax liability" v={g.net} accent />
+              <tr className="border-b hover:bg-accent/40">
+                <td className="px-4 py-2">4B — B2C large (inter-state &gt; ₹2.5L)</td>
+                <td className="px-4 py-2 text-right tabular">{b2c.filter(r => r.nature === "inter").length}</td>
+                <Num v={sumHeads(b2c.filter(r => r.nature === "inter")).taxable} />
+                <Num v={sumHeads(b2c.filter(r => r.nature === "inter")).igst} />
+                <Num v={0} />
+                <Num v={0} />
+              </tr>
+              <tr className="border-b hover:bg-accent/40">
+                <td className="px-4 py-2">5 — Zero-rated / export supplies</td>
+                <td className="px-4 py-2 text-right tabular">{exports.length}</td>
+                <Num v={sumHeads(exports).taxable} />
+                <Num v={0} />
+                <Num v={0} />
+                <Num v={0} />
+              </tr>
+              <tr className="border-b hover:bg-accent/40">
+                <td className="px-4 py-2">7D — Reverse charge inward (RCM)</td>
+                <td className="px-4 py-2 text-right tabular">{rcmRows.length}</td>
+                <Num v={rcmT.taxable} />
+                <Num v={rcmT.igst} />
+                <Num v={rcmT.cgst} />
+                <Num v={rcmT.sgst + rcmT.utgst} />
+              </tr>
+            </tbody>
+            <TFoot label="Total outward (Table 5)" cols={[t.taxable, t.igst, t.cgst, t.sgst + t.utgst]} span={2} />
+          </table>
+        </Card>
+
+        {/* Part III — ITC */}
+        <Card className="overflow-hidden">
+          <div className="border-b bg-muted/40 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Part III — Input Tax Credit (ITC) details for FY {fy}
+          </div>
+          <table className="w-full text-sm">
+            <THead cols={["ITC category", "IGST", "CGST", "SGST/UTGST", "Total"]} numFrom={1} />
+            <tbody>
+              <tr className="border-b hover:bg-accent/40">
+                <td className="px-4 py-2">6A — ITC from GSTR-2B (imports + supplier-filed)</td>
+                <Num v={itcT.igst} /><Num v={itcT.cgst} /><Num v={itcT.sgst + itcT.utgst} /><Num v={itcT.tax} />
+              </tr>
+              <tr className="border-b hover:bg-accent/40">
+                <td className="px-4 py-2">6B — ITC on reverse charge (self-paid GST)</td>
+                <Num v={rcmT.igst} /><Num v={rcmT.cgst} /><Num v={rcmT.sgst + rcmT.utgst} /><Num v={rcmT.tax} />
+              </tr>
+              <tr className="border-b hover:bg-accent/40">
+                <td className="px-4 py-2 text-muted-foreground">7H — ITC reversed / blocked (sec. 17(5))</td>
+                <Num v={sumHeads(itcBlocked).igst} /><Num v={sumHeads(itcBlocked).cgst} /><Num v={sumHeads(itcBlocked).sgst + sumHeads(itcBlocked).utgst} /><Num v={sumHeads(itcBlocked).tax} />
+              </tr>
+            </tbody>
+            <TFoot label="Net ITC availed" cols={[itcT.igst + rcmT.igst, itcT.cgst + rcmT.cgst, itcT.sgst + rcmT.sgst + itcT.utgst + rcmT.utgst, itcT.tax + rcmT.tax]} span={1} />
+          </table>
+        </Card>
+
+        {/* Part IV — Tax paid summary */}
+        <div className="grid grid-cols-3 gap-3">
+          <Kpi label="Output tax (FY)" value={g.outputTax} />
+          <Kpi label="ITC availed (FY)" value={g.itc} />
+          <Kpi label="Net GST liability" value={g.net} accent />
         </div>
-      </Card>
+
+        {/* Table 17 — HSN summary */}
+        <Card className="overflow-hidden">
+          <TableToolbar
+            count={hsnOut.length}
+            onExport={() => downloadCsv(`gstr9-hsn-FY${fy}`, ["HSN", "Description", "Rate", "Lines", "Taxable", "IGST", "CGST", "SGST/UTGST"], hsnOut.map((g) => [g.code, g.desc, g.rate, g.lines, g.taxable, g.igst, g.cgst, g.sgst + g.utgst]))}
+          />
+          <div className="border-b bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground">Table 17 — HSN-wise summary of outward supplies</div>
+          <div className="overflow-x-auto scrollbar-thin">
+            <table className="w-full text-sm">
+              <THead cols={["HSN / SAC", "Description", "Rate", "Lines", "Taxable", "IGST", "CGST", "SGST/UTGST"]} numFrom={2} />
+              <tbody>
+                {hsnOut.slice(0, limit).map((g) => (
+                  <tr key={`${g.code}-${g.rate}`} className="border-b last:border-0 hover:bg-accent/40">
+                    <td className="px-4 py-2 font-mono text-xs font-semibold">{g.code}</td>
+                    <td className="px-4 py-2 text-xs">{g.desc}</td>
+                    <td className="px-4 py-2 text-right text-xs">{g.rate}%</td>
+                    <td className="px-4 py-2 text-right tabular text-xs">{g.lines}</td>
+                    <Num v={g.taxable} /><Num v={g.igst} /><Num v={g.cgst} /><Num v={g.sgst + g.utgst} />
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <ShowMore shown={Math.min(limit, hsnOut.length)} total={hsnOut.length} onMore={() => setLimit(l => l + 50)} />
+        </Card>
+      </div>
+    );
+  }
+
+  // ---- GSTR-9C (reconciliation statement) ---------------------------------
+  function renderGstr9c() {
+    const fy = sel.kind === "fy" ? sel.value : "2025-26";
+    const { from, to } = periodRange("fy:" + fy);
+    const g9 = gstr9For(scope, fy);
+
+    // Pull GL balances for the same period
+    const glF: ReportFilters = {
+      entityId: scope.entityId,
+      locationId: "all",
+      state: "all",
+      basis: "accrual",
+      from,
+      to,
+    };
+    const mv = periodMovement(glF);
+
+    // Revenue per books (credit-normal accounts, so negate)
+    const glRevenue =
+      -(mv.get("4010") ?? 0) +
+      -(mv.get("4020") ?? 0) +
+      -(mv.get("4030") ?? 0) -
+      (mv.get("4040") ?? 0); // 4040 = Sales Returns (debit-normal contra)
+
+    // ITC per books (GST Input 1300, debit-normal)
+    const glItc = mv.get("1300") ?? 0;
+
+    // GST Output per books (2100, credit-normal)
+    const glOutputTax = -(mv.get("2100") ?? 0);
+
+    const g9Turnover = g9.rows.filter(r => r.label !== "Total ITC availed").reduce((s, r) => s + r.taxable, 0);
+    const turnoverGap = g9Turnover - glRevenue;
+    const itcGap = g9.itc - glItc;
+    const outputTaxGap = g9.outputTax - glOutputTax;
+
+    const Row = ({ label, a, b, gap, sub }: { label: string; a: number; b: number; gap: number; sub?: boolean }) => (
+      <tr className={cn("border-b last:border-0", sub ? "text-muted-foreground" : "hover:bg-accent/40")}>
+        <td className={cn("px-4 py-2.5 text-sm", sub && "pl-8 text-xs")}>{label}</td>
+        <Num v={a} />
+        <Num v={b} />
+        <td className="px-4 py-2.5 text-right">
+          <Money value={gap} className={cn("font-semibold tabular text-sm", Math.abs(gap) < 1 ? "text-success" : "text-warning")} />
+        </td>
+      </tr>
+    );
+
+    return (
+      <div className="space-y-4">
+        <Card className="border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
+          <strong className="text-foreground">GSTR-9C</strong> — Reconciliation statement (comparable to a CA certificate) for FY {fy}.
+          Compares the annual return (GSTR-9) figures with the audited books. Unreconciled gaps flag items needing explanation before filing.
+        </Card>
+
+        {/* Pt. II — Turnover reconciliation */}
+        <Card className="overflow-hidden">
+          <div className="border-b bg-muted/40 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Part II — Reconciliation of turnover declared in GSTR-9 with audited financials
+          </div>
+          <table className="w-full text-sm">
+            <THead cols={["Particulars", "As per GSTR-9", "As per books (GL)", "Difference"]} numFrom={1} />
+            <tbody>
+              <Row label="5A — Annual turnover (taxable + exempt)" a={g9Turnover} b={glRevenue} gap={turnoverGap} />
+              <Row label="Less: Credit notes issued during FY" a={0} b={0} gap={0} sub />
+              <Row label="Less: Advances adjusted during FY" a={0} b={0} gap={0} sub />
+              <Row label="Net turnover after adjustments" a={g9Turnover} b={glRevenue} gap={turnoverGap} />
+            </tbody>
+          </table>
+          {Math.abs(turnoverGap) < 1 && (
+            <div className="border-t bg-success/5 px-4 py-2 text-xs text-success">
+              ✓ Turnover reconciles — no gap between annual return and audited P&L.
+            </div>
+          )}
+          {Math.abs(turnoverGap) >= 1 && (
+            <div className="border-t bg-warning/5 px-4 py-2 text-xs text-warning">
+              Difference of <Money value={Math.abs(turnoverGap)} className="inline font-semibold" /> requires explanation (timing, cancellations, or missing entries in one source).
+            </div>
+          )}
+        </Card>
+
+        {/* Pt. III — ITC reconciliation */}
+        <Card className="overflow-hidden">
+          <div className="border-b bg-muted/40 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Part III — Reconciliation of ITC declared in annual return with ITC per books
+          </div>
+          <table className="w-full text-sm">
+            <THead cols={["Particulars", "As per GSTR-9", "As per books (1300)", "Difference"]} numFrom={1} />
+            <tbody>
+              <Row label="12A — ITC availed as per annual return" a={g9.itc} b={glItc} gap={itcGap} />
+              <Row label="12B — ITC as per GSTR-2B (filed suppliers)" a={g9.itc} b={g9.itc} gap={0} sub />
+              <Row label="12C — Difference (ineligible / timing)" a={0} b={Math.max(0, glItc - g9.itc)} gap={Math.max(0, glItc - g9.itc)} sub />
+            </tbody>
+          </table>
+        </Card>
+
+        {/* Pt. IV — Tax paid reconciliation */}
+        <Card className="overflow-hidden">
+          <div className="border-b bg-muted/40 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Part IV — Reconciliation of tax amount payable and paid
+          </div>
+          <table className="w-full text-sm">
+            <THead cols={["Particulars", "As per GSTR-9", "As per books (2100)", "Difference"]} numFrom={1} />
+            <tbody>
+              <Row label="14 — Output tax payable" a={g9.outputTax} b={glOutputTax} gap={outputTaxGap} />
+              <Row label="14 — ITC set-off" a={g9.itc} b={glItc} gap={itcGap} />
+              <Row label="14 — Net cash payable" a={Math.max(0, g9.net)} b={Math.max(0, glOutputTax - glItc)} gap={Math.max(0, g9.net) - Math.max(0, glOutputTax - glItc)} />
+            </tbody>
+          </table>
+        </Card>
+
+        {/* Summary KPIs */}
+        <div className="grid grid-cols-3 gap-3">
+          <Kpi label="Turnover gap" value={Math.abs(turnoverGap)} accent={Math.abs(turnoverGap) > 0} />
+          <Kpi label="ITC gap" value={Math.abs(itcGap)} accent={Math.abs(itcGap) > 0} />
+          <Kpi label="Tax gap" value={Math.abs(outputTaxGap)} accent={Math.abs(outputTaxGap) > 0} />
+        </div>
+      </div>
     );
   }
 

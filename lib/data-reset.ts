@@ -11,6 +11,7 @@ const KEEP = new Set<string>([
   "nexa-xlsx-templates", // saved Excel formatting presets
   "nexa-xlsx-active-template",
   "nexa-report-period", // selected reporting period (a view preference)
+  "nexa-access", // roles, members & module provisioning — not business data
 ]);
 
 /** Human-readable list of modules cleared on reset. */

@@ -105,6 +105,12 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
             members: mergedMembers,
           };
         }
+        // Self-heal: if the stored currentUserId no longer matches any member
+        // (e.g. stale state after a bare-shell reset with old data), snap back
+        // to the first member or the DEFAULTS so navigation is never broken.
+        if (next.members.length > 0 && !next.members.find((m) => m.id === next.currentUserId)) {
+          next = { ...next, currentUserId: next.members[0].id, mimicOriginalId: null };
+        }
         setS(next);
       }
     } catch {}

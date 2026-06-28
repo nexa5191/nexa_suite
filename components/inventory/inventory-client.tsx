@@ -70,6 +70,12 @@ export function InventoryClient() {
   const [search, setSearch] = React.useState("");
   const [ageingMap, setAgeingMap] = React.useState<Map<string, ItemAgeing>>(new Map());
   const [dio, setDio] = React.useState(0);
+  const [lowStockOnly, setLowStockOnly] = React.useState(false);
+  const tableRef = React.useRef<HTMLDivElement>(null);
+
+  function scrollToTable() {
+    tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   React.useEffect(() => {
     const added = loadAddedMovements();
@@ -123,10 +129,16 @@ export function InventoryClient() {
       sub: meta.short,
       detail,
       detailTitle: `${meta.short} — top SKUs by value`,
+      onClick: () => {
+        setTab(c);
+        setLowStockOnly(false);
+        scrollToTable();
+      },
     };
   });
 
   const shownItems = (tab === "all" ? ITEMS : itemsByCategory(tab)).filter((it) => {
+    if (lowStockOnly && stockTotal(idx, it.id) >= it.reorderLevel) return false;
     if (loc !== ALL && stockAt(idx, it.id, loc) === 0) return false;
     if (search) {
       const q = search.toLowerCase();
@@ -193,13 +205,36 @@ export function InventoryClient() {
         ))}
       </div>
 
-      {/* Top metrics */}
+      {/* Top metrics — each card filters the SKU table below */}
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <MetricMoney label="Total stock value" value={totalValue} />
-        <Metric label="SKUs tracked" value={String(ITEMS.length)} />
-        <Metric label="Low-stock items" value={String(low.length)} highlight={low.length > 0} />
-        <Metric label="Stock locations" value={String(LOCATIONS.length)} />
-        <Metric label="DIO (days)" value={dio > 0 ? `${dio}d` : "—"} sub="Days Inventory Outstanding" />
+        <MetricMoney
+          label="Total stock value"
+          value={totalValue}
+          onClick={() => { setTab("all"); setLowStockOnly(false); setSearch(""); scrollToTable(); }}
+        />
+        <Metric
+          label="SKUs tracked"
+          value={String(ITEMS.length)}
+          onClick={() => { setTab("all"); setLowStockOnly(false); setSearch(""); scrollToTable(); }}
+        />
+        <Metric
+          label="Low-stock items"
+          value={String(low.length)}
+          highlight={low.length > 0}
+          active={lowStockOnly}
+          onClick={() => { setLowStockOnly(true); setTab("all"); setSearch(""); scrollToTable(); }}
+        />
+        <Metric
+          label="Stock locations"
+          value={String(LOCATIONS.length)}
+          onClick={() => { setTab("all"); setLowStockOnly(false); setSearch(""); scrollToTable(); }}
+        />
+        <Metric
+          label="DIO (days)"
+          value={dio > 0 ? `${dio}d` : "—"}
+          sub="Days Inventory Outstanding"
+          onClick={() => { setTab("all"); setLowStockOnly(false); setSearch(""); scrollToTable(); }}
+        />
       </div>
 
       {/* Value by stage — flip each card for its per-SKU breakdown */}
@@ -229,20 +264,28 @@ export function InventoryClient() {
       )}
 
       {/* Filters */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div ref={tableRef} className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-1">
           {(["all", ...CATEGORY_ORDER] as const).map((c) => (
             <button
               key={c}
-              onClick={() => setTab(c)}
+              onClick={() => { setTab(c); setLowStockOnly(false); }}
               className={cn(
                 "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                tab === c ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-accent",
+                tab === c && !lowStockOnly ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-accent",
               )}
             >
               {c === "all" ? "All" : CATEGORY_META[c].label}
             </button>
           ))}
+          {lowStockOnly && (
+            <button
+              onClick={() => setLowStockOnly(false)}
+              className="flex items-center gap-1 rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-sm font-medium text-warning"
+            >
+              <AlertTriangle className="size-3.5" /> Low stock <X className="size-3.5 ml-0.5" />
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
@@ -645,9 +688,20 @@ function Field({
   );
 }
 
-function Metric({ label, value, highlight, sub }: { label: string; value: string; highlight?: boolean; sub?: string }) {
+function Metric({ label, value, highlight, sub, onClick, active }: {
+  label: string; value: string; highlight?: boolean; sub?: string;
+  onClick?: () => void; active?: boolean;
+}) {
   return (
-    <Card className={cn("p-4", highlight && "border-warning/40")}>
+    <Card
+      className={cn(
+        "p-4 transition-colors",
+        highlight && "border-warning/40",
+        active && "ring-2 ring-primary",
+        onClick && "cursor-pointer hover:bg-accent/50",
+      )}
+      onClick={onClick}
+    >
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className={cn("mt-1 text-3xl font-bold tabular", highlight && "text-warning")}>{value}</p>
       {sub && <p className="mt-0.5 text-[10px] text-muted-foreground">{sub}</p>}
@@ -655,9 +709,12 @@ function Metric({ label, value, highlight, sub }: { label: string; value: string
   );
 }
 
-function MetricMoney({ label, value }: { label: string; value: number }) {
+function MetricMoney({ label, value, onClick }: { label: string; value: number; onClick?: () => void }) {
   return (
-    <Card className="p-4">
+    <Card
+      className={cn("p-4 transition-colors", onClick && "cursor-pointer hover:bg-accent/50")}
+      onClick={onClick}
+    >
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="mt-1 text-3xl font-bold tabular">
         <Money value={value} compact />

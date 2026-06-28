@@ -23,6 +23,8 @@ export interface Kpi {
   detail?: KpiDetail[];
   /** Heading shown on the flip side. Defaults to "Breakdown". */
   detailTitle?: string;
+  /** Called when the card is clicked (works alongside flip/href). */
+  onClick?: () => void;
 }
 
 export function KpiStrip({ items }: { items: Kpi[] }) {
@@ -70,9 +72,12 @@ function KpiCard({ k }: { k: Kpi }) {
       </Link>
     );
   }
-  // Static card (unchanged behaviour).
+  // Clickable card (filter / action).
   return (
-    <div className={SHELL}>
+    <div
+      className={cn(SHELL, k.onClick && "cursor-pointer hover:border-primary/40 hover:bg-accent/40")}
+      onClick={k.onClick}
+    >
       <Face k={k} />
     </div>
   );
@@ -81,7 +86,10 @@ function KpiCard({ k }: { k: Kpi }) {
 function Flip({ k }: { k: Kpi }) {
   const [flipped, setFlipped] = React.useState(false);
   return (
-    <div className={cn(SHELL, "cursor-pointer hover:border-primary/40")} onClick={() => setFlipped((f) => !f)}>
+    <div
+      className={cn(SHELL, "cursor-pointer hover:border-primary/40")}
+      onClick={() => { setFlipped((f) => !f); k.onClick?.(); }}
+    >
       {!flipped ? (
         <>
           <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">

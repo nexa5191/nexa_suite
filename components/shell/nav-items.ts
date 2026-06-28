@@ -206,6 +206,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "fx-revaluation", href: "/reports/fx-revaluation", label: "FX Revaluation", icon: Globe },
       { key: "dcf", href: "/reports/dcf", label: "DCF Valuation", icon: Activity },
       { key: "kpi-builder", href: "/reports/kpi-builder", label: "Custom KPIs", icon: Sliders },
+      { key: "cma-data", href: "/reports/cma", label: "CMA / Lender Package", icon: Briefcase },
     ],
   },
   {

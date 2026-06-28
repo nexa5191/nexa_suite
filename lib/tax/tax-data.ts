@@ -13,7 +13,8 @@ import { BUSINESS_EVENTS, gstRateFor } from "@/lib/accounting/events";
 import type { BusinessEvent } from "@/lib/accounting/types";
 import { locationById, entityById } from "@/lib/accounting/org";
 import { ACCOUNTS } from "@/lib/crm";
-import { TAX_VENDOR_POOL, ldcRateFor, type MsmeClass } from "@/lib/vendors";
+import { TAX_VENDOR_POOL, ldcRateFor, allPOs, loadAddedPOs, VENDORS, type MsmeClass, type PurchaseOrder } from "@/lib/vendors";
+import { loadCreatedInvoices, type Invoice, type InvoiceLine } from "@/lib/invoicing";
 import {
   classify,
   splitTax,
@@ -324,23 +325,193 @@ function buildInward(ev: BusinessEvent): InwardRow {
   };
 }
 
+// ---- invoice → outward row builders ----------------------------------------
+
+/** GST rate by vendor procurement category (used for inward PO rows). */
+const CATEG_GST: Record<string, number> = {
+  "Raw Materials": 5, "Packaging": 12, "Logistics": 5,
+  "IT & Software": 18, "Marketing": 18, "Services": 18,
+  "Capital Equipment": 18, "Office Equipment": 18, "Employee Claims": 0,
+};
+const CATEG_TDS: Record<string, { section: string; rate: number }> = {
+  "Raw Materials": { section: "194Q", rate: 0.1 }, "Packaging": { section: "194Q", rate: 0.1 },
+  "Logistics": { section: "194C", rate: 2 }, "IT & Software": { section: "194J", rate: 2 },
+  "Marketing": { section: "194C", rate: 2 }, "Services": { section: "194J", rate: 10 },
+  "Capital Equipment": { section: "194C", rate: 2 }, "Office Equipment": { section: "194J", rate: 2 },
+  "Employee Claims": { section: "192", rate: 0 },
+};
+const CATEG_HSN: Record<string, string> = {
+  "Raw Materials": "1006", "Packaging": "3923", "Logistics": "996511",
+  "IT & Software": "998314", "Marketing": "998321", "Services": "9983",
+  "Capital Equipment": "8479", "Office Equipment": "8471", "Employee Claims": "—",
+};
+
+function outwardFromLine(
+  inv: Invoice, line: InvoiceLine, idx: number, discFrac: number,
+): OutwardRow {
+  const entity = entityById(inv.entityId);
+  const supplierGstin = entity?.gstin ?? "";
+  const supplierState = supplierGstin.length >= 2 ? supplierGstin.slice(0, 2) : "29";
+
+  const acc = ACCOUNTS.find((a) => a.id === inv.accountId);
+  const customerName = inv.billTo?.name ?? acc?.name ?? "Customer";
+  const rawGstin = (inv.billTo?.gstin ?? acc?.gstin ?? "").replace(/^[—]$/, "");
+  const customerGstin = rawGstin.length === 15 ? rawGstin : "";
+  const placeOfSupply = acc?.stateCode ?? (customerGstin.length >= 2 ? customerGstin.slice(0, 2) : supplierState);
+
+  const isExport = placeOfSupply === "SG" || supplierState === "SG";
+  const gstRate = isExport ? 0 : line.gstRate;
+  const nature: TaxNature = isExport ? "export" : natureOf(supplierState, placeOfSupply);
+  const isUT = !isExport && isUnionTerritory(placeOfSupply) && nature === "intra";
+
+  const lineBase = line.qty * line.rate * discFrac;
+  const split = splitTax(lineBase, gstRate, nature, isUT);
+
+  return {
+    id: `${inv.id}-l${idx}`,
+    invoiceNo: inv.number,
+    date: inv.date,
+    period: monthKeyOf(inv.date),
+    fy: fyOf(inv.date),
+    entityId: inv.entityId,
+    locationId: "",
+    supplierState,
+    supplierGstin,
+    customerName,
+    customerGstin,
+    placeOfSupply,
+    supplyType: customerGstin ? "B2B" : "B2C",
+    nature,
+    ut: isUT,
+    desc: line.desc,
+    hsn: line.hsn,
+    kind: classify(line.desc).kind,
+    rate: gstRate,
+    taxable: split.taxable,
+    cgst: split.cgst,
+    sgst: split.sgst,
+    utgst: split.utgst,
+    igst: split.igst,
+    tax: split.tax,
+    gross: split.gross,
+    tdsReceivable: 0,
+  };
+}
+
+function buildAllOutward(): OutwardRow[] {
+  const rows: OutwardRow[] = [];
+  for (const inv of loadCreatedInvoices()) {
+    if (inv.status === "draft") continue;
+    const subtotal = inv.lines.reduce((s, l) => s + l.qty * l.rate, 0);
+    const discAmt =
+      inv.discountType === "amount"
+        ? Math.min(inv.discountValue ?? 0, subtotal)
+        : inv.discountType === "percent"
+        ? (subtotal * (inv.discountValue ?? 0)) / 100
+        : 0;
+    const discFrac = subtotal > 0 ? 1 - discAmt / subtotal : 1;
+    inv.lines.forEach((line, i) => rows.push(outwardFromLine(inv, line, i, discFrac)));
+  }
+  return rows;
+}
+
+function inwardFromPO(po: PurchaseOrder): InwardRow {
+  const rnd = rngFor("po-" + po.id);
+  const vendor = VENDORS.find((v) => v.id === po.vendorId);
+
+  const vendorGstin = vendor?.gstin && vendor.gstin !== "—" ? vendor.gstin : "29AACCM9861R1ZF";
+  const vendorPan = panFromGstin(vendorGstin);
+  const supplierState = vendorGstin.length >= 2 ? vendorGstin.slice(0, 2) : "29";
+
+  const entity = entityById(po.entityId);
+  const recipientGstin = entity?.gstin ?? "";
+  const recipientState = recipientGstin.length >= 2 ? recipientGstin.slice(0, 2) : "29";
+
+  const nature = natureOf(supplierState, recipientState);
+  const isUT = isUnionTerritory(recipientState) && nature === "intra";
+
+  const category = vendor?.category ?? "Services";
+  const gstRate = CATEG_GST[category] ?? 18;
+  const tdsCfg = CATEG_TDS[category] ?? { section: "194J", rate: 10 };
+  const split = splitTax(po.total, gstRate, nature, isUT);
+
+  const ldc = ldcRateFor(vendor, tdsCfg.section, po.date);
+  const effRate = ldc ? ldc.rate : tdsCfg.rate;
+  const tds = tdsAmount(po.total, effRate);
+
+  const itcEligible = category !== "Employee Claims" && gstRate > 0;
+  const rcm = category === "Logistics" && rnd() < 0.3;
+  const date = po.invoice?.date ?? po.date;
+
+  return {
+    id: po.id,
+    invoiceNo: po.invoice?.number ?? `BILL-${po.id}`,
+    date,
+    period: monthKeyOf(date),
+    fy: fyOf(date),
+    entityId: po.entityId,
+    locationId: po.locationId,
+    vendorId: po.vendorId,
+    vendorName: vendor?.name ?? "Vendor",
+    vendorGstin,
+    vendorPan,
+    supplierState,
+    recipientState,
+    msme: vendor?.msme ?? false,
+    msmeClass: vendor?.msmeClass,
+    nature,
+    ut: isUT,
+    desc: po.title,
+    hsn: CATEG_HSN[category] ?? "9983",
+    kind: classify(po.title).kind,
+    rate: gstRate,
+    taxable: split.taxable,
+    cgst: split.cgst,
+    sgst: split.sgst,
+    utgst: split.utgst,
+    igst: split.igst,
+    tax: split.tax,
+    gross: split.gross,
+    itcEligible,
+    rcm,
+    tdsSection: tdsCfg.section,
+    tdsBaseRate: tdsCfg.rate,
+    tdsRate: effRate,
+    ldc: !!ldc,
+    ldcCertNo: ldc?.certNo,
+    tds,
+    netPayable: Math.round((split.gross - tds) * 100) / 100,
+  };
+}
+
+function buildAllInward(): InwardRow[] {
+  return allPOs(loadAddedPOs())
+    .filter((po) => !!po.vendorId)
+    .map(inwardFromPO);
+}
+
 // ---- memoised datasets -----------------------------------------------------
 let _out: OutwardRow[] | null = null;
 let _in: InwardRow[] | null = null;
 
 export function outwardRows(): OutwardRow[] {
+  if (typeof window === "undefined") return [];
   if (_out) return _out;
-  _out = BUSINESS_EVENTS.filter((e) => e.kind === "sale").map(buildOutward);
+  _out = buildAllOutward();
   return _out;
 }
 
 export function inwardRows(): InwardRow[] {
+  if (typeof window === "undefined") return [];
   if (_in) return _in;
-  // Goods/service purchases only — exclude payroll (sec.192, no GST/TDS here).
-  _in = BUSINESS_EVENTS.filter(
-    (e) => e.kind === "purchase" && e.incomeOrExpenseAccount !== "6010" && e.contraAccount !== "2300",
-  ).map(buildInward);
+  _in = buildAllInward();
   return _in;
+}
+
+/** Call after localStorage data changes (e.g. new invoices posted). */
+export function invalidateTaxCache(): void {
+  _out = null;
+  _in = null;
 }
 
 // ---- scoping & period filters ----------------------------------------------

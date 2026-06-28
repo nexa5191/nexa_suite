@@ -1232,6 +1232,35 @@ export function loadDemoData() {
   write("nexa-crm-events",     DEMO_CRM_EVENTS);
   write("nexa-leave-config",   DEMO_LEAVE_CONFIG);
   write("nexa-tax-filings",    DEMO_TAX_FILINGS);
+  // Restore a valid owner session so the full nav is visible after demo load.
+  // Members are seeded from the demo employee roster so the mimic (view-as)
+  // switcher works out of the box — the Eye icon lets you switch between roles
+  // to see how the app looks to each persona. This state is preserved through
+  // bare-shell resets (nexa-access is in the KEEP set in data-reset.ts).
+  write("nexa-access", {
+    _v: 3,
+    disabled: ["projects", "timesheets"],
+    roles: [
+      { id: "owner",   label: "Owner",   rank: 100, modules: "*", canManageAccess: true,  system: true },
+      { id: "admin",   label: "Admin",   rank: 80,  modules: "*", canManageAccess: true },
+      { id: "manager", label: "Manager", rank: 60,  modules: ["overview","accounting","tax-compliance","group-treasury","sales-revenue","planning-analysis","reports","people-hr","workspace"], canManageAccess: false },
+      { id: "member",  label: "Member",  rank: 40,  modules: ["overview","sales-revenue","workspace","reports"], canManageAccess: false },
+      { id: "viewer",  label: "Viewer",  rank: 20,  modules: ["overview","reports"], canManageAccess: false },
+    ],
+    members: [
+      // C-Suite — owner / admin full access
+      { id: "u-001", name: "Vikram Anand",   email: "vikram.anand@nexafoods.example",   roleId: "owner"   }, // CEO
+      { id: "u-002", name: "Asha Menon",     email: "asha.menon@nexafoods.example",     roleId: "admin"   }, // CFO
+      { id: "u-003", name: "Sanjay Mehta",   email: "sanjay.mehta@nexafoods.example",   roleId: "manager" }, // COO
+      { id: "u-004", name: "Meghna Kapoor",  email: "meghna.kapoor@nexafoods.example",  roleId: "manager" }, // CMO
+      { id: "u-005", name: "Rajeev Sharma",  email: "rajeev.sharma@nexafoods.example",  roleId: "manager" }, // CTO
+      // Department heads — member / viewer access
+      { id: "u-006", name: "Priya Krishnan", email: "priya.krishnan@nexafoods.example", roleId: "member"  }, // Finance Manager
+      { id: "u-007", name: "Ananya Kapoor",  email: "ananya.kapoor@nexafoods.example",  roleId: "viewer"  }, // Auditor (read-only)
+    ],
+    currentUserId: "u-001",  // logged in as CEO; use Eye icon to mimic others
+    mimicOriginalId: null,
+  });
   window.location.reload();
 }
 
