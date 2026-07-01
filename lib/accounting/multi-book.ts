@@ -10,7 +10,7 @@
 // ---------------------------------------------------------------------------
 
 import { filteredPostings } from "./ledger";
-import { CHART_OF_ACCOUNTS } from "./chart-of-accounts";
+import { loadChartOfAccounts } from "./chart-of-accounts";
 import type { Basis } from "./types";
 import { revSummary } from "@/lib/finance/revenue-recognition";
 import { apSummary } from "@/lib/finance/payables";
@@ -18,7 +18,7 @@ import { LEASES, initialLiability, schedule } from "@/lib/finance/leases";
 import { allAssets, loadCreatedAssets } from "@/lib/assets/assets";
 import { fyDepForBasis } from "@/lib/assets/depreciation";
 
-const TYPE_OF = new Map(CHART_OF_ACCOUNTS.map((a) => [a.code, a.type]));
+const TYPE_OF = new Map(loadChartOfAccounts().map((a) => [a.code, a.type]));
 
 export const FY_LABEL = "FY 2025-26";
 const FY_START = "2025-04-01";

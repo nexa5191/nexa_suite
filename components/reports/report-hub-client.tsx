@@ -12,9 +12,9 @@ import { cn, formatDate } from "@/lib/utils";
 import { ENTITIES, ALL, entityById, locationById } from "@/lib/accounting/org";
 import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { filteredPostings } from "@/lib/accounting/ledger";
-import { CHART_OF_ACCOUNTS } from "@/lib/accounting/chart-of-accounts";
+import { loadChartOfAccounts } from "@/lib/accounting/chart-of-accounts";
 import { EMPLOYEES, departmentName, employeeName, employeeById } from "@/lib/hr/employees";
-import { DEFAULT_LEAVE_TYPES, LEAVE_REQUESTS, leaveTypeById, balancesFor } from "@/lib/hr/leave";
+import { loadLeaveTypes, LEAVE_REQUESTS, leaveTypeById, balancesFor } from "@/lib/hr/leave";
 import { outwardRows, inwardRows } from "@/lib/tax/tax-data";
 import { stateName } from "@/lib/tax/gst";
 import { ORDERS, byChannel } from "@/lib/orders";
@@ -33,8 +33,8 @@ const INWARD = inwardRows();
 // reorder columns, then export the rendered table to PDF.
 // ---------------------------------------------------------------------------
 
-const accountName = (code: string) => CHART_OF_ACCOUNTS.find((a) => a.code === code)?.name ?? code;
-const accountType = (code: string) => CHART_OF_ACCOUNTS.find((a) => a.code === code)?.type ?? "—";
+const accountName = (code: string) => loadChartOfAccounts().find((a) => a.code === code)?.name ?? code;
+const accountType = (code: string) => loadChartOfAccounts().find((a) => a.code === code)?.type ?? "—";
 
 // All accrual postings — the flat transaction ledger the reports read from.
 const POSTINGS = filteredPostings({
@@ -187,7 +187,7 @@ const REPORTS: ReportDef[] = [
     group: "People",
     columns: [
       { key: "employee", label: "Employee", cell: (r) => employeeName(r.employeeId as string) },
-      { key: "type", label: "Type", cell: (r) => { const t = leaveTypeById(DEFAULT_LEAVE_TYPES, r.leaveTypeId as string); return t ? <Badge variant={t.tone}>{t.code}</Badge> : "—"; } },
+      { key: "type", label: "Type", cell: (r) => { const t = leaveTypeById(loadLeaveTypes(), r.leaveTypeId as string); return t ? <Badge variant={t.tone}>{t.code}</Badge> : "—"; } },
       { key: "from", label: "From", cell: (r) => formatDate(r.from as string) },
       { key: "to", label: "To", cell: (r) => formatDate(r.to as string) },
       { key: "days", label: "Days", align: "right", cell: (r) => <span className="tabular font-semibold">{r.days as number}</span> },
@@ -220,8 +220,8 @@ const REPORTS: ReportDef[] = [
         .filter((e) => f.entity === ALL || e.entityId === f.entity)
         .filter((e) => match(f.q, e.name, e.code))
         .flatMap((e) =>
-          balancesFor(e.id, DEFAULT_LEAVE_TYPES).map((b) => {
-            const t = leaveTypeById(DEFAULT_LEAVE_TYPES, b.leaveTypeId)!;
+          balancesFor(e.id, loadLeaveTypes()).map((b) => {
+            const t = leaveTypeById(loadLeaveTypes(), b.leaveTypeId)!;
             return {
               ...b,
               typeName: t.name,

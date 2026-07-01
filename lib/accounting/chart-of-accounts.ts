@@ -63,6 +63,17 @@ export const CHART_OF_ACCOUNTS: Account[] = [
   { code: "6900", name: "Bank Charges & Interest", type: "expense", subtype: "Finance Costs", normal: "debit", cashFlow: "none" },
 ];
 
+const COA_KEY = "nexa-chart-of-accounts";
+export function loadChartOfAccounts(): Account[] {
+  if (typeof window === "undefined") return CHART_OF_ACCOUNTS;
+  try {
+    const r = localStorage.getItem(COA_KEY);
+    const p = r ? JSON.parse(r) as Account[] : null;
+    if (Array.isArray(p) && p.length) return p;
+  } catch { /* ignore */ }
+  return CHART_OF_ACCOUNTS;
+}
+
 const BY_CODE = new Map(CHART_OF_ACCOUNTS.map((a) => [a.code, a]));
 
 export function account(code: string): Account {

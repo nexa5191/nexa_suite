@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Label } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { EMPLOYEES, employeeById, employeeName, departmentName, DEPARTMENTS } from "@/lib/hr/employees";
+import { EMPLOYEES, employeeById, employeeName, departmentName, loadDepartments } from "@/lib/hr/employees";
 import {
   REVIEW_CYCLES, ACTIVE_CYCLE, cycleById, cycleProgress, PHASE_LABEL,
   ratingLabel, ratingTone, appraisalFor, objectivesFor, objectiveProgress, keyResultProgress,
@@ -68,7 +68,7 @@ export function PerformanceClient() {
           </div>
           <Select value={dept} onChange={(e) => setDept(e.target.value)} className="h-9 w-52">
             <option value="all">All departments</option>
-            {DEPARTMENTS.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            {loadDepartments().map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
           </Select>
         </div>
         <div className="mt-3">

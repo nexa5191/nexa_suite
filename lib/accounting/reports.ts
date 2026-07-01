@@ -1,5 +1,5 @@
 import type { ReportFilters, Basis } from "./types";
-import { CHART_OF_ACCOUNTS, account, accountSafe, SUBTYPE_ORDER } from "./chart-of-accounts";
+import { loadChartOfAccounts, account, accountSafe, SUBTYPE_ORDER } from "./chart-of-accounts";
 import { periodMovement, cumulativeBalance, allPostings } from "./ledger";
 import { ENTITIES, resolveEntityIds } from "./org";
 
@@ -64,7 +64,7 @@ export function buildPnL(f: ReportFilters): PnL {
   const financeEntries: Array<{ code: string; amount: number }> = [];
   const otherIncomeEntries: Array<{ code: string; amount: number }> = [];
 
-  for (const a of CHART_OF_ACCOUNTS) {
+  for (const a of loadChartOfAccounts()) {
     const bal = mv.get(a.code) ?? 0;
     if (a.type === "income") {
       const amount = -bal; // credit-normal
@@ -129,7 +129,7 @@ export function buildBalanceSheet(f: ReportFilters): BalanceSheet {
   const equityEntries: Array<{ code: string; amount: number }> = [];
   let plNet = 0;
 
-  for (const a of CHART_OF_ACCOUNTS) {
+  for (const a of loadChartOfAccounts()) {
     const b = bal.get(a.code) ?? 0;
     if (a.type === "asset") assetEntries.push({ code: a.code, amount: b });
     else if (a.type === "liability") liabEntries.push({ code: a.code, amount: -b });
@@ -197,7 +197,7 @@ export function buildCashFlow(f: ReportFilters): CashFlow {
   const investing: Row[] = [];
   const financing: Row[] = [];
 
-  for (const a of CHART_OF_ACCOUNTS) {
+  for (const a of loadChartOfAccounts()) {
     const m = mv.get(a.code) ?? 0;
     if (a.type === "income" || a.type === "expense") {
       netProfit += -m;
@@ -347,7 +347,7 @@ export function outstandingControl(f: ReportFilters): { receivables: number; pay
 export function cashAndReceivables(f: ReportFilters): { cash: number; receivables: number; payables: number } {
   const bal = cumulativeBalance(f, f.to);
   let cash = 0;
-  for (const a of CHART_OF_ACCOUNTS) {
+  for (const a of loadChartOfAccounts()) {
     if (a.isCash) cash += bal.get(a.code) ?? 0;
   }
   return {

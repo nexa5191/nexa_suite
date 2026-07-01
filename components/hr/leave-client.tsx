@@ -12,7 +12,6 @@ import { cn, formatDate } from "@/lib/utils";
 import { useNewIntent } from "@/lib/commands/new-intent";
 import { EMPLOYEES, employeeName } from "@/lib/hr/employees";
 import {
-  DEFAULT_LEAVE_TYPES,
   LEAVE_REQUESTS,
   loadLeaveTypes,
   leaveTypeById,
@@ -28,7 +27,7 @@ const STATUS_VARIANT: Record<LeaveRequest["status"], "warning" | "success" | "da
 };
 
 export function LeaveClient() {
-  const [types, setTypes] = React.useState<LeaveType[]>(DEFAULT_LEAVE_TYPES);
+  const [types, setTypes] = React.useState<LeaveType[]>(() => loadLeaveTypes());
   const [extra, setExtra] = React.useState<LeaveRequest[]>([]);
   const [viewAs, setViewAs] = React.useState("emp-006");
   const [statusFilter, setStatusFilter] = React.useState("all");

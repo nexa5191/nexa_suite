@@ -6,7 +6,7 @@
 
 import type { Basis } from "@/lib/accounting/types";
 import { allPostings } from "@/lib/accounting/ledger";
-import { CHART_OF_ACCOUNTS, accountSafe } from "@/lib/accounting/chart-of-accounts";
+import { loadChartOfAccounts, accountSafe } from "@/lib/accounting/chart-of-accounts";
 import { fyLabel } from "@/lib/accounting/periods";
 
 export interface BudgetAssumptions {
@@ -127,7 +127,7 @@ export function buildBudget(
   const priors = monthlyByAccount(entityId, basis, fyStart - 1);
 
   const lines: BudgetLine[] = [];
-  for (const a of CHART_OF_ACCOUNTS) {
+  for (const a of loadChartOfAccounts()) {
     if (a.type !== "income" && a.type !== "expense") continue;
     const actual = actuals.get(a.code) ?? new Array(12).fill(0);
     const prior = priors.get(a.code) ?? new Array(12).fill(0);

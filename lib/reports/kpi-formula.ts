@@ -1,5 +1,5 @@
 import type { ReportFilters } from "@/lib/accounting/types";
-import { CHART_OF_ACCOUNTS } from "@/lib/accounting/chart-of-accounts";
+import { loadChartOfAccounts } from "@/lib/accounting/chart-of-accounts";
 import { periodMovement, cumulativeBalance } from "@/lib/accounting/ledger";
 
 // ---------------------------------------------------------------------------
@@ -36,14 +36,14 @@ export const saveCustomKpis = (kpis: CustomKpi[]) => writeLS(KEY, kpis);
 // Statement-sign convention: income/liability/equity are credit-normal → flip
 // debit-minus-credit so "revenue" and "asset balance" both read as positive.
 function stmtSign(code: string): number {
-  const a = CHART_OF_ACCOUNTS.find((x) => x.code === code);
+  const a = loadChartOfAccounts().find((x) => x.code === code);
   if (!a) return 1;
   return a.type === "income" || a.type === "liability" || a.type === "equity" ? -1 : 1;
 }
 
 function sumMap(mv: Map<string, number>, from: string, to?: string): number {
   let total = 0;
-  for (const a of CHART_OF_ACCOUNTS) {
+  for (const a of loadChartOfAccounts()) {
     const inRange = to ? a.code >= from && a.code <= to : a.code === from;
     if (inRange) total += stmtSign(a.code) * (mv.get(a.code) ?? 0);
   }
@@ -73,7 +73,7 @@ export function formulaCodes(formula: string): string[] {
   let m: RegExpExecArray | null;
   while ((m = re.exec(formula)) !== null) {
     const from = m[1], to = m[2];
-    for (const a of CHART_OF_ACCOUNTS) {
+    for (const a of loadChartOfAccounts()) {
       if (to ? a.code >= from && a.code <= to : a.code === from) codes.push(a.code);
     }
   }

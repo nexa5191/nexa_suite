@@ -11,6 +11,17 @@ export const DEPARTMENTS: Department[] = [
   "HR", "Operations", "SCM", "Maintenance", "Finance", "Marketing", "IT",
 ];
 
+const BUDGET_DEPTS_KEY = "nexa-budget-depts";
+export function loadBudgetDepts(): Department[] {
+  if (typeof window === "undefined") return DEPARTMENTS;
+  try {
+    const r = localStorage.getItem(BUDGET_DEPTS_KEY);
+    const p = r ? JSON.parse(r) as Department[] : null;
+    if (Array.isArray(p) && p.length) return p;
+  } catch { /* ignore */ }
+  return DEPARTMENTS;
+}
+
 // GL heads = P&L account names from the chart of accounts.
 // Each account is assigned to exactly one owning department.
 export const DEPT_HEADS: Record<Department, string[]> = {

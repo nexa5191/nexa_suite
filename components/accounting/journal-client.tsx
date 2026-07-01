@@ -14,7 +14,7 @@ import { useJournal } from "@/components/accounting/journal-provider";
 import { NewJournalEntry } from "@/components/accounting/new-journal-entry";
 import { allPostings, filteredPostings } from "@/lib/accounting/ledger";
 import { isManualPosting, manualEntryIdFromPosting } from "@/lib/accounting/manual-entries";
-import { CHART_OF_ACCOUNTS, accountSafe } from "@/lib/accounting/chart-of-accounts";
+import { loadChartOfAccounts, accountSafe } from "@/lib/accounting/chart-of-accounts";
 import { locationById, entityById } from "@/lib/accounting/org";
 import type { Posting } from "@/lib/accounting/types";
 import { cn, formatDate } from "@/lib/utils";
@@ -82,7 +82,7 @@ export function JournalClient() {
           <div className="flex flex-wrap items-center gap-2">
             <Select value={account} onChange={(e) => setAccount(e.target.value)} className="h-9 w-48">
               <option value="all">All accounts</option>
-              {CHART_OF_ACCOUNTS.map((a) => (
+              {loadChartOfAccounts().map((a) => (
                 <option key={a.code} value={a.code}>
                   {a.code} · {a.name}
                 </option>

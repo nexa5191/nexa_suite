@@ -11,7 +11,7 @@ import { Drawer } from "@/components/ui/modal";
 import { cn, formatDate } from "@/lib/utils";
 import {
   EMPLOYEES,
-  DEPARTMENTS,
+  loadDepartments,
   departmentName,
   employeeName,
   employeeEntityName,
@@ -74,7 +74,7 @@ export function PeopleClient() {
           </div>
           <Select value={dept} onChange={(e) => setDept(e.target.value)}>
             <option value={ALL}>All departments</option>
-            {DEPARTMENTS.map((d) => (
+            {loadDepartments().map((d) => (
               <option key={d.id} value={d.id}>{d.name}</option>
             ))}
           </Select>

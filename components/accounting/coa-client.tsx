@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/shell/page-header";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Money } from "@/components/ui/money";
-import { CHART_OF_ACCOUNTS, TYPE_ORDER } from "@/lib/accounting/chart-of-accounts";
+import { loadChartOfAccounts, TYPE_ORDER } from "@/lib/accounting/chart-of-accounts";
 import { cumulativeBalance } from "@/lib/accounting/ledger";
 import type { AccountType, ReportFilters } from "@/lib/accounting/types";
 import { cn } from "@/lib/utils";
@@ -59,7 +59,7 @@ export function CoaClient() {
     <>
       <PageHeader
         title="Chart of Accounts"
-        subtitle={`${CHART_OF_ACCOUNTS.length} accounts · live balances reflect the selected scope and basis`}
+        subtitle={`${loadChartOfAccounts().length} accounts · live balances reflect the selected scope and basis`}
         actions={
           <div className="relative w-full sm:w-64">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -75,7 +75,7 @@ export function CoaClient() {
 
       <div className="space-y-3">
         {types.map((type) => {
-          const accounts = CHART_OF_ACCOUNTS.filter(
+          const accounts = loadChartOfAccounts().filter(
             (a) =>
               a.type === type &&
               (!term || a.name.toLowerCase().includes(term) || a.code.includes(term)),

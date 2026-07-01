@@ -31,8 +31,20 @@ export const PETTY_HEADS: PettyHead[] = [
   { label: "Office & admin sundries", accountCode: "6035" },
 ];
 
+const PETTY_HEADS_KEY = "nexa-petty-heads";
+export function loadPettyHeads(): PettyHead[] {
+  if (typeof window === "undefined") return PETTY_HEADS;
+  try {
+    const r = localStorage.getItem(PETTY_HEADS_KEY);
+    const p = r ? JSON.parse(r) as PettyHead[] : null;
+    if (Array.isArray(p) && p.length) return p;
+  } catch { /* ignore */ }
+  return PETTY_HEADS;
+}
+
 export function pettyHead(label: string): PettyHead {
-  return PETTY_HEADS.find((h) => h.label === label) ?? PETTY_HEADS[PETTY_HEADS.length - 1];
+  const heads = loadPettyHeads();
+  return heads.find((h) => h.label === label) ?? heads[heads.length - 1];
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;

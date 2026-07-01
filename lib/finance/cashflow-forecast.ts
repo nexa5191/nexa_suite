@@ -14,7 +14,7 @@ import { openItems, AS_ON } from "@/lib/finance/receivables";
 import { apOpenItems } from "@/lib/finance/payables";
 import { runTotals } from "@/lib/hr/payroll";
 import { cumulativeBalance } from "@/lib/accounting/ledger";
-import { CHART_OF_ACCOUNTS } from "@/lib/accounting/chart-of-accounts";
+import { loadChartOfAccounts } from "@/lib/accounting/chart-of-accounts";
 import type { Basis } from "@/lib/accounting/types";
 import { gstr3bFor } from "@/lib/tax/returns";
 import { gstr3bDueDate } from "@/lib/tax/gst";
@@ -33,7 +33,7 @@ function lastDayOfMonth(year: number, month0: number): string {
 export function openingCash(asOn: string = AS_ON): number {
   const f = { entityId: "all", locationId: "all", state: "all", basis: "accrual" as Basis, from: "", to: "" };
   const bal = cumulativeBalance(f, asOn);
-  return CHART_OF_ACCOUNTS.filter((a) => a.isCash).reduce((s, a) => s + (bal.get(a.code) ?? 0), 0);
+  return loadChartOfAccounts().filter((a) => a.isCash).reduce((s, a) => s + (bal.get(a.code) ?? 0), 0);
 }
 
 export interface CashflowBucket {

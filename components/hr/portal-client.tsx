@@ -15,7 +15,7 @@ import { cn, formatDate } from "@/lib/utils";
 import { usePortalEmployee } from "@/lib/hr/portal-session";
 import { EMPLOYEES, employeeById, employeeName, departmentName } from "@/lib/hr/employees";
 import { locationById, entityById } from "@/lib/accounting/org";
-import { DEFAULT_LEAVE_TYPES, balancesFor, leaveTypeById } from "@/lib/hr/leave";
+import { loadLeaveTypes, balancesFor, leaveTypeById } from "@/lib/hr/leave";
 import { salaryStructure, payslipsForEmployee } from "@/lib/hr/payroll";
 import { journeyFor, documentsFor, type JourneyType, type DocCategory } from "@/lib/hr/journey";
 
@@ -38,7 +38,7 @@ export function PortalClient() {
   const [empId, setEmpId] = usePortalEmployee();
   const emp = employeeById(empId)!;
   const exited = emp.status === "exited";
-  const balances = balancesFor(empId, DEFAULT_LEAVE_TYPES);
+  const balances = balancesFor(empId, loadLeaveTypes());
   const salary = salaryStructure(empId);
   const payslips = payslipsForEmployee(empId);
   const journey = journeyFor(empId);
@@ -134,8 +134,8 @@ export function PortalClient() {
             <CardHeader><CardTitle className="flex items-center gap-2"><CalendarDays className="size-4" /> Leave balance</CardTitle></CardHeader>
             <CardContent>
               <div className="grid gap-2 sm:grid-cols-3">
-                {balances.filter((b) => leaveTypeById(DEFAULT_LEAVE_TYPES, b.leaveTypeId)!.annualDays > 0).map((b) => {
-                  const t = leaveTypeById(DEFAULT_LEAVE_TYPES, b.leaveTypeId)!;
+                {balances.filter((b) => leaveTypeById(loadLeaveTypes(), b.leaveTypeId)!.annualDays > 0).map((b) => {
+                  const t = leaveTypeById(loadLeaveTypes(), b.leaveTypeId)!;
                   return (
                     <div key={b.leaveTypeId} className="rounded-lg border p-2.5">
                       <div className="flex items-center justify-between">

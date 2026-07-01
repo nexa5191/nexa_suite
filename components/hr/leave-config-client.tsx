@@ -28,7 +28,7 @@ function blankType(n: number): LeaveType {
 }
 
 export function LeaveConfigClient() {
-  const [types, setTypes] = React.useState<LeaveType[]>(DEFAULT_LEAVE_TYPES);
+  const [types, setTypes] = React.useState<LeaveType[]>(() => loadLeaveTypes());
   const [dirty, setDirty] = React.useState(false);
   const [saved, setSaved] = React.useState(false);
   const seq = React.useRef(0);

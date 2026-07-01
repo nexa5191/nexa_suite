@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Drawer } from "@/components/ui/modal";
 import { cn, formatDate } from "@/lib/utils";
 import { LOCATIONS, locationById, ALL } from "@/lib/accounting/org";
-import { HOLIDAYS, type Holiday } from "@/lib/hr/holidays";
+import { loadHolidays, type Holiday } from "@/lib/hr/holidays";
 import { TODAY } from "@/lib/calendar";
 import { usePrefs } from "@/components/prefs/prefs-provider";
 
@@ -42,7 +42,7 @@ export function HolidaysClient() {
   }, [userLocId]);
 
   const rows = React.useMemo(
-    () => [...HOLIDAYS].sort((a, b) => a.date.localeCompare(b.date)),
+    () => [...loadHolidays()].sort((a, b) => a.date.localeCompare(b.date)),
     [],
   );
   const upcoming = rows.find((h) => h.date >= TODAY);

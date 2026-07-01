@@ -10,7 +10,7 @@
 // correct auditor-facing view (no statement-sign flipping needed).
 // ---------------------------------------------------------------------------
 
-import { CHART_OF_ACCOUNTS, accountSafe } from "./chart-of-accounts";
+import { loadChartOfAccounts, accountSafe } from "./chart-of-accounts";
 import { allPostings } from "./ledger";
 import type { Basis } from "./types";
 import { resolveEntityIds } from "./org";
@@ -77,7 +77,7 @@ export function buildTrialBalance(f: TbFilters): TrialBalance {
 
   const lines: TrialBalanceLine[] = [];
 
-  for (const a of CHART_OF_ACCOUNTS) {
+  for (const a of loadChartOfAccounts()) {
     const oDr = openDr.get(a.code) ?? 0;
     const oCr = openCr.get(a.code) ?? 0;
     const pDr = perDr.get(a.code) ?? 0;

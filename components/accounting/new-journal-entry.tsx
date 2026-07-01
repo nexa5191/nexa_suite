@@ -10,7 +10,7 @@ import { Money } from "@/components/ui/money";
 import { usePrefs } from "@/components/prefs/prefs-provider";
 import { useJournal } from "@/components/accounting/journal-provider";
 import { cn } from "@/lib/utils";
-import { CHART_OF_ACCOUNTS, accountSafe } from "@/lib/accounting/chart-of-accounts";
+import { loadChartOfAccounts, accountSafe } from "@/lib/accounting/chart-of-accounts";
 import { ENTITIES, ALL, locationsForEntity } from "@/lib/accounting/org";
 import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { partiesByKind } from "@/lib/accounting/parties";
@@ -50,7 +50,7 @@ const todayIso = () => new Date().toISOString().slice(0, 10);
 const GST_RATES = [0, 5, 12, 18, 28];
 // Common TDS rates by section: 194C 1/2%, 194J 10%, 194I 10%, 194Q 0.1%, 194H 5%.
 const TDS_RATES = [0, 0.1, 1, 2, 5, 10];
-const cashAccounts = CHART_OF_ACCOUNTS.filter((a) => a.isCash);
+const cashAccounts = loadChartOfAccounts().filter((a) => a.isCash);
 
 /** Searchable invoice combobox — filter by number, customer or date. */
 function InvoicePicker({
@@ -144,17 +144,17 @@ function InvoicePicker({
 function counterOptions(type: VoucherType): Account[] {
   switch (type) {
     case "sales":
-      return CHART_OF_ACCOUNTS.filter((a) => a.type === "income");
+      return loadChartOfAccounts().filter((a) => a.type === "income");
     case "credit_note":
-      return CHART_OF_ACCOUNTS.filter((a) => a.type === "income");
+      return loadChartOfAccounts().filter((a) => a.type === "income");
     case "purchase":
-      return CHART_OF_ACCOUNTS.filter((a) => a.type === "expense" || a.code === "1200");
+      return loadChartOfAccounts().filter((a) => a.type === "expense" || a.code === "1200");
     case "debit_note":
-      return CHART_OF_ACCOUNTS.filter((a) => a.type === "expense");
+      return loadChartOfAccounts().filter((a) => a.type === "expense");
     case "asset":
-      return CHART_OF_ACCOUNTS.filter((a) => a.subtype === "Fixed Assets" && a.normal === "debit");
+      return loadChartOfAccounts().filter((a) => a.subtype === "Fixed Assets" && a.normal === "debit");
     default:
-      return CHART_OF_ACCOUNTS; // payment / receipt / bank: any account
+      return loadChartOfAccounts(); // payment / receipt / bank: any account
   }
 }
 
@@ -744,7 +744,7 @@ export function NewJournalEntry({
                     <td className="px-3 py-2">
                       <Select value={l.accountCode} onChange={(e) => setLine(i, { accountCode: e.target.value })}>
                         <option value="">Select account…</option>
-                        {CHART_OF_ACCOUNTS.map((a) => (
+                        {loadChartOfAccounts().map((a) => (
                           <option key={a.code} value={a.code}>
                             {a.code} · {a.name}
                           </option>

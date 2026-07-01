@@ -11,6 +11,17 @@ export const DEPARTMENTS: Department[] = [
   { id: "dep-proc", name: "Procurement" },
 ];
 
+const DEPARTMENTS_KEY = "nexa-departments";
+export function loadDepartments(): Department[] {
+  if (typeof window === "undefined") return DEPARTMENTS;
+  try {
+    const r = localStorage.getItem(DEPARTMENTS_KEY);
+    const p = r ? JSON.parse(r) as Department[] : null;
+    if (Array.isArray(p) && p.length) return p;
+  } catch { /* ignore */ }
+  return DEPARTMENTS;
+}
+
 function readLS<T>(key: string, fb: T): T {
   if (typeof window === "undefined") return fb;
   try { const r = localStorage.getItem(key); return r ? (JSON.parse(r) as T) : fb; } catch { return fb; }

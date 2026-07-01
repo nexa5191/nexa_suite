@@ -7,7 +7,7 @@ import { allPostings } from "@/lib/accounting/ledger";
 import { accountSafe } from "@/lib/accounting/chart-of-accounts";
 import { ENTITIES, LOCATIONS } from "@/lib/accounting/org";
 import { FINISHED_ITEMS, explodedUnitCost } from "@/lib/inventory/items";
-import { ACTIVE_EMPLOYEES, DEPARTMENTS, departmentName } from "@/lib/hr/employees";
+import { ACTIVE_EMPLOYEES, loadDepartments, departmentName } from "@/lib/hr/employees";
 
 export interface UseOfFund {
   label: string;
@@ -165,7 +165,7 @@ function projections(base: BaseFinancials, inputs: PlanInputs, baseLabel: string
 function teamSummary(): TeamSummary {
   const counts = new Map<string, number>();
   for (const e of ACTIVE_EMPLOYEES) counts.set(e.departmentId, (counts.get(e.departmentId) ?? 0) + 1);
-  const byDept = DEPARTMENTS.map((d) => ({ dept: d.name, count: counts.get(d.id) ?? 0 })).filter(
+  const byDept = loadDepartments().map((d) => ({ dept: d.name, count: counts.get(d.id) ?? 0 })).filter(
     (d) => d.count > 0,
   );
   const leadership = ACTIVE_EMPLOYEES.filter((e) =>

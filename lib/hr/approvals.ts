@@ -1,5 +1,5 @@
 import type { Approval } from "./types";
-import { DEFAULT_LEAVE_TYPES, pendingLeaveRequests, leaveTypeById } from "./leave";
+import { loadLeaveTypes, pendingLeaveRequests, leaveTypeById } from "./leave";
 import { employeeById, employeeName } from "./employees";
 import { invoicesAwaitingApproval, invoiceApprovalId, vendorName } from "@/lib/vendors";
 import { formatDate } from "@/lib/utils";
@@ -14,7 +14,7 @@ import { formatDate } from "@/lib/utils";
 function leaveApprovals(): Approval[] {
   return pendingLeaveRequests().map((r) => {
     const emp = employeeById(r.employeeId);
-    const type = leaveTypeById(DEFAULT_LEAVE_TYPES, r.leaveTypeId);
+    const type = leaveTypeById(loadLeaveTypes(), r.leaveTypeId);
     const span =
       r.from === r.to
         ? `${formatDate(r.from)}${r.unit === "half" ? " (half day)" : ""}`

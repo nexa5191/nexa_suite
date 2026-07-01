@@ -24,6 +24,13 @@ import type { FixedAsset } from "@/lib/assets/assets";
 import type { Loan } from "@/lib/hr/loans";
 import type { Bin, BinStock } from "@/lib/inventory/bins";
 import type { AltUom } from "@/lib/inventory/items";
+import { CHART_OF_ACCOUNTS } from "@/lib/accounting/chart-of-accounts";
+import { DEPARTMENTS } from "@/lib/hr/employees";
+import { HOLIDAYS } from "@/lib/hr/holidays";
+import { DEFAULT_LEAVE_TYPES } from "@/lib/hr/leave";
+import { GST_STATES } from "@/lib/gstin";
+import { PETTY_HEADS } from "@/lib/petty-cash";
+import { DEPARTMENTS as BUDGET_DEPTS } from "@/lib/finance/budget-builder";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const pad = (n: number, w = 3) => String(n).padStart(w, "0");
@@ -1419,6 +1426,13 @@ export function loadDemoData() {
   write("nexa-assets",         DEMO_ASSETS);
   write("nexa-loans",          DEMO_LOANS);
   write("nexa-crm-events",     DEMO_CRM_EVENTS);
+  write("nexa-chart-of-accounts", CHART_OF_ACCOUNTS);
+  write("nexa-departments",      DEPARTMENTS);
+  write("nexa-holidays",         HOLIDAYS);
+  write("nexa-gst-states",       GST_STATES);
+  write("nexa-petty-heads",      PETTY_HEADS);
+  write("nexa-budget-depts",     BUDGET_DEPTS);
+  write("nexa-leave-config",     DEFAULT_LEAVE_TYPES);
   write("nexa-leave-config",   DEMO_LEAVE_CONFIG);
   write("nexa-tax-filings",    DEMO_TAX_FILINGS);
   write("nexa-p2p-state",      DEMO_P2P_STATE);

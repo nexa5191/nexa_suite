@@ -6,7 +6,7 @@ import { usePrefs } from "@/components/prefs/prefs-provider";
 import { PageHeader } from "@/components/shell/page-header";
 import { buildPnL, buildBalanceSheet } from "@/lib/accounting/reports";
 import { cumulativeBalance } from "@/lib/accounting/ledger";
-import { CHART_OF_ACCOUNTS } from "@/lib/accounting/chart-of-accounts";
+import { loadChartOfAccounts } from "@/lib/accounting/chart-of-accounts";
 import type { ReportFilters } from "@/lib/accounting/types";
 import { Money } from "@/components/ui/money";
 import { cn } from "@/lib/utils";
@@ -138,7 +138,7 @@ export function CmaClient() {
   const bal = cumulativeBalance(filters, fy.to);
 
   // ---- Current Assets ---------------------------------------------------
-  const cashAmt = CHART_OF_ACCOUNTS.filter((a) => a.isCash).reduce(
+  const cashAmt = loadChartOfAccounts().filter((a) => a.isCash).reduce(
     (s, a) => s + (bal.get(a.code) ?? 0),
     0,
   );

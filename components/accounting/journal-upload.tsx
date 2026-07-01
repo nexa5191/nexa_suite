@@ -23,7 +23,7 @@ import { Money } from "@/components/ui/money";
 import { cn } from "@/lib/utils";
 import { usePrefs } from "@/components/prefs/prefs-provider";
 import { useJournal } from "@/components/accounting/journal-provider";
-import { CHART_OF_ACCOUNTS } from "@/lib/accounting/chart-of-accounts";
+import { loadChartOfAccounts } from "@/lib/accounting/chart-of-accounts";
 import { ENTITIES, ALL, locationsForEntity } from "@/lib/accounting/org";
 import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { VOUCHER_TYPES, nextVoucherNo } from "@/lib/accounting/manual-entries";
@@ -493,7 +493,7 @@ function DocCard({
                   <td className="px-3 py-1.5">
                     <Select value={l.accountCode} onChange={(e) => onPatchLine(l.id, { accountCode: e.target.value })}>
                       <option value="">Select account…</option>
-                      {CHART_OF_ACCOUNTS.map((a) => (
+                      {loadChartOfAccounts().map((a) => (
                         <option key={a.code} value={a.code}>
                           {a.code} · {a.name}
                         </option>

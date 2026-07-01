@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Money } from "@/components/ui/money";
 import { useJournal } from "@/components/accounting/journal-provider";
 import { ACCOUNTS, accountById } from "@/lib/crm";
-import { CHART_OF_ACCOUNTS } from "@/lib/accounting/chart-of-accounts";
+import { loadChartOfAccounts } from "@/lib/accounting/chart-of-accounts";
 import { locationsForEntity } from "@/lib/accounting/org";
 import { cn, formatDate } from "@/lib/utils";
 import {
@@ -29,7 +29,7 @@ import type { EntryDraft, ManualEntryLine } from "@/lib/accounting/manual-entrie
 
 const AR = "1100";
 const TDS_RECEIVABLE = "1310";
-const cashAccounts = CHART_OF_ACCOUNTS.filter((a) => a.isCash);
+const cashAccounts = loadChartOfAccounts().filter((a) => a.isCash);
 const todayIso = () => new Date().toISOString().slice(0, 10);
 const round2 = (n: number) => Math.round(n * 100) / 100;
 

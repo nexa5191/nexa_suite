@@ -8,7 +8,7 @@ import { Input, Select, Label } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Money } from "@/components/ui/money";
 import { useJournal } from "@/components/accounting/journal-provider";
-import { CHART_OF_ACCOUNTS } from "@/lib/accounting/chart-of-accounts";
+import { loadChartOfAccounts } from "@/lib/accounting/chart-of-accounts";
 import { entityById } from "@/lib/accounting/org";
 import { loadDecisions, saveDecisions, type Decision } from "@/lib/hr/approvals";
 import { cn, formatDate } from "@/lib/utils";
@@ -27,7 +27,7 @@ import type { EntryDraft, ManualEntryLine } from "@/lib/accounting/manual-entrie
 
 const AP = "2010";
 const TDS_PAYABLE = "2200";
-const cashAccounts = CHART_OF_ACCOUNTS.filter((a) => a.isCash);
+const cashAccounts = loadChartOfAccounts().filter((a) => a.isCash);
 const todayIso = () => new Date().toISOString().slice(0, 10);
 const round2 = (n: number) => Math.round(n * 100) / 100;
 

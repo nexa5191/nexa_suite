@@ -48,6 +48,17 @@ export const HOLIDAYS: Holiday[] = [
   nat("hol-18", "Christmas", "2026-12-25"),
 ];
 
+const HOLIDAYS_KEY = "nexa-holidays";
+export function loadHolidays(): Holiday[] {
+  if (typeof window === "undefined") return HOLIDAYS;
+  try {
+    const r = localStorage.getItem(HOLIDAYS_KEY);
+    const p = r ? JSON.parse(r) as Holiday[] : null;
+    if (Array.isArray(p) && p.length) return p;
+  } catch { /* ignore */ }
+  return HOLIDAYS;
+}
+
 const HOLIDAY_DATES_BY_LOC = new Map<string, Set<string>>();
 for (const l of LOCATIONS) HOLIDAY_DATES_BY_LOC.set(l.id, new Set());
 for (const h of HOLIDAYS) {

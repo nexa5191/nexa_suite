@@ -9,11 +9,11 @@
 // ---------------------------------------------------------------------------
 
 import { filteredPostings } from "./ledger";
-import { CHART_OF_ACCOUNTS } from "./chart-of-accounts";
+import { loadChartOfAccounts } from "./chart-of-accounts";
 import { LOCATIONS, entityById } from "./org";
 import type { Basis } from "./types";
 
-const TYPE_OF = new Map(CHART_OF_ACCOUNTS.map((a) => [a.code, a.type]));
+const TYPE_OF = new Map(loadChartOfAccounts().map((a) => [a.code, a.type]));
 
 export interface SegmentRow {
   locationId: string;

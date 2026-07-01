@@ -1,4 +1,4 @@
-import { EMPLOYEES, employeeById, DEPARTMENTS } from "./employees";
+import { EMPLOYEES, employeeById, loadDepartments } from "./employees";
 import type { Employee } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -428,7 +428,7 @@ export interface TeamRollup {
 
 /** Rollup keyed by department. */
 export function departmentRollups(): TeamRollup[] {
-  return DEPARTMENTS.map((d) => {
+  return loadDepartments().map((d) => {
     const ids = EMPLOYEES.filter((e) => e.departmentId === d.id).map((e) => e.id);
     const s = perfSummary(ids);
     return { id: d.id, name: d.name, headcount: s.headcount, avgRating: s.avgRating, promotions: s.promotions };

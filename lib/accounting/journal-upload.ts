@@ -18,7 +18,7 @@
 
 import { parseCsv } from "@/lib/csv/csv";
 import { ENTITIES, LOCATIONS, locationsForEntity } from "./org";
-import { CHART_OF_ACCOUNTS, accountSafe } from "./chart-of-accounts";
+import { loadChartOfAccounts, accountSafe } from "./chart-of-accounts";
 import {
   BOOKS_OPENING,
   VOUCHER_TYPES,
@@ -135,7 +135,7 @@ function resolveAccountCode(s: string): string {
   const t = s.trim();
   if (!t) return "";
   if (accountSafe(t)) return t;
-  return CHART_OF_ACCOUNTS.find((a) => a.name.toLowerCase() === t.toLowerCase())?.code ?? "";
+  return loadChartOfAccounts().find((a) => a.name.toLowerCase() === t.toLowerCase())?.code ?? "";
 }
 
 function resolveType(s: string): VoucherType {

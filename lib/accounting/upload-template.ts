@@ -6,7 +6,7 @@
 // from. A plain single-sheet CSV variant is kept for quick edits.
 // ---------------------------------------------------------------------------
 
-import { CHART_OF_ACCOUNTS } from "./chart-of-accounts";
+import { loadChartOfAccounts } from "./chart-of-accounts";
 import { ENTITIES, LOCATIONS, entityById } from "./org";
 import { VOUCHER_TYPES } from "./manual-entries";
 import { toCsv } from "@/lib/csv/csv";
@@ -104,7 +104,7 @@ function glSheet() {
   const rows: CellInput[][] = [
     [c("Code", HEAD), c("Account name", HEAD), c("Type", HEAD), c("Subtype", HEAD), c("Normal balance", HEAD)],
   ];
-  for (const a of CHART_OF_ACCOUNTS) {
+  for (const a of loadChartOfAccounts()) {
     rows.push([
       c(a.code, CELL_CODE),
       c(a.name, CELL),

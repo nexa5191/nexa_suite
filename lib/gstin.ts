@@ -58,6 +58,16 @@ export const GST_STATES: Record<string, string> = {
   "99": "Centre Jurisdiction",
 };
 
+const GST_STATES_KEY = "nexa-gst-states";
+export function loadGstStates(): Record<string, string> {
+  if (typeof window === "undefined") return GST_STATES;
+  try {
+    const r = localStorage.getItem(GST_STATES_KEY);
+    if (r) { const p = JSON.parse(r); if (p && typeof p === "object") return p as Record<string, string>; }
+  } catch { /* ignore */ }
+  return GST_STATES;
+}
+
 const ENTITY_TYPES: Record<string, string> = {
   P: "Individual / Proprietor",
   C: "Company",

@@ -16,7 +16,7 @@ import { ENTITIES, LOCATIONS, entityById } from "@/lib/accounting/org";
 import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { accountSafe } from "@/lib/accounting/chart-of-accounts";
 import {
-  PETTY_HEADS,
+  loadPettyHeads,
   pettyHead,
   pettyCashBook,
   topUpDraft,
@@ -184,7 +184,7 @@ type PostResult = { ok: true } | { ok: false; errors: string[] };
 
 function ExpenseForm({ onClose, onSubmit }: { onClose: () => void; onSubmit: (amount: number, head: string, narration: string) => PostResult }) {
   const [amount, setAmount] = React.useState("");
-  const [head, setHead] = React.useState(PETTY_HEADS[0].label);
+  const [head, setHead] = React.useState(() => loadPettyHeads()[0]?.label ?? "");
   const [narration, setNarration] = React.useState("");
   const [errors, setErrors] = React.useState<string[]>([]);
   const amt = parseFloat(amount) || 0;
@@ -193,7 +193,7 @@ function ExpenseForm({ onClose, onSubmit }: { onClose: () => void; onSubmit: (am
       <Field label="Amount (₹)"><Input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" inputMode="decimal" className="h-9 w-32" /></Field>
       <Field label="Analysis head">
         <Select value={head} onChange={(e) => setHead(e.target.value)} className="h-9 w-56">
-          {PETTY_HEADS.map((h) => (<option key={h.label} value={h.label}>{h.label}</option>))}
+          {loadPettyHeads().map((h) => (<option key={h.label} value={h.label}>{h.label}</option>))}
         </Select>
       </Field>
       <Field label="Particulars"><Input value={narration} onChange={(e) => setNarration(e.target.value)} placeholder="e.g. Auto fare — bank visit" className="h-9 w-64" /></Field>

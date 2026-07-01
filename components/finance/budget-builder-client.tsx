@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
-  DEPARTMENTS, MONTHS, FY, FY_PREV, CLOSED_MONTHS,
+  loadBudgetDepts, MONTHS, FY, FY_PREV, CLOSED_MONTHS,
   DEPT_STATUS_META, SEED_STORE,
   loadBudgetStore, deptAnnualTotal, deptMonthTotal,
   type BudgetStore, type Department,
@@ -52,17 +52,17 @@ export function BudgetBuilderClient() {
 
   React.useEffect(() => { setStore(loadBudgetStore()); }, []);
 
-  const grandFY25   = DEPARTMENTS.reduce((s, d) => s + deptAnnualTotal(store, d, "fy25Actual"), 0);
-  const grandFY26   = DEPARTMENTS.reduce((s, d) => s + deptAnnualTotal(store, d, "budgeted"),   0);
-  const grandActual = DEPARTMENTS.reduce((s, d) => s + deptAnnualTotal(store, d, "actuals"),    0);
+  const grandFY25   = loadBudgetDepts().reduce((s, d) => s + deptAnnualTotal(store, d, "fy25Actual"), 0);
+  const grandFY26   = loadBudgetDepts().reduce((s, d) => s + deptAnnualTotal(store, d, "budgeted"),   0);
+  const grandActual = loadBudgetDepts().reduce((s, d) => s + deptAnnualTotal(store, d, "actuals"),    0);
   const ytdBudget   = CLOSED_MONTHS.reduce((s, mi) =>
-    s + DEPARTMENTS.reduce((ss, d) => ss + deptMonthTotal(store, d, mi, "budgeted"), 0), 0);
+    s + loadBudgetDepts().reduce((ss, d) => ss + deptMonthTotal(store, d, mi, "budgeted"), 0), 0);
   const ytdActual   = CLOSED_MONTHS.reduce((s, mi) =>
-    s + DEPARTMENTS.reduce((ss, d) => ss + deptMonthTotal(store, d, mi, "actuals"), 0), 0);
+    s + loadBudgetDepts().reduce((ss, d) => ss + deptMonthTotal(store, d, mi, "actuals"), 0), 0);
 
-  const approved  = DEPARTMENTS.filter((d) => store.deptStatus[d] === "approved").length;
-  const submitted = DEPARTMENTS.filter((d) => store.deptStatus[d] === "submitted").length;
-  const draft     = DEPARTMENTS.filter((d) => store.deptStatus[d] === "draft").length;
+  const approved  = loadBudgetDepts().filter((d) => store.deptStatus[d] === "approved").length;
+  const submitted = loadBudgetDepts().filter((d) => store.deptStatus[d] === "submitted").length;
+  const draft     = loadBudgetDepts().filter((d) => store.deptStatus[d] === "draft").length;
   const totalGrowth = pct(grandFY26, grandFY25);
 
   return (
@@ -100,9 +100,9 @@ export function BudgetBuilderClient() {
               <p className="text-[10px] text-muted-foreground">Draft</p>
             </div>
             <div className="ml-auto text-right">
-              <p className="text-xs font-medium text-muted-foreground">{DEPARTMENTS.length} depts</p>
+              <p className="text-xs font-medium text-muted-foreground">{loadBudgetDepts().length} depts</p>
               <div className="mt-1 h-1.5 w-20 rounded-full bg-muted overflow-hidden">
-                <div className="h-full rounded-full bg-success" style={{ width: `${(approved / DEPARTMENTS.length) * 100}%` }} />
+                <div className="h-full rounded-full bg-success" style={{ width: `${(approved / loadBudgetDepts().length) * 100}%` }} />
               </div>
             </div>
           </div>
@@ -111,7 +111,7 @@ export function BudgetBuilderClient() {
 
       {/* Department cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {DEPARTMENTS.map((dept) => (
+        {loadBudgetDepts().map((dept) => (
           <DeptCard key={dept} dept={dept} store={store} />
         ))}
       </div>
@@ -310,7 +310,7 @@ function ConsolidationTable({ store, grandFY25, grandFY26, grandActual }: {
               </tr>
             </thead>
             <tbody>
-              {DEPARTMENTS.map((dept, i) => {
+              {loadBudgetDepts().map((dept, i) => {
                 const fy25   = deptAnnualTotal(store, dept, "fy25Actual");
                 const fy26   = deptAnnualTotal(store, dept, "budgeted");
                 const ytdAct = CLOSED_MONTHS.reduce((s, mi) => s + deptMonthTotal(store, dept, mi, "actuals"), 0);

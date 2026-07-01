@@ -5,7 +5,7 @@
 // and the auditor can toggle which notes to print. All amounts in INR (base).
 // ---------------------------------------------------------------------------
 
-import { CHART_OF_ACCOUNTS } from "./chart-of-accounts";
+import { loadChartOfAccounts } from "./chart-of-accounts";
 import { cumulativeBalance, periodMovement } from "./ledger";
 import type { ReportFilters } from "./types";
 
@@ -48,7 +48,7 @@ export function noteReserves(f: ReportFilters): ReservesNote {
   // Period profit from income − expense net.
   const mv = periodMovement(f);
   let netProfit = 0;
-  for (const a of CHART_OF_ACCOUNTS) {
+  for (const a of loadChartOfAccounts()) {
     const m = mv.get(a.code) ?? 0;
     if (a.type === "income") netProfit += -m;
     if (a.type === "expense") netProfit -= m;

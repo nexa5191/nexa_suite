@@ -8,7 +8,7 @@ import { Input, Select } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Money } from "@/components/ui/money";
 import { useJournal } from "@/components/accounting/journal-provider";
-import { CHART_OF_ACCOUNTS } from "@/lib/accounting/chart-of-accounts";
+import { loadChartOfAccounts } from "@/lib/accounting/chart-of-accounts";
 import { entityById, locationById } from "@/lib/accounting/org";
 import { loadDecisions, saveDecisions, type Decision } from "@/lib/hr/approvals";
 import { cn, formatDate } from "@/lib/utils";
@@ -47,8 +47,8 @@ import {
 } from "@/lib/p2p";
 import type { EntryDraft } from "@/lib/accounting/manual-entries";
 
-const accountName = (code: string) => CHART_OF_ACCOUNTS.find((a) => a.code === code)?.name ?? code;
-const cashAccounts = CHART_OF_ACCOUNTS.filter((a) => a.isCash);
+const accountName = (code: string) => loadChartOfAccounts().find((a) => a.code === code)?.name ?? code;
+const cashAccounts = loadChartOfAccounts().filter((a) => a.isCash);
 const todayIso = () => new Date().toISOString().slice(0, 10);
 const GST_RATES = [0, 5, 12, 18, 28];
 
