@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ClipboardList, Plus, Trash2, ChevronRight, CheckCircle2, XCircle, ShoppingCart, Zap, AlertTriangle, TrendingDown, TrendingUp, Search } from "lucide-react";
+import { ClipboardList, Plus, Trash2, ChevronRight, CheckCircle2, XCircle, ShoppingCart, Zap, AlertTriangle, TrendingDown, TrendingUp, Search, PackageX, Clock, Pencil, TrendingUp as DemandIcon, BarChart2 } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,9 +18,10 @@ import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { buildBudget, loadOverrides, loadAssumptions } from "@/lib/planning/budget";
 import {
   allPRs, loadPRs, savePRs, nextPRRef,
-  PR_STATUS_META,
-  type PurchaseRequisition, type PRLine, type PRStatus,
+  PR_STATUS_META, buildAutoRolPRs, loadRolContext, saveRolContext,
+  type PurchaseRequisition, type PRLine, type PRStatus, type AutoRolLineContext,
 } from "@/lib/inventory/supply-chain";
+import { allMovements, buildStockIndex, loadAddedMovements, stockTotal } from "@/lib/inventory/movements";
 import {
   VENDORS,
   PURCHASE_ORDERS,
@@ -40,7 +41,7 @@ function fmtQty(n: number, uom?: string) {
   return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 }).format(n) + (uom ? ` ${uom}` : "");
 }
 
-const TODAY = "2026-06-22";
+const TODAY = "2026-07-01";
 
 export function RequisitionsClient() {
   const [added, setAdded] = React.useState<PurchaseRequisition[]>([]);
@@ -49,8 +50,25 @@ export function RequisitionsClient() {
   const [selected, setSelected] = React.useState<PurchaseRequisition | null>(null);
   const [creating, setCreating] = React.useState(false);
   const [convertingPR, setConvertingPR] = React.useState<PurchaseRequisition | null>(null);
+  const [belowRol, setBelowRol] = React.useState<Array<{ item: (typeof ITEMS)[0]; onHand: number }>>([]);
+  const [rolContext, setRolContext] = React.useState<Record<string, AutoRolLineContext>>({});
+  const [rolBanner, setRolBanner] = React.useState<{ msg: string; ok: boolean } | null>(null);
 
-  React.useEffect(() => { setAdded(loadPRs()); }, []);
+  React.useEffect(() => {
+    setAdded(loadPRs());
+    setRolContext(loadRolContext());
+    const mvs = allMovements(loadAddedMovements());
+    const idx = buildStockIndex(mvs);
+    const flags = ITEMS
+      .filter((it) =>
+        ["raw", "packing"].includes(it.category) ||
+        (it.category === "finished" && it.ownership === "third-party"),
+      )
+      .map((it) => ({ item: it, onHand: stockTotal(idx, it.id) }))
+      .filter(({ item, onHand }) => onHand < item.reorderLevel)
+      .sort((a, b) => a.onHand / a.item.reorderLevel - b.onHand / b.item.reorderLevel);
+    setBelowRol(flags);
+  }, []);
 
   function persist(next: PurchaseRequisition[]) {
     setAdded(next.filter((p) => !["pr-001","pr-002","pr-003"].includes(p.id)));
@@ -63,6 +81,24 @@ export function RequisitionsClient() {
     const next = prs.map((p) => p.id === id ? { ...p, ...patch } : p);
     persist(next);
     setSelected(next.find((p) => p.id === id) ?? null);
+  }
+
+  function generateAutoRolPRs() {
+    const mvs = allMovements(loadAddedMovements());
+    const result = buildAutoRolPRs(mvs, added, "emp-024", TODAY);
+    if (!result) {
+      setRolBanner({ msg: "All purchasable items are above their reorder level — nothing to order.", ok: true });
+      setTimeout(() => setRolBanner(null), 4000);
+      return;
+    }
+    const { pr, context } = result;
+    const next = [...prs, pr];
+    persist(next);
+    saveRolContext({ ...loadRolContext(), ...context });
+    setRolContext((prev) => ({ ...prev, ...context }));
+    setRolBanner({ msg: `Auto-PR ${pr.ref} created with ${pr.lines.length} line${pr.lines.length !== 1 ? "s" : ""}. Open it to review and confirm quantities.`, ok: true });
+    setTimeout(() => setRolBanner(null), 7000);
+    setSelected(pr);
   }
 
   const q = search.toLowerCase();
@@ -96,6 +132,51 @@ export function RequisitionsClient() {
         <StatCard label="Awaiting approval" value={String(pending)} highlight={pending > 0} />
         <StatCard label="Approved / ordered" value={String(prs.filter((p) => ["approved","ordered"].includes(p.status)).length)} />
       </div>
+
+      {/* ROL alert panel */}
+      {belowRol.length > 0 && (() => {
+        const activeRolPR = prs.find((p) => p.source === "auto-rol" && ["submitted","approved"].includes(p.status));
+        return (
+          <div className="mb-4 rounded-lg border border-warning/40 bg-warning/5 p-3">
+            <div className="flex flex-wrap items-start gap-3">
+              <div className="flex items-center gap-1.5 shrink-0">
+                <PackageX className="size-4 text-warning" />
+                <span className="text-sm font-semibold text-warning">{belowRol.length} item{belowRol.length !== 1 ? "s" : ""} below reorder level</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
+                {belowRol.map(({ item, onHand }) => (
+                  <span key={item.id} className="inline-flex items-center gap-1 rounded border border-warning/30 bg-warning/10 px-2 py-0.5 text-[11px]">
+                    <span className="font-medium">{item.name}</span>
+                    <span className="text-muted-foreground">{onHand.toFixed(0)}/{item.reorderLevel} {item.uom}</span>
+                  </span>
+                ))}
+              </div>
+              <div className="shrink-0">
+                {activeRolPR ? (
+                  <button
+                    onClick={() => setSelected(activeRolPR)}
+                    className="text-xs text-primary hover:underline font-medium"
+                  >
+                    PR {activeRolPR.ref} in review → open
+                  </button>
+                ) : (
+                  <Button size="sm" onClick={generateAutoRolPRs}>
+                    <Zap className="size-3.5" /> Generate Auto-PR
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ROL generation banner */}
+      {rolBanner && (
+        <div className={`mb-3 flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm ${rolBanner.ok ? "border-success/40 bg-success/10 text-success" : "border-danger/40 bg-danger/10 text-danger"}`}>
+          <CheckCircle2 className="size-4 shrink-0" />
+          <span className="font-medium">{rolBanner.msg}</span>
+        </div>
+      )}
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-48 max-w-xs">
@@ -166,7 +247,13 @@ export function RequisitionsClient() {
                       </div>
                     </td>
                     <td className="px-5 py-3 text-xs text-muted-foreground max-w-48 truncate">{pr.note ?? "—"}</td>
-                    <td className="px-5 py-3"><Badge variant={meta.variant}>{meta.label}</Badge></td>
+                    <td className="px-5 py-3">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Badge variant={meta.variant}>{meta.label}</Badge>
+                        {pr.source === "auto-rol" && <Badge variant="warning" className="text-[10px] px-1.5">Auto-ROL</Badge>}
+                        {pr.source === "mrp" && <Badge variant="primary" className="text-[10px] px-1.5">MRP</Badge>}
+                      </div>
+                    </td>
                     <td className="px-5 py-3"><ChevronRight className="size-4 text-muted-foreground/50" /></td>
                   </tr>
                 );
@@ -188,6 +275,7 @@ export function RequisitionsClient() {
             setSelected(null);
           }}
           onConvertToPO={() => { setConvertingPR(selected); setSelected(null); }}
+          rolContext={rolContext}
         />
       )}
 
@@ -224,26 +312,61 @@ export function RequisitionsClient() {
 }
 
 function PRDetailDrawer({
-  pr, onClose, onUpdate, onDelete, onConvertToPO,
+  pr, onClose, onUpdate, onDelete, onConvertToPO, rolContext,
 }: {
   pr: PurchaseRequisition;
   onClose: () => void;
   onUpdate: (patch: Partial<PurchaseRequisition>) => void;
   onDelete: () => void;
   onConvertToPO?: () => void;
+  rolContext?: Record<string, AutoRolLineContext>;
 }) {
   const meta = PR_STATUS_META[pr.status];
+  const isAutoRol = pr.source === "auto-rol";
+  const isMrp = pr.source === "mrp";
+
+  // Amendment state
+  const [amending, setAmending] = React.useState(false);
+  const [amendLines, setAmendLines] = React.useState<PRLine[]>(pr.lines);
+
+  function saveAmendment() {
+    onUpdate({ lines: amendLines });
+    setAmending(false);
+  }
+
+  const canAmend = ["draft", "submitted"].includes(pr.status) && !amending;
+
   return (
     <Drawer
       open
       onClose={onClose}
       title={<span className="flex items-center gap-1.5"><ClipboardList className="size-4 text-muted-foreground" />{pr.ref}</span>}
       subtitle={pr.date}
-      actions={<Badge variant={meta.variant}>{meta.label}</Badge>}
+      actions={
+        <div className="flex items-center gap-2">
+          <Badge variant={meta.variant}>{meta.label}</Badge>
+          {isAutoRol && <Badge variant="warning" className="text-[10px]">Auto-ROL</Badge>}
+          {isMrp && <Badge variant="primary" className="text-[10px]">MRP</Badge>}
+        </div>
+      }
     >
       <div className="space-y-5">
+
+        {/* Auto-ROL context header */}
+        {isAutoRol && (
+          <div className="rounded-lg border border-warning/30 bg-warning/5 px-3 py-2.5 space-y-1">
+            <div className="flex items-center gap-1.5">
+              <PackageX className="size-3.5 text-warning" />
+              <span className="text-xs font-semibold text-warning">System-generated — ROL triggered</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Quantities are set to cover stock through lead time + safety buffer. Review the breakdown below, amend if needed, then approve and convert to PO.
+            </p>
+          </div>
+        )}
+
         <dl className="grid grid-cols-2 gap-3 text-sm">
-          <Field label="Requested by" value={employeeName(pr.requestedBy)} />
+          <Field label="Requested by" value={isAutoRol ? "System (ROL monitor)" : employeeName(pr.requestedBy)} />
           <Field label="Date" value={pr.date} />
           {pr.approvedBy && <Field label="Approved by" value={employeeName(pr.approvedBy)} />}
           {pr.approvedDate && <Field label="Approved on" value={pr.approvedDate} />}
@@ -251,29 +374,149 @@ function PRDetailDrawer({
           {pr.note && <Field label="Note" value={pr.note} className="col-span-2" />}
         </dl>
 
+        {/* Items table */}
         <div>
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Items requested</p>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-xs text-muted-foreground text-left">
-                <th className="py-1.5 font-medium">Item</th>
-                <th className="py-1.5 text-right font-medium">Qty</th>
-                <th className="py-1.5 font-medium pl-3">Note</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pr.lines.map((l) => {
-                const item = itemById(l.itemId);
-                return (
-                  <tr key={l.itemId} className="border-b last:border-0">
-                    <td className="py-2">{itemName(l.itemId)}</td>
-                    <td className="py-2 text-right tabular-nums font-medium">{fmtQty(l.qty, item?.uom)}</td>
-                    <td className="py-2 pl-3 text-xs text-muted-foreground">{l.note ?? "—"}</td>
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {isAutoRol ? "Procurement lines — SCM review" : "Items requested"}
+            </p>
+            {canAmend && (
+              <button
+                onClick={() => { setAmendLines(pr.lines); setAmending(true); }}
+                className="flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                <Pencil className="size-3" /> Amend quantities
+              </button>
+            )}
+            {amending && (
+              <div className="flex gap-1.5">
+                <Button size="sm" onClick={saveAmendment}>Save</Button>
+                <Button size="sm" variant="ghost" onClick={() => { setAmendLines(pr.lines); setAmending(false); }}>Cancel</Button>
+              </div>
+            )}
+          </div>
+
+          {/* Auto-ROL rich context table */}
+          {isAutoRol && rolContext ? (
+            <div className="overflow-x-auto scrollbar-thin rounded-lg border">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b bg-muted/40 text-left">
+                    <th className="px-3 py-2 font-medium text-muted-foreground">Item</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">On hand</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">ROL</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">
+                      <span className="flex items-center justify-end gap-1"><Clock className="size-3" />Lead time</span>
+                    </th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">
+                      <span className="flex items-center justify-end gap-1"><BarChart2 className="size-3" />Demand req.</span>
+                    </th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">Suggested</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">Confirm qty</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {(amending ? amendLines : pr.lines).map((l, i) => {
+                    const ctx = rolContext[l.itemId];
+                    const item = itemById(l.itemId);
+                    const uom = ctx?.uom ?? item?.uom ?? "";
+                    const onHandPct = ctx ? Math.min(100, (ctx.onHand / ctx.rol) * 100) : 0;
+                    return (
+                      <tr key={l.itemId} className="border-b last:border-0 hover:bg-accent/30">
+                        <td className="px-3 py-2.5 font-medium">{itemName(l.itemId)}</td>
+                        <td className="px-3 py-2.5 text-right tabular-nums">
+                          <span className={ctx && ctx.onHand < ctx.rol ? "text-danger font-semibold" : ""}>
+                            {ctx ? fmtQty(ctx.onHand, uom) : "—"}
+                          </span>
+                          {ctx && (
+                            <div className="mt-0.5 h-1 w-full rounded-full bg-muted">
+                              <div className="h-full rounded-full bg-danger" style={{ width: `${onHandPct}%` }} />
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">
+                          {ctx ? fmtQty(ctx.rol, uom) : "—"}
+                        </td>
+                        <td className="px-3 py-2.5 text-right">
+                          {ctx ? (
+                            <span className="tabular-nums">{ctx.leadTimeDays}d
+                              {ctx.avgDailyDemand > 0 && (
+                                <span className="ml-1 text-muted-foreground">({fmtQty(ctx.leadTimeDemand, uom)})</span>
+                              )}
+                            </span>
+                          ) : "—"}
+                        </td>
+                        <td className="px-3 py-2.5 text-right tabular-nums">
+                          {ctx && ctx.avgDailyDemand > 0 ? (
+                            <span>
+                              {fmtQty(ctx.avgDailyDemand, uom)}/d
+                              {ctx.safetyBuffer > 0 && (
+                                <span className="ml-1 text-muted-foreground">+{fmtQty(ctx.safetyBuffer, uom)} buffer</span>
+                              )}
+                            </span>
+                          ) : <span className="text-muted-foreground">No history</span>}
+                        </td>
+                        <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">
+                          {ctx ? fmtQty(ctx.suggestedQty, uom) : fmtQty(l.qty, uom)}
+                        </td>
+                        <td className="px-3 py-2.5 text-right">
+                          {amending ? (
+                            <Input
+                              type="number" min={1}
+                              value={amendLines[i]?.qty || ""}
+                              onChange={(e) => setAmendLines((p) => p.map((line, j) => j === i ? { ...line, qty: Number(e.target.value) } : line))}
+                              className="h-7 w-20 text-right text-xs ml-auto"
+                            />
+                          ) : (
+                            <span className={`tabular-nums font-semibold ${ctx && l.qty !== ctx.suggestedQty ? "text-primary" : ""}`}>
+                              {fmtQty(l.qty, uom)}
+                              {ctx && l.qty !== ctx.suggestedQty && (
+                                <span className="ml-1 text-[10px] font-normal text-muted-foreground">(amended)</span>
+                              )}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            /* Standard PR lines table */
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-xs text-muted-foreground text-left">
+                  <th className="py-1.5 font-medium">Item</th>
+                  <th className="py-1.5 text-right font-medium">Qty</th>
+                  <th className="py-1.5 font-medium pl-3">Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(amending ? amendLines : pr.lines).map((l, i) => {
+                  const item = itemById(l.itemId);
+                  return (
+                    <tr key={l.itemId} className="border-b last:border-0">
+                      <td className="py-2">{itemName(l.itemId)}</td>
+                      <td className="py-2 text-right">
+                        {amending ? (
+                          <Input
+                            type="number" min={1}
+                            value={amendLines[i]?.qty || ""}
+                            onChange={(e) => setAmendLines((p) => p.map((line, j) => j === i ? { ...line, qty: Number(e.target.value) } : line))}
+                            className="h-7 w-24 text-right text-xs"
+                          />
+                        ) : (
+                          <span className="tabular-nums font-medium">{fmtQty(l.qty, item?.uom)}</span>
+                        )}
+                      </td>
+                      <td className="py-2 pl-3 text-xs text-muted-foreground">{l.note ?? "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
 
         {/* Actions */}
@@ -491,7 +734,7 @@ function ConvertToPODrawer({
         spocId,
         entityId,
         locationId,
-        status: "issued",
+        status: "draft",
       });
       pool = [...pool, po];
       created.push(po.id);

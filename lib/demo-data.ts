@@ -8,8 +8,13 @@
 import type { Entity, Location } from "@/lib/accounting/types";
 import type { Item, BomComponent, Movement } from "@/lib/inventory/types";
 import type { TransferOrder } from "@/lib/inventory/transfers";
-import type { GoodsReceiptNote } from "@/lib/inventory/supply-chain";
+import type { GoodsReceiptNote, PurchaseRequisition, StockCount, MaterialIssue } from "@/lib/inventory/supply-chain";
+import type { ReturnToVendor } from "@/lib/inventory/rtv";
+import type { CustomerReturn } from "@/lib/orders/returns";
+import type { ConsignmentLocation, ConsignmentStock, ConsignmentMovement } from "@/lib/inventory/consignment";
 import type { Vendor, PurchaseOrder } from "@/lib/vendors";
+import type { VendorInvoice } from "@/lib/vendors/vendor-portal";
+import type { AdvancePayment } from "@/lib/vendors/advance-payments";
 import type { CrmAccount, CrmContact, JourneyEvent } from "@/lib/crm";
 import type { Employee } from "@/lib/hr/types";
 import type { BankAccount } from "@/lib/banking/banking";
@@ -17,6 +22,8 @@ import type { ManualEntry } from "@/lib/accounting/manual-entries";
 import type { Invoice } from "@/lib/invoicing";
 import type { FixedAsset } from "@/lib/assets/assets";
 import type { Loan } from "@/lib/hr/loans";
+import type { Bin, BinStock } from "@/lib/inventory/bins";
+import type { AltUom } from "@/lib/inventory/items";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const pad = (n: number, w = 3) => String(n).padStart(w, "0");
@@ -1209,6 +1216,180 @@ const DEMO_TAX_FILINGS = [
   {id:"gst-006",type:"GSTR-3B",period:"2026-05",entityId:"ent-1",filedOn:"2026-06-20",status:"filed",taxable:55000000,cgst:0,sgst:0,igst:4950000,cess:0,itc:3400000,net:1550000},
 ];
 
+// ── PURCHASE REQUISITIONS (6) ─────────────────────────────────────────────────
+const DEMO_PRS: PurchaseRequisition[] = [
+  { id:"pr-001",ref:"PR-0001",date:"2026-05-02",requestedBy:"emp-074",lines:[{itemId:"rm-001",qty:8000,note:"Q1 FG run — wheat atta"},{itemId:"rm-002",qty:5000,note:"Q1 FG run — maida"}],note:"Monthly RM procurement for Bengaluru plant",status:"ordered",approvedBy:"emp-023",approvedDate:"2026-05-03",poRef:"PO-021",source:"manual" },
+  { id:"pr-002",ref:"PR-0002",date:"2026-05-15",requestedBy:"emp-083",lines:[{itemId:"pm-001",qty:400,note:"Low stock alert"},{itemId:"pm-013",qty:8000,note:"Pouch requirement"}],note:"Packaging reorder — Pune unit",status:"ordered",approvedBy:"emp-023",approvedDate:"2026-05-16",poRef:"PO-022",source:"manual" },
+  { id:"pr-003",ref:"PR-0003",date:"2026-06-10",requestedBy:"emp-074",lines:[{itemId:"rm-011",qty:500,note:"Spice line ramp-up"},{itemId:"rm-013",qty:700,note:"Spice line ramp-up"}],note:"June spice batch",status:"approved",approvedBy:"emp-023",approvedDate:"2026-06-11",source:"manual" },
+  { id:"pr-004",ref:"PR-0004",date:"2026-06-25",requestedBy:"emp-082",lines:[{itemId:"rm-026",qty:2000,note:"Re-order level hit"},{itemId:"rm-027",qty:1200,note:"Re-order level hit"}],note:"Auto-generated from ROL check — review and raise PO",status:"submitted",source:"auto-rol" },
+  { id:"pr-005",ref:"PR-0005",date:"2026-07-01",requestedBy:"emp-074",lines:[{itemId:"rm-001",qty:9000,note:"MRP auto-draft — 30d horizon"},{itemId:"rm-006",qty:3000,note:"MRP auto-draft — 30d horizon"},{itemId:"pm-017",qty:5000,note:"MRP auto-draft — 30d horizon"}],note:"Auto-generated from MRP plan (30-day horizon). 3 items with shortfall.",status:"submitted",source:"mrp" },
+  { id:"pr-006",ref:"PR-0006",date:"2026-06-18",requestedBy:"emp-083",lines:[{itemId:"rm-027",qty:800}],note:"Adhoc procurement — urgent",status:"rejected",approvedBy:"emp-023",approvedDate:"2026-06-19",source:"manual" },
+];
+
+// ── STOCK COUNTS (3) ─────────────────────────────────────────────────────────
+const DEMO_COUNTS: StockCount[] = [
+  { id:"sc-001",ref:"SC-0001",date:"2026-04-01",locationId:"loc-1",countedBy:"emp-088",lines:[{itemId:"rm-001",systemQty:12400,countedQty:12380},{itemId:"rm-002",systemQty:8200,countedQty:8200},{itemId:"rm-006",systemQty:4500,countedQty:4450}],note:"Quarter-end physical count — Bengaluru plant",status:"posted" },
+  { id:"sc-002",ref:"SC-0002",date:"2026-04-01",locationId:"loc-8",countedBy:"emp-082",lines:[{itemId:"pm-001",systemQty:1050,countedQty:1050},{itemId:"pm-004",systemQty:650,countedQty:640},{itemId:"pm-013",systemQty:22000,countedQty:21800}],note:"Quarter-end count — Ahmedabad Packaging Hub",status:"posted" },
+  { id:"sc-003",ref:"SC-0003",date:"2026-06-30",locationId:"loc-1",countedBy:"emp-088",lines:[{itemId:"rm-001",systemQty:9800,countedQty:9800},{itemId:"rm-011",systemQty:380,countedQty:360},{itemId:"rm-013",systemQty:610,countedQty:610}],note:"June month-end count",status:"approved" },
+];
+
+// ── MATERIAL ISSUES (5) ──────────────────────────────────────────────────────
+const DEMO_ISSUES: MaterialIssue[] = [
+  { id:"mis-001",ref:"MIS-0001",date:"2026-05-05",productionRef:"PROD-051",locationId:"loc-1",issuedBy:"emp-088",lines:[{itemId:"rm-001",qty:2000},{itemId:"rm-002",qty:1200},{itemId:"rm-011",qty:80}],note:"Issue for atta production batch PROD-051",status:"posted" },
+  { id:"mis-002",ref:"MIS-0002",date:"2026-05-12",productionRef:"PROD-052",locationId:"loc-1",issuedBy:"emp-088",lines:[{itemId:"rm-006",qty:800},{itemId:"rm-027",qty:300}],note:"Spice masala batch PROD-052",status:"posted" },
+  { id:"mis-003",ref:"MIS-0003",date:"2026-05-20",productionRef:"PROD-053",locationId:"loc-4",issuedBy:"emp-083",lines:[{itemId:"rm-001",qty:1500},{itemId:"rm-026",qty:600}],note:"Pune unit — multigrain atta PROD-053",status:"posted" },
+  { id:"mis-004",ref:"MIS-0004",date:"2026-06-10",productionRef:"PROD-054",locationId:"loc-1",issuedBy:"emp-088",lines:[{itemId:"rm-001",qty:2500},{itemId:"rm-002",qty:1800},{itemId:"rm-011",qty:120}],note:"June batch PROD-054",status:"posted" },
+  { id:"mis-005",ref:"MIS-0005",date:"2026-06-25",productionRef:"PROD-055",locationId:"loc-1",issuedBy:"emp-088",lines:[{itemId:"rm-006",qty:1000},{itemId:"rm-013",qty:400}],note:"Last June batch",status:"draft" },
+];
+
+// ── RETURN TO VENDOR (3) ─────────────────────────────────────────────────────
+const DEMO_RTVS: ReturnToVendor[] = [
+  { id:"rtv-001",ref:"RTV-2526-001",date:"2026-02-08",vendorId:"ven-07",poRef:"PO-007",locationId:"loc-8",lines:[{itemName:"HDPE Drum 25L",hsn:"3923",qty:25,uom:"pcs",rate:145,amount:3625,grnRef:"GRN-007",reason:"quality-rejection"}],totalAmount:3625,gstAmount:326.25,totalWithGst:3951.25,status:"credit-note-received",debitNoteRef:"DN-2526-001",debitNoteDate:"2026-02-10",debitNoteAmount:3951.25,dispatchDate:"2026-02-09",vehicleNo:"KA01AB1234",remarks:"Hairline cracks detected on 25 jars during QC",approvedBy:"emp-023",approvedAt:"2026-02-09T10:00:00.000Z" },
+  { id:"rtv-002",ref:"RTV-2526-002",date:"2026-05-12",vendorId:"ven-07",poRef:"PO-016",locationId:"loc-8",lines:[{itemName:"HDPE Jar 500ml",hsn:"3923",qty:25,uom:"pcs",rate:12,amount:300,grnRef:"GRN-016",reason:"quality-rejection"}],totalAmount:300,gstAmount:27,totalWithGst:327,status:"dispatched",debitNoteRef:"DN-2526-002",debitNoteDate:"2026-05-14",debitNoteAmount:327,dispatchDate:"2026-05-13",vehicleNo:"MH04CD5678",remarks:"QC rejected 25 jars — returned with debit note",approvedBy:"emp-023",approvedAt:"2026-05-12T14:00:00.000Z" },
+  { id:"rtv-003",ref:"RTV-2526-003",date:"2026-06-20",vendorId:"ven-01",poRef:"PO-018",locationId:"loc-1",lines:[{itemName:"Wheat (Whole)",hsn:"1001",qty:500,uom:"kg",rate:23,amount:11500,grnRef:"GRN-018",reason:"wrong-item"}],totalAmount:11500,gstAmount:0,totalWithGst:11500,status:"draft",debitNoteRef:null,debitNoteDate:null,debitNoteAmount:0,dispatchDate:null,vehicleNo:"",remarks:"Wrong wheat variety delivered — returning 500 kg",approvedBy:null,approvedAt:null },
+];
+
+// ── CUSTOMER RETURNS (3) ─────────────────────────────────────────────────────
+const DEMO_RETURNS: CustomerReturn[] = [
+  { id:"crn-001",ref:"CRN-2526-001",date:"2026-04-18",customerName:"FreshMart Supermarkets",customerGstin:"27AABCF1234P1ZQ",entityId:"ent-1",locationId:"loc-1",lines:[{itemName:"Nexa Atta 5kg",hsn:"1101",qtyReturned:50,qtyApproved:50,uom:"pcs",rate:195,amount:9750,reason:"near-expiry",disposition:"scrap",originalInvoiceRef:"SAL-0312"},{itemName:"Nexa Turmeric 200g",hsn:"0910",qtyReturned:30,qtyApproved:30,uom:"pcs",rate:65,amount:1950,reason:"quality-issue",disposition:"scrap",originalInvoiceRef:"SAL-0312"}],totalReturned:11700,creditNoteRef:"CN-2526-001",creditNoteDate:"2026-04-20",status:"credit-note-issued",receivedDate:"2026-04-19",remarks:"Near-expiry atta + substandard turmeric batch",approvedBy:"emp-023" },
+  { id:"crn-002",ref:"CRN-2526-002",date:"2026-05-25",customerName:"Reliance Smart",customerGstin:"27AABCR5678Q1ZP",entityId:"ent-2",locationId:"loc-2",lines:[{itemName:"Nexa Atta 10kg",hsn:"1101",qtyReturned:20,qtyApproved:18,uom:"pcs",rate:370,amount:6660,reason:"transit-damage",disposition:"rework",originalInvoiceRef:"SAL-0441"}],totalReturned:6660,creditNoteRef:null,creditNoteDate:null,status:"approved",receivedDate:"2026-05-27",remarks:"20 bags damaged in transit; 18 approved for credit",approvedBy:"emp-023" },
+  { id:"crn-003",ref:"CRN-2526-003",date:"2026-06-28",customerName:"Big Bazaar",customerGstin:"29AABCB9012R1ZN",entityId:"ent-1",locationId:"loc-1",lines:[{itemName:"Nexa Jeera 100g",hsn:"0909",qtyReturned:100,qtyApproved:0,uom:"pcs",rate:45,amount:4500,reason:"customer-cancelled",disposition:"restock",originalInvoiceRef:"SAL-0512"}],totalReturned:4500,creditNoteRef:null,creditNoteDate:null,status:"requested",receivedDate:null,remarks:"Order cancellation — goods not yet returned",approvedBy:null },
+];
+
+// ── CONSIGNMENT ───────────────────────────────────────────────────────────────
+const DEMO_CSM_LOCATIONS: ConsignmentLocation[] = [
+  { id:"csm-loc-01",name:"FreshMart VMI — Pune",type:"outbound",partyName:"FreshMart Supermarkets",partyGstin:"27AABCF1234P1ZQ",address:"S-12, Aundh Commercial Complex, Pune 411007",contactName:"Prakash Jadhav",contactPhone:"+91 98765 11223",entityId:"ent-1",replenishmentFrequency:"weekly",lastReconciled:"2026-06-28",status:"active" },
+  { id:"csm-loc-02",name:"Spencer's VMI — Bengaluru",type:"outbound",partyName:"Spencer's Retail Ltd",partyGstin:"29AABCS4321Q1ZP",address:"48, Koramangala 5th Block, Bengaluru 560095",contactName:"Meena Prabhu",contactPhone:"+91 97654 22334",entityId:"ent-1",replenishmentFrequency:"fortnightly",lastReconciled:"2026-06-20",status:"active" },
+  { id:"csm-loc-03",name:"Vendor Consignment — ven-01 (Wheat)",type:"inbound",partyName:"Sterling Grains Pvt Ltd",partyGstin:"27AABCS1234G1Z3",address:"Plot 45, MIDC Taloja, Navi Mumbai",contactName:"Ramesh Joshi",contactPhone:"+91 98765 43210",entityId:"ent-1",replenishmentFrequency:"monthly",lastReconciled:"2026-06-15",status:"active" },
+];
+
+const DEMO_CSM_STOCK: ConsignmentStock[] = [
+  { id:"csm-stk-01",locationId:"csm-loc-01",itemName:"Nexa Atta 5kg",hsn:"1101",uom:"pcs",qtyPlaced:300,qtySold:210,qtyReturned:10,qtyOnHand:80,lastMovementDate:"2026-06-25",ratePerUnit:195,totalValueOnSite:15600 },
+  { id:"csm-stk-02",locationId:"csm-loc-01",itemName:"Nexa Turmeric 200g",hsn:"0910",uom:"pcs",qtyPlaced:500,qtySold:380,qtyReturned:5,qtyOnHand:115,lastMovementDate:"2026-06-24",ratePerUnit:65,totalValueOnSite:7475 },
+  { id:"csm-stk-03",locationId:"csm-loc-02",itemName:"Nexa Atta 10kg",hsn:"1101",uom:"pcs",qtyPlaced:150,qtySold:90,qtyReturned:0,qtyOnHand:60,lastMovementDate:"2026-06-20",ratePerUnit:370,totalValueOnSite:22200 },
+  { id:"csm-stk-04",locationId:"csm-loc-03",itemName:"Wheat (Whole)",hsn:"1001",uom:"kg",qtyPlaced:5000,qtySold:0,qtyReturned:0,qtyOnHand:5000,lastMovementDate:"2026-06-15",ratePerUnit:23,totalValueOnSite:115000 },
+];
+
+const DEMO_CSM_MOVEMENTS: ConsignmentMovement[] = [
+  { id:"csm-mv-01",ref:"CSM-001",locationId:"csm-loc-01",date:"2026-05-01",type:"dispatch",itemName:"Nexa Atta 5kg",qty:300,uom:"pcs",remarks:"Initial consignment placement" },
+  { id:"csm-mv-02",ref:"CSM-002",locationId:"csm-loc-01",date:"2026-06-01",type:"sale-report",itemName:"Nexa Atta 5kg",qty:210,uom:"pcs",remarks:"May sales report" },
+  { id:"csm-mv-03",ref:"CSM-003",locationId:"csm-loc-01",date:"2026-06-01",type:"return",itemName:"Nexa Atta 5kg",qty:10,uom:"pcs",remarks:"Near-expiry returns" },
+  { id:"csm-mv-04",ref:"CSM-004",locationId:"csm-loc-02",date:"2026-05-15",type:"dispatch",itemName:"Nexa Atta 10kg",qty:150,uom:"pcs",remarks:"First placement at Spencer's" },
+  { id:"csm-mv-05",ref:"CSM-005",locationId:"csm-loc-02",date:"2026-06-20",type:"sale-report",itemName:"Nexa Atta 10kg",qty:90,uom:"pcs",remarks:"Jun sales report" },
+  { id:"csm-mv-06",ref:"CSM-006",locationId:"csm-loc-03",date:"2026-06-15",type:"reconciliation",itemName:"Wheat (Whole)",qty:5000,uom:"kg",remarks:"Opening balance confirmed" },
+];
+
+// ── P2P GL TRAIL STATE ────────────────────────────────────────────────────────
+// Voucher-level GRN + invoice entries for all POs with inventory GRNs (PO-001–020).
+// Stored under nexa-p2p-state so the 3-way-match trail panel shows real vouchers.
+const DEMO_P2P_STATE: Record<string, {
+  grn?: { date: string; voucherNo: string; account: string; taxable: number };
+  invoice?: { date: string; voucherNo: string; number: string; rate: number; taxable: number; gst: number; gross: number };
+}> = {
+  "po-001": { grn:{date:"2026-01-08",voucherNo:"JV-P2P-G001",account:"1200",taxable:214500}, invoice:{date:"2026-01-08",voucherNo:"JV-P2P-I001",number:"SG/2026/01",rate:18,taxable:214500,gst:38310,gross:252810} },
+  "po-002": { grn:{date:"2026-01-10",voucherNo:"JV-P2P-G002",account:"1200",taxable:93400},  invoice:{date:"2026-01-10",voucherNo:"JV-P2P-I002",number:"BO/2026/011",rate:18,taxable:93400,gst:16812,gross:110212} },
+  "po-003": { grn:{date:"2026-01-12",voucherNo:"JV-P2P-G003",account:"1200",taxable:108600}, invoice:{date:"2026-01-12",voucherNo:"JV-P2P-I003",number:"SS/2026/JAN01",rate:18,taxable:108600,gst:19548,gross:128148} },
+  "po-004": { grn:{date:"2026-01-14",voucherNo:"JV-P2P-G004",account:"1200",taxable:94000},  invoice:{date:"2026-01-14",voucherNo:"JV-P2P-I004",number:"NBO/26/101",rate:18,taxable:94000,gst:16920,gross:110920} },
+  "po-005": { grn:{date:"2026-01-20",voucherNo:"JV-P2P-G005",account:"1200",taxable:103800}, invoice:{date:"2026-01-20",voucherNo:"JV-P2P-I005",number:"VAT/2026/01",rate:18,taxable:103800,gst:18684,gross:122484} },
+  "po-006": { grn:{date:"2026-02-05",voucherNo:"JV-P2P-G006",account:"1200",taxable:244000}, invoice:{date:"2026-02-05",voucherNo:"JV-P2P-I006",number:"SG/2026/02",rate:18,taxable:244000,gst:43920,gross:287920} },
+  "po-007": { grn:{date:"2026-02-07",voucherNo:"JV-P2P-G007",account:"1200",taxable:106975}, invoice:{date:"2026-02-07",voucherNo:"JV-P2P-I007",number:"BO/2026/012",rate:18,taxable:106975,gst:19255,gross:126230} },
+  "po-008": { grn:{date:"2026-02-10",voucherNo:"JV-P2P-G008",account:"1200",taxable:202000}, invoice:{date:"2026-02-10",voucherNo:"JV-P2P-I008",number:"NBO/26/102",rate:18,taxable:202000,gst:36360,gross:238360} },
+  "po-009": { grn:{date:"2026-03-04",voucherNo:"JV-P2P-G009",account:"1200",taxable:228000}, invoice:{date:"2026-03-04",voucherNo:"JV-P2P-I009",number:"PSA/2026/03",rate:18,taxable:228000,gst:40440,gross:268440} },
+  "po-010": { grn:{date:"2026-03-06",voucherNo:"JV-P2P-G010",account:"1200",taxable:96500},  invoice:{date:"2026-03-06",voucherNo:"JV-P2P-I010",number:"FPI/2026/031",rate:18,taxable:96500,gst:17370,gross:113870} },
+  "po-011": { grn:{date:"2026-03-10",voucherNo:"JV-P2P-G011",account:"1200",taxable:191250}, invoice:{date:"2026-03-10",voucherNo:"JV-P2P-I011",number:"NBO/26/103",rate:18,taxable:191250,gst:34425,gross:225675} },
+  "po-012": { grn:{date:"2026-04-05",voucherNo:"JV-P2P-G012",account:"1200",taxable:316000}, invoice:{date:"2026-04-05",voucherNo:"JV-P2P-I012",number:"SG/2026/04",rate:18,taxable:316000,gst:56880,gross:372880} },
+  "po-013": { grn:{date:"2026-04-08",voucherNo:"JV-P2P-G013",account:"1200",taxable:83600},  invoice:{date:"2026-04-08",voucherNo:"JV-P2P-I013",number:"SKP/2026/041",rate:18,taxable:83600,gst:15048,gross:98648} },
+  "po-014": { grn:{date:"2026-04-10",voucherNo:"JV-P2P-G014",account:"1200",taxable:110000}, invoice:{date:"2026-04-10",voucherNo:"JV-P2P-I014",number:"VAT/2026/04",rate:18,taxable:110000,gst:19800,gross:129800} },
+  "po-015": { grn:{date:"2026-05-06",voucherNo:"JV-P2P-G015",account:"1200",taxable:373500}, invoice:{date:"2026-05-06",voucherNo:"JV-P2P-I015",number:"PSA/2026/05",rate:18,taxable:373500,gst:67230,gross:440730} },
+  "po-016": { grn:{date:"2026-05-08",voucherNo:"JV-P2P-G016",account:"1200",taxable:132500}, invoice:{date:"2026-05-08",voucherNo:"JV-P2P-I016",number:"BO/2026/013",rate:18,taxable:132500,gst:23850,gross:156350} },
+  "po-017": { grn:{date:"2026-05-10",voucherNo:"JV-P2P-G017",account:"1200",taxable:192000}, invoice:{date:"2026-05-10",voucherNo:"JV-P2P-I017",number:"NBO/26/104",rate:18,taxable:192000,gst:34560,gross:226560} },
+  "po-018": { grn:{date:"2026-06-04",voucherNo:"JV-P2P-G018",account:"1200",taxable:291500}, invoice:{date:"2026-06-04",voucherNo:"JV-P2P-I018",number:"SG/2026/06",rate:18,taxable:291500,gst:52470,gross:343970} },
+  "po-019": { grn:{date:"2026-06-06",voucherNo:"JV-P2P-G019",account:"1200",taxable:80400} }, // issued — GRN done, invoice not yet received
+  "po-020": { grn:{date:"2026-06-08",voucherNo:"JV-P2P-G020",account:"1200",taxable:172800}, invoice:{date:"2026-06-08",voucherNo:"JV-P2P-I020",number:"NBO/26/105",rate:18,taxable:172800,gst:31104,gross:203904} },
+};
+
+// ── PO PAYMENTS (nexa-po-payments) ───────────────────────────────────────────
+// Invoice amounts fully paid for all POs with status="paid", so they don't
+// appear as outstanding in the Pay Bills queue.
+const DEMO_PO_PAYMENTS: Record<string, number> = {
+  "po-001":252810, "po-002":110212, "po-003":128148, "po-004":110920,
+  "po-005":122484, "po-006":287920, "po-007":126230, "po-008":238360,
+  "po-009":268440, "po-010":113870, "po-011":225675, "po-014":129800,
+  "po-021":413000, "po-022":212400, "po-023":300900, "po-024":141600,
+  "po-025":1770000,"po-027":944000, "po-029":424800, "po-030":708000,
+  "po-031":4130000,"po-032":2832000,"po-033":1062000,"po-034":507400,
+  "po-035":495600, "po-037":330400,
+};
+
+// ── APPROVAL DECISIONS (nexa-approval-decisions) ─────────────────────────────
+// SPOC sign-off decisions for vendor invoices.  April invoiced POs are approved
+// (showing "approved-paid" status); May–June remain pending for the demo queue.
+const DEMO_APPROVAL_DECISIONS: Record<string, "approved" | "rejected"> = {
+  "apr-invoice-po-012": "approved",
+  "apr-invoice-po-013": "approved",
+};
+
+// ── VENDOR PORTAL INVOICES (nexa-vendor-invoices) ────────────────────────────
+const DEMO_VENDOR_INVOICES: VendorInvoice[] = [
+  { id:"vi-001", vendorId:"ven-07", poId:"po-016", invoiceNo:"BO/2026/013",  date:"2026-05-08", amount:156350, fileName:"BO_2026_013.pdf",  status:"approved", submittedAt:"2026-05-08T09:00:00.000Z" },
+  { id:"vi-002", vendorId:"ven-01", poId:"po-018", invoiceNo:"SG/2026/06",   date:"2026-06-04", amount:343970, fileName:"SG_2026_06.pdf",   status:"approved", submittedAt:"2026-06-04T11:00:00.000Z" },
+  { id:"vi-003", vendorId:"ven-08", poId:"po-019", invoiceNo:"FPI/2026/061", date:"2026-06-20", amount:94872,  fileName:"FPI_2026_061.pdf", status:"pending",  submittedAt:"2026-06-20T14:30:00.000Z" },
+];
+
+// ── VENDOR ADVANCES (nexa-advances) ──────────────────────────────────────────
+const DEMO_ADVANCES: AdvancePayment[] = [
+  { id:"adv-001",ref:"ADV-2526-001",vendorId:"ven-21",poId:"po-031",amount:1000000,date:"2026-01-10",purpose:"Advance against machinery order — Robopack RP-500 packing line",status:"adjusted",adjustedAgainst:"po-031",adjustedAmount:1000000,adjustedDate:"2026-01-20" },
+  { id:"adv-002",ref:"ADV-2526-002",vendorId:"ven-22",poId:"po-032",amount:800000, date:"2026-02-01",purpose:"Equipment installation deposit — Maize Engineering flour mill upgrade",status:"adjusted",adjustedAgainst:"po-032",adjustedAmount:800000, adjustedDate:"2026-03-01" },
+  { id:"adv-003",ref:"ADV-2526-003",vendorId:"ven-01",poId:"po-015",amount:200000, date:"2026-04-28",purpose:"Raw-material booking advance — wheat season contract",status:"adjusted",adjustedAgainst:"po-015",adjustedAmount:200000, adjustedDate:"2026-05-02" },
+  { id:"adv-004",ref:"ADV-2526-004",vendorId:"ven-04",poId:null,    amount:150000, date:"2026-06-01",purpose:"Advance against crude sunflower oil futures contract — Jul delivery",status:"pending",adjustedAgainst:null,adjustedAmount:0,adjustedDate:null },
+  { id:"adv-005",ref:"ADV-2526-005",vendorId:"ven-08",poId:null,    amount:100000, date:"2026-06-15",purpose:"Mobilisation advance — packaging film supply contract Q3",status:"pending",adjustedAgainst:null,adjustedAmount:0,adjustedDate:null },
+];
+
+// ── WAREHOUSE BINS (nexa-bins) ────────────────────────────────────────────────
+const DEMO_BINS: Bin[] = [
+  // Bengaluru Manufacturing (loc-1)
+  {id:"bin-001",code:"BLR-RCV-A",locationId:"loc-1",zone:"receiving",  description:"Receiving Dock A",              capacityKg:10000,currentKg:0,isActive:true},
+  {id:"bin-002",code:"BLR-STG-A",locationId:"loc-1",zone:"storage",   description:"RM Storage A — Grains",         capacityKg:50000,currentKg:0,isActive:true},
+  {id:"bin-003",code:"BLR-STG-B",locationId:"loc-1",zone:"storage",   description:"RM Storage B — Spices & Oils",  capacityKg:20000,currentKg:0,isActive:true},
+  {id:"bin-004",code:"BLR-QNT-A",locationId:"loc-1",zone:"quarantine",description:"Quarantine Hold",                capacityKg:5000, currentKg:0,isActive:true},
+  {id:"bin-005",code:"BLR-PCK-A",locationId:"loc-1",zone:"picking",   description:"Production Staging",            capacityKg:8000, currentKg:0,isActive:true},
+  // Pune Production (loc-4)
+  {id:"bin-006",code:"PNE-RCV-A",locationId:"loc-4",zone:"receiving",  description:"Receiving Dock — Pune",         capacityKg:5000, currentKg:0,isActive:true},
+  {id:"bin-007",code:"PNE-STG-A",locationId:"loc-4",zone:"storage",   description:"RM Storage — Pune",             capacityKg:15000,currentKg:0,isActive:true},
+  // Ahmedabad Packaging Hub (loc-8)
+  {id:"bin-008",code:"AMD-RCV-A",locationId:"loc-8",zone:"receiving",  description:"Receiving Area",                capacityKg:3000, currentKg:0,isActive:true},
+  {id:"bin-009",code:"AMD-STG-A",locationId:"loc-8",zone:"storage",   description:"PM Storage A — Films & Pouches",capacityKg:10000,currentKg:0,isActive:true},
+  {id:"bin-010",code:"AMD-STG-B",locationId:"loc-8",zone:"storage",   description:"PM Storage B — Jars & Cartons", capacityKg:5000, currentKg:0,isActive:true},
+  {id:"bin-011",code:"AMD-DSP-A",locationId:"loc-8",zone:"dispatch",  description:"Dispatch Bay",                  capacityKg:3000, currentKg:0,isActive:true},
+];
+
+// ── WAREHOUSE BIN STOCK (nexa-bin-stock) ─────────────────────────────────────
+const DEMO_BIN_STOCK: BinStock[] = [
+  {binId:"bin-002",itemId:"rm-001",qty:9800, uom:"kg", batchNo:"BT-2610",expiryDate:null,lastMovedAt:"2026-06-04T10:00:00.000Z"},
+  {binId:"bin-002",itemId:"rm-002",qty:4500, uom:"kg", batchNo:"BT-2611",expiryDate:null,lastMovedAt:"2026-06-04T10:00:00.000Z"},
+  {binId:"bin-003",itemId:"rm-011",qty:360,  uom:"kg", batchNo:null,     expiryDate:null,lastMovedAt:"2026-06-04T10:00:00.000Z"},
+  {binId:"bin-003",itemId:"rm-013",qty:610,  uom:"kg", batchNo:null,     expiryDate:null,lastMovedAt:"2026-06-04T10:00:00.000Z"},
+  {binId:"bin-003",itemId:"rm-026",qty:1800, uom:"L",  batchNo:null,     expiryDate:null,lastMovedAt:"2026-06-08T10:00:00.000Z"},
+  {binId:"bin-007",itemId:"rm-027",qty:1000, uom:"L",  batchNo:null,     expiryDate:null,lastMovedAt:"2026-04-10T10:00:00.000Z"},
+  {binId:"bin-007",itemId:"rm-006",qty:2500, uom:"kg", batchNo:null,     expiryDate:null,lastMovedAt:"2026-03-10T10:00:00.000Z"},
+  {binId:"bin-009",itemId:"pm-001",qty:300,  uom:"kg", batchNo:null,     expiryDate:null,lastMovedAt:"2026-06-06T10:00:00.000Z"},
+  {binId:"bin-009",itemId:"pm-013",qty:15000,uom:"pcs",batchNo:null,     expiryDate:null,lastMovedAt:"2026-06-06T10:00:00.000Z"},
+  {binId:"bin-010",itemId:"pm-017",qty:5000, uom:"pcs",batchNo:null,     expiryDate:null,lastMovedAt:"2026-05-08T10:00:00.000Z"},
+  {binId:"bin-010",itemId:"pm-004",qty:250,  uom:"kg", batchNo:null,     expiryDate:null,lastMovedAt:"2026-03-06T10:00:00.000Z"},
+];
+
+// ── UOM OVERRIDES (nexa-uom-overrides) ───────────────────────────────────────
+// Alternate pack sizes for key bulk and packaging items.
+const DEMO_UOM_OVERRIDES: Record<string, AltUom> = {
+  "rm-001": { unit:"bag",    pack:50  }, // 50 kg jute bags
+  "rm-002": { unit:"bag",    pack:50  }, // 50 kg jute bags
+  "rm-011": { unit:"carton", pack:25  }, // 25 kg cartons
+  "rm-026": { unit:"drum",   pack:200 }, // 200 L drums
+  "pm-001": { unit:"roll",   pack:100 }, // 100 kg rolls
+  "pm-013": { unit:"carton", pack:500 }, // 500-pouch export carton
+  "pm-017": { unit:"carton", pack:250 }, // 250-jar master carton
+};
+
 // ── LOAD DEMO DATA ────────────────────────────────────────────────────────────
 export function loadDemoData() {
   if (typeof window === "undefined") return;
@@ -1225,6 +1406,14 @@ export function loadDemoData() {
   write("nexa-inv-movements",  DEMO_MOVEMENTS);
   write("nexa-transfers",      DEMO_TRANSFERS);
   write("nexa-sc-grn",         DEMO_GRNS);
+  write("nexa-sc-pr",          DEMO_PRS);
+  write("nexa-sc-count",       DEMO_COUNTS);
+  write("nexa-sc-issue",       DEMO_ISSUES);
+  write("nexa-rtv",            DEMO_RTVS);
+  write("nexa-customer-returns", DEMO_RETURNS);
+  write("nexa-csm-locations",  DEMO_CSM_LOCATIONS);
+  write("nexa-csm-stock",      DEMO_CSM_STOCK);
+  write("nexa-csm-movements",  DEMO_CSM_MOVEMENTS);
   write("nexa-added-pos",      DEMO_POS);
   write("nexa-invoices",       DEMO_INVOICES);
   write("nexa-assets",         DEMO_ASSETS);
@@ -1232,6 +1421,14 @@ export function loadDemoData() {
   write("nexa-crm-events",     DEMO_CRM_EVENTS);
   write("nexa-leave-config",   DEMO_LEAVE_CONFIG);
   write("nexa-tax-filings",    DEMO_TAX_FILINGS);
+  write("nexa-p2p-state",      DEMO_P2P_STATE);
+  write("nexa-po-payments",    DEMO_PO_PAYMENTS);
+  write("nexa-approval-decisions", DEMO_APPROVAL_DECISIONS);
+  write("nexa-vendor-invoices",DEMO_VENDOR_INVOICES);
+  write("nexa-advances",       DEMO_ADVANCES);
+  write("nexa-bins",           DEMO_BINS);
+  write("nexa-bin-stock",      DEMO_BIN_STOCK);
+  write("nexa-uom-overrides",  DEMO_UOM_OVERRIDES);
   // Restore a valid owner session so the full nav is visible after demo load.
   // Members are seeded from the demo employee roster so the mimic (view-as)
   // switcher works out of the box — the Eye icon lets you switch between roles
@@ -1278,6 +1475,13 @@ export const DEMO_MODULES = [
   "15 inter-location transfer orders",
   "20 goods receipt notes (with QC results)",
   "40 purchase orders (RM · PM · opex · capex)",
+  "P2P GL trail: 20 GRN vouchers + 19 invoice vouchers",
+  "Payments seeded for all 26 settled POs",
+  "SPOC approvals for Apr invoiced POs",
+  "3 vendor portal invoices (2 approved · 1 pending)",
+  "5 vendor advance payments",
+  "11 warehouse bins (BLR · PNE · AMD) + bin stock",
+  "Alt-UoM overrides for 7 key items",
   "10 fixed assets (machinery · vehicles · IT)",
   "5 employee loans with EMI schedules",
   "80 CRM journey events (calls · meetings · deals)",

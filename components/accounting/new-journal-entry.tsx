@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2, AlertTriangle, Scale, RefreshCw, FileText, ChevronDown, Search } from "lucide-react";
+import { Plus, Trash2, AlertTriangle, Scale, RefreshCw, FileText, ChevronDown, Search, Save } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Label } from "@/components/ui/input";
@@ -172,7 +172,7 @@ export function NewJournalEntry({
   title?: string;
 }) {
   const prefs = usePrefs();
-  const { entries, post } = useJournal();
+  const { entries, post, saveDraft } = useJournal();
 
   const [type, setType] = useState<VoucherType>(defaultType);
   const def = voucherType(type);
@@ -183,6 +183,7 @@ export function NewJournalEntry({
   const [date, setDate] = useState(todayIso());
   const [basis, setBasis] = useState<EntryBasis>(def.defaultBasis);
   const [narration, setNarration] = useState("");
+  const [costCenter, setCostCenter] = useState("");
   const [partyId, setPartyId] = useState("");
   const [g, setG] = useState<GuidedInput>(defaultGuidedInput(defaultType));
   const [lines, setLines] = useState<DraftLine[]>([blankLine(), blankLine()]);
@@ -305,6 +306,7 @@ export function NewJournalEntry({
     setDate(todayIso());
     setBasis(voucherType(defaultType).defaultBasis);
     setNarration("");
+    setCostCenter("");
     setPartyId("");
     setInvoiceId("");
     setCreditLines([]);
@@ -315,8 +317,8 @@ export function NewJournalEntry({
     setSubmitErrors([]);
   }
 
-  function handlePost() {
-    const draft: EntryDraft = {
+  function buildDraft(): EntryDraft {
+    return {
       type,
       date,
       narration,
@@ -325,15 +327,25 @@ export function NewJournalEntry({
       currency,
       basis,
       partyId: def.partyKind === "none" ? undefined : partyId || undefined,
+      costCenter: costCenter.trim() || undefined,
       lines: resolvedLines,
       autoReverse: autoReverse || undefined,
       reverseDate: autoReverse ? reverseDate : undefined,
     };
-    const result = post(draft);
+  }
+
+  function handlePost() {
+    const result = post(buildDraft());
     if (!result.ok) {
       setSubmitErrors(result.errors);
       return;
     }
+    reset();
+    onClose();
+  }
+
+  function handleSaveDraft() {
+    saveDraft(buildDraft());
     reset();
     onClose();
   }
@@ -373,6 +385,9 @@ export function NewJournalEntry({
               </Badge>
             )}
           </div>
+          <Button variant="outline" onClick={handleSaveDraft} className="mr-auto">
+            <Save className="size-3.5" /> Save draft
+          </Button>
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
@@ -512,9 +527,15 @@ export function NewJournalEntry({
           </div>
         )}
 
-        <div>
-          <Label htmlFor="je-narration">Narration</Label>
-          <Input id="je-narration" value={narration} onChange={(e) => setNarration(e.target.value)} placeholder="What is this voucher for?" className="mt-1" />
+        <div className="grid grid-cols-3 gap-3">
+          <div className="col-span-2">
+            <Label htmlFor="je-narration">Narration</Label>
+            <Input id="je-narration" value={narration} onChange={(e) => setNarration(e.target.value)} placeholder="What is this voucher for?" className="mt-1" />
+          </div>
+          <div>
+            <Label htmlFor="je-cc">Cost centre</Label>
+            <Input id="je-cc" value={costCenter} onChange={(e) => setCostCenter(e.target.value)} placeholder="e.g. Operations" className="mt-1" />
+          </div>
         </div>
 
         {/* Quick-fill for guided voucher types */}

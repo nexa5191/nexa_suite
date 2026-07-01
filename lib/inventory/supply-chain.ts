@@ -7,7 +7,7 @@
 // ---------------------------------------------------------------------------
 
 import type { Movement } from "./types";
-import { buildStockIndex, allMovements, stockAt } from "./movements";
+import { buildStockIndex, allMovements, stockAt, stockTotal } from "./movements";
 import { ITEMS, itemById } from "./items";
 import { LOCATIONS } from "@/lib/accounting/org";
 
@@ -33,6 +33,7 @@ export interface PurchaseRequisition {
   approvedBy?: string;
   approvedDate?: string;
   poRef?: string;
+  source?: "manual" | "auto-rol" | "mrp";
 }
 
 // ---------------------------------------------------------------------------
@@ -264,6 +265,114 @@ export function stockSnapshot(locationId: string, movements: Movement[]) {
     item: it,
     systemQty: stockAt(idx, it.id, locationId),
   })).filter((r) => r.systemQty > 0);
+}
+
+// ---------------------------------------------------------------------------
+// Auto-PR generation — ROL-triggered
+// ---------------------------------------------------------------------------
+
+/** Avg daily outflow for an item across the whole movement history. */
+function avgDailyOutflow(movements: Movement[], itemId: string): number {
+  const out = movements.filter(
+    (m) => m.itemId === itemId && m.qty < 0 && ["consumption", "sale", "transfer-out"].includes(m.type),
+  );
+  if (out.length === 0) return 0;
+  let minDate = "9999", maxDate = "0000", total = 0;
+  for (const m of out) {
+    total += Math.abs(m.qty);
+    if (m.date < minDate) minDate = m.date;
+    if (m.date > maxDate) maxDate = m.date;
+  }
+  const histDays = Math.max(1, (new Date(maxDate).getTime() - new Date(minDate).getTime()) / 86400000 + 1);
+  return total / histDays;
+}
+
+/** Context stored per auto-ROL line so SCM can see the full picture. */
+export interface AutoRolLineContext {
+  onHand: number;
+  rol: number;
+  suggestedQty: number;
+  leadTimeDays: number;
+  safetyDays: number;
+  avgDailyDemand: number;
+  leadTimeDemand: number;
+  safetyBuffer: number;
+  uom: string;
+}
+
+const AUTO_ROL_CONTEXT_KEY = "nexa-sc-rol-context";
+
+export function loadRolContext(): Record<string, AutoRolLineContext> {
+  if (typeof window === "undefined") return {};
+  try { const r = localStorage.getItem(AUTO_ROL_CONTEXT_KEY); return r ? JSON.parse(r) : {}; } catch { return {}; }
+}
+export function saveRolContext(ctx: Record<string, AutoRolLineContext>) {
+  try { localStorage.setItem(AUTO_ROL_CONTEXT_KEY, JSON.stringify(ctx)); } catch { /* ignore */ }
+}
+
+/**
+ * Scan the item master for all purchasable items below ROL and build a single
+ * purchase requisition — placed directly in "submitted" status for SCM review.
+ *
+ * Order qty formula:
+ *   target = ROL + avgDaily × (leadTimeDays + safetyDays)
+ *   qty    = max(1, ceil(target − onHand))
+ *
+ * Returns null when everything is above ROL.
+ */
+export function buildAutoRolPRs(
+  movements: Movement[],
+  added: PurchaseRequisition[],
+  requestedBy: string,
+  date: string,
+): { pr: PurchaseRequisition; context: Record<string, AutoRolLineContext> } | null {
+  const idx = buildStockIndex(movements);
+  const lines: PRLine[] = [];
+  const context: Record<string, AutoRolLineContext> = {};
+
+  for (const item of ITEMS) {
+    if (item.category === "semi-finished") continue;
+    if (item.category === "finished" && item.ownership !== "third-party") continue;
+
+    const onHand = stockTotal(idx, item.id);
+    if (onHand >= item.reorderLevel) continue;
+
+    const daily = avgDailyOutflow(movements, item.id);
+    const leadDays = item.leadTimeDays ?? 7;
+    const safetyDays_ = item.safetyDays ?? 3;
+    const leadTimeDemand = daily * leadDays;
+    const safetyBuffer = daily * safetyDays_;
+    const target = item.reorderLevel + leadTimeDemand + safetyBuffer;
+    const qty = Math.max(1, Math.ceil(target - onHand));
+
+    lines.push({ itemId: item.id, qty });
+    context[item.id] = {
+      onHand,
+      rol: item.reorderLevel,
+      suggestedQty: qty,
+      leadTimeDays: leadDays,
+      safetyDays: safetyDays_,
+      avgDailyDemand: daily,
+      leadTimeDemand,
+      safetyBuffer,
+      uom: item.uom,
+    };
+  }
+
+  if (lines.length === 0) return null;
+
+  const ref = nextPRRef(added);
+  const pr: PurchaseRequisition = {
+    id: `pr-rol-${Date.now()}`,
+    ref,
+    date,
+    requestedBy,
+    lines,
+    note: `System-generated — ${lines.length} item${lines.length !== 1 ? "s" : ""} below reorder level. Review quantities and convert to PO.`,
+    status: "submitted",
+    source: "auto-rol",
+  };
+  return { pr, context };
 }
 
 // ---------------------------------------------------------------------------

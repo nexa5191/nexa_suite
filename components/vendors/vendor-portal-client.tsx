@@ -68,6 +68,7 @@ const STATUS_META: Record<
   POEffectiveStatus,
   { label: string; variant: "default" | "warning" | "success" | "danger" | "primary" }
 > = {
+  draft: { label: "Draft", variant: "default" },
   issued: { label: "Awaiting invoice", variant: "default" },
   "pending-approval": { label: "Pending approval", variant: "warning" },
   "approved-paid": { label: "Approved · Paid", variant: "success" },

@@ -29,6 +29,10 @@ import {
   type GoodsReceiptNote,
 } from "@/lib/inventory/supply-chain";
 import {
+  loadVendorInvoices, saveVendorInvoices,
+  type VendorInvoice,
+} from "@/lib/vendors/vendor-portal";
+import {
   VENDORS,
   PURCHASE_ORDERS,
   vendorName,
@@ -60,7 +64,8 @@ import {
 } from "@/lib/vendors";
 
 const STATUS_META: Record<POEffectiveStatus, { label: string; variant: "default" | "warning" | "success" | "danger" | "primary" }> = {
-  issued: { label: "Awaiting invoice", variant: "default" },
+  draft: { label: "Draft — pending approval", variant: "default" },
+  issued: { label: "Awaiting invoice", variant: "primary" },
   "pending-approval": { label: "Pending SPOC approval", variant: "warning" },
   "approved-paid": { label: "Approved · Auto-paid", variant: "success" },
   rejected: { label: "Invoice rejected", variant: "danger" },
@@ -171,6 +176,7 @@ export function VendorsClient() {
   const [mutations, setMutations] = React.useState<Record<string, POMutation>>({});
   const [poSearch, setPoSearch] = React.useState("");
   const [vendorSearch, setVendorSearch] = React.useState("");
+  const [portalInvoices, setPortalInvoices] = React.useState<VendorInvoice[]>([]);
 
   const refresh = React.useCallback(() => {
     setDecisions(loadDecisions());
@@ -179,6 +185,7 @@ export function VendorsClient() {
     setAddedPOs(loadAddedPOs());
     setGrns(allGRNs(loadGRNs()));
     setMutations(loadPOMutations());
+    setPortalInvoices(loadVendorInvoices());
   }, []);
 
   React.useEffect(() => {
@@ -215,7 +222,43 @@ export function VendorsClient() {
     });
   }
 
+  function acceptPortalInvoice(inv: VendorInvoice) {
+    // 1. Mark portal invoice as accepted
+    const updatedInvs = portalInvoices.map((i) => i.id === inv.id ? { ...i, status: "approved" as const } : i);
+    saveVendorInvoices(updatedInvs);
+    setPortalInvoices(updatedInvs);
+    // 2. Book to PO — change status to invoiced and attach invoice details
+    const updatedPOs = addedPOs.map((p) =>
+      p.id === inv.poId
+        ? { ...p, status: "invoiced" as const, invoice: { number: inv.invoiceNo, date: inv.date, amount: inv.amount } }
+        : p,
+    );
+    saveAddedPOs(updatedPOs);
+    setAddedPOs(updatedPOs);
+    appendAudit({
+      actorId: null,
+      module: "Vendors",
+      action: "approve",
+      record: inv.poId,
+      after: `Portal invoice ${inv.invoiceNo} accepted · ₹${inv.amount.toLocaleString("en-IN")} · routed to SPOC for approval`,
+    });
+  }
+
+  function issuePO(po: PurchaseOrder) {
+    const next = addedPOs.map((p) => p.id === po.id ? { ...p, status: "issued" as const } : p);
+    saveAddedPOs(next);
+    setAddedPOs(next);
+    appendAudit({
+      actorId: null,
+      module: "Vendors",
+      action: "approve",
+      record: po.id,
+      after: `PO approved & issued: ${po.title} · ₹${po.total.toLocaleString("en-IN")}`,
+    });
+  }
+
   const allOrderRows = allOrders.map((po) => ({ po, status: effectiveStatus(po, decisions) }));
+  const draftPOs = allOrderRows.filter((o) => o.status === "draft");
   const orders = poSearch
     ? allOrderRows.filter(({ po }) => {
         const q = poSearch.toLowerCase();
@@ -276,6 +319,16 @@ export function VendorsClient() {
         </p>
       </Card>
 
+      {/* Draft PO approval notice */}
+      {tab === "orders" && draftPOs.length > 0 && (
+        <Card className="mb-4 flex flex-wrap items-center gap-3 border-warning/40 bg-warning/5 p-4">
+          <AlertTriangle className="size-4 shrink-0 text-warning" />
+          <p className="text-sm">
+            <strong>{draftPOs.length}</strong> PO{draftPOs.length !== 1 ? "s" : ""} pending approval — Finance or Manager must review and click <span className="font-medium">Issue PO</span> before they go to the vendor.
+          </p>
+        </Card>
+      )}
+
       {/* 3-way match auto-approval */}
       {tab === "orders" && autoApprovable.length > 0 && (
         <Card className="mb-4 flex flex-wrap items-center gap-3 border-success/40 bg-success/10 p-4">
@@ -308,6 +361,40 @@ export function VendorsClient() {
 
       {tab === "orders" ? (
         <>
+          {/* Vendor portal invoice queue — Finance review before SPOC approval */}
+          {portalInvoices.filter((i) => i.status === "pending").length > 0 && (
+            <Card className="mb-4 overflow-hidden border-primary/30">
+              <div className="border-b bg-primary/5 px-4 py-2.5 flex items-center gap-2">
+                <FileCheck className="size-4 text-primary" />
+                <p className="text-sm font-semibold">Vendor Portal Invoice Queue</p>
+                <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-medium text-primary">
+                  {portalInvoices.filter((i) => i.status === "pending").length} pending
+                </span>
+                <p className="ml-2 text-xs text-muted-foreground">Review supplier-uploaded invoices and accept to trigger SPOC approval</p>
+              </div>
+              <div className="divide-y">
+                {portalInvoices.filter((i) => i.status === "pending").map((inv) => {
+                  const po = allOrders.find((p) => p.id === inv.poId);
+                  return (
+                    <div key={inv.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold">{vendorName(inv.vendorId)}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Inv {inv.invoiceNo} · {inv.date} · PO {inv.poId}{po ? ` — ${po.title}` : ""}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">Submitted: {new Date(inv.submittedAt).toLocaleDateString("en-IN")}</p>
+                      </div>
+                      <Money value={inv.amount} className="tabular-nums font-semibold shrink-0" />
+                      <Button size="sm" onClick={() => acceptPortalInvoice(inv)}>
+                        <Check className="size-3.5" /> Accept & book to PO
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          )}
+
           <div className="mb-3 relative max-w-xs">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input value={poSearch} onChange={(e) => setPoSearch(e.target.value)} placeholder="Search PO, vendor…" className="h-8 pl-8 text-xs" />
@@ -396,7 +483,11 @@ export function VendorsClient() {
                       </td>
                       <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2">
-                          {status === "pending-approval" ? (
+                          {status === "draft" ? (
+                            <Button size="sm" onClick={() => issuePO(po)}>
+                              <Check className="size-3.5" /> Issue PO
+                            </Button>
+                          ) : status === "pending-approval" ? (
                             <>
                               <Button size="sm" variant="outline" onClick={() => decide(po, "rejected")}>
                                 <X className="size-3.5" /> Reject

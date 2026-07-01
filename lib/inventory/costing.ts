@@ -36,21 +36,48 @@ export interface Lot {
 /**
  * Build the lot register from all stock movements.
  * Receipt unit costs come from (in priority):
- *   1. Unit prices on GRN lines (user-entered)
+ *   1. Unit prices on GRN lines (user-entered) + pro-rated freight
  *   2. SEED_PRICES map (hardcoded demo variances)
  *   3. item.rate (standard cost fallback)
+ *
+ * Freight allocation:
+ *   "value" basis: freight per unit = freightTotal × (lineValue / totalGrnValue) / lineQty
+ *   "qty"   basis: freight per unit = freightTotal / totalGrnQty
  */
 export function buildLotRegister(
   movements: Movement[],
   grns: GoodsReceiptNote[],
 ): Lot[] {
   // Build GRN unit-price lookup: "ref|itemId" and "poRef|itemId"
+  // Includes pro-rated landed cost (freight) where the GRN specifies freight allocation.
   const grnPrices = new Map<string, number>();
   for (const grn of grns) {
+    const freight = grn.freightTotal ?? 0;
+    let freightPerUnit: Map<string, number> | null = null;
+
+    if (freight > 0 && grn.lines.length > 0) {
+      freightPerUnit = new Map();
+      if (grn.freightBasis === "qty") {
+        const totalQty = grn.lines.reduce((s, l) => s + l.qty, 0);
+        const fpu = totalQty > 0 ? freight / totalQty : 0;
+        for (const l of grn.lines) freightPerUnit.set(l.itemId, l.qty > 0 ? fpu : 0);
+      } else {
+        // value basis (default)
+        const totalVal = grn.lines.reduce((s, l) => s + l.qty * (l.unitPrice ?? 0), 0);
+        for (const l of grn.lines) {
+          if (l.unitPrice && l.unitPrice > 0 && totalVal > 0 && l.qty > 0) {
+            const lineVal = l.qty * l.unitPrice;
+            freightPerUnit.set(l.itemId, (freight * (lineVal / totalVal)) / l.qty);
+          }
+        }
+      }
+    }
+
     for (const line of grn.lines) {
       if (line.unitPrice && line.unitPrice > 0) {
-        grnPrices.set(`${grn.ref}|${line.itemId}`, line.unitPrice);
-        if (grn.poRef) grnPrices.set(`${grn.poRef}|${line.itemId}`, line.unitPrice);
+        const landed = line.unitPrice + (freightPerUnit?.get(line.itemId) ?? 0);
+        grnPrices.set(`${grn.ref}|${line.itemId}`, landed);
+        if (grn.poRef) grnPrices.set(`${grn.poRef}|${line.itemId}`, landed);
       }
     }
   }

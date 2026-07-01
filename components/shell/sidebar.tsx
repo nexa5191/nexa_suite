@@ -2,17 +2,30 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronDown, Pin } from "lucide-react";
 import { NAV_GROUPS, SECONDARY_NAV, isNavActive, type NavItem } from "./nav-items";
 import { Logo } from "./logo";
 import { cn } from "@/lib/utils";
 import { useAccess } from "@/components/access/access-provider";
+import { loadBookmarks, toggleBookmark, type Bookmark } from "@/lib/bookmarks";
 
 export function Sidebar({ side = "left" }: { side?: "left" | "right" }) {
   const pathname = usePathname();
   const isRight = side === "right";
-  const { can } = useAccess();
+  const { can, currentUserId } = useAccess();
+
+  const [pins, setPins] = useState<Bookmark[]>([]);
+
+  useEffect(() => {
+    setPins(loadBookmarks(currentUserId));
+  }, [currentUserId]);
+
+  useEffect(() => {
+    const onBookmark = () => setPins(loadBookmarks(currentUserId));
+    window.addEventListener("nexa:bookmark-changed", onBookmark);
+    return () => window.removeEventListener("nexa:bookmark-changed", onBookmark);
+  }, [currentUserId]);
 
   // Only show functions the acting user can reach; drop now-empty groups.
   const groups = NAV_GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => can(i.key)) })).filter(
@@ -91,6 +104,45 @@ export function Sidebar({ side = "left" }: { side?: "left" | "right" }) {
       </div>
 
       <nav className="flex-1 overflow-y-auto no-scrollbar px-3 py-2" onMouseLeave={() => setHovered(null)}>
+        {/* Pinned pages */}
+        {pins.length > 0 && (
+          <div className="mb-2 pb-2 border-b">
+            <p className="mb-1 px-2.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/60">Pinned</p>
+            <ul className="space-y-0.5">
+              {pins.map((pin) => {
+                const active = pathname === pin.path;
+                return (
+                  <li key={pin.path} className="group flex items-center">
+                    <Link
+                      href={pin.path}
+                      className={cn(
+                        "flex flex-1 min-w-0 items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors",
+                        active
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                      )}
+                    >
+                      <Pin className="size-3.5 shrink-0" />
+                      <span className="truncate">{pin.label}</span>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        const next = toggleBookmark(currentUserId, pin.path, pin.label);
+                        setPins(next);
+                        window.dispatchEvent(new CustomEvent("nexa:bookmark-changed"));
+                      }}
+                      title="Unpin"
+                      className="mr-1 hidden rounded p-1 text-muted-foreground hover:text-danger group-hover:flex"
+                    >
+                      <Pin className="size-3" />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
         {groups.map((group) => {
           const isOpen = expandedLabel === group.label;
           const groupActive = group.items.some((i) => isNavActive(pathname, i.href));

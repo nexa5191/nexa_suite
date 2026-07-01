@@ -858,7 +858,7 @@ export function PlanningClient() {
     const newPR: PurchaseRequisition = {
       id: `pr-mrp-${Date.now()}`,
       ref,
-      date: "2026-06-26",
+      date: "2026-07-01",
       requestedBy: "emp-024",
       lines: toOrder.map((l) => ({
         itemId: l.itemId,
@@ -866,7 +866,8 @@ export function PlanningClient() {
         note: `MRP auto-draft — ${horizon}d horizon`,
       })),
       note: `Auto-generated from MRP plan (${horizon}-day horizon). ${toOrder.length} items with shortfall.`,
-      status: "draft",
+      status: "submitted",
+      source: "mrp",
     };
     const next = [...added, newPR];
     savePRs(next);

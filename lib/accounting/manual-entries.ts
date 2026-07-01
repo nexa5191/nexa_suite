@@ -29,7 +29,7 @@ export const BOOKS_OPENING = "2024-04-01";
 /** A voucher may post to the accrual ledger, the cash ledger, or both. */
 export type EntryBasis = Basis | "both";
 
-export type EntryStatus = "posted" | "reversed";
+export type EntryStatus = "draft" | "posted" | "reversed";
 
 export type VoucherType =
   | "journal"
@@ -112,6 +112,7 @@ export interface ManualEntry {
   currency: string;
   basis: EntryBasis;
   partyId?: string;
+  costCenter?: string;
   lines: ManualEntryLine[];
   status: EntryStatus;
   /** Accrual that reverses automatically on `reverseDate` (provisions etc.). */
@@ -391,6 +392,16 @@ export function nextVoucherNo(entries: ManualEntry[], type: VoucherType): string
 
 // ---- Posting & reversal ---------------------------------------------------
 
+export function createDraftEntry(draft: EntryDraft, nowIso: string): ManualEntry {
+  return {
+    ...draft,
+    id: `draft-${nowIso}-${Math.random().toString(36).slice(2, 6)}`,
+    voucherNo: "DRAFT",
+    status: "draft",
+    createdAt: nowIso,
+  };
+}
+
 export function createEntry(draft: EntryDraft, existing: ManualEntry[], nowIso: string): ManualEntry {
   const lines = draft.lines
     .filter((l) => (Number(l.debit) || 0) !== 0 || (Number(l.credit) || 0) !== 0)
@@ -416,6 +427,7 @@ export function buildReversal(original: ManualEntry, date: string): EntryDraft {
     currency: original.currency,
     basis: original.basis,
     partyId: original.partyId,
+    costCenter: original.costCenter,
     lines: original.lines.map((l) => ({ accountCode: l.accountCode, debit: l.credit, credit: l.debit })),
   };
 }
@@ -427,6 +439,7 @@ const basesFor = (b: EntryBasis): Basis[] => (b === "both" ? ["accrual", "cash"]
 export function expandManualEntries(entries: ManualEntry[]): Posting[] {
   const out: Posting[] = [];
   for (const e of entries) {
+    if (e.status === "draft") continue;
     const loc = locationById(e.locationId);
     const state = loc?.state ?? "—";
     const def = voucherType(e.type);

@@ -16,7 +16,9 @@ import { ACTIVE_EMPLOYEES, employeeName } from "@/lib/hr/employees";
 import { LOCATIONS } from "@/lib/accounting/org";
 import { appendMovements } from "@/lib/inventory/movements";
 import { appendAudit } from "@/lib/audit/audit-log";
-import { PURCHASE_ORDERS, VENDORS, type POLine } from "@/lib/vendors";
+import { PURCHASE_ORDERS, VENDORS, allPOs, loadAddedPOs, vendorById, type POLine } from "@/lib/vendors";
+import { useJournal } from "@/components/accounting/journal-provider";
+import { buildGrnDraft, grnDebitAccount, loadP2P, saveP2P } from "@/lib/p2p";
 import { NEW_INTENT_EVENT } from "@/lib/commands/new-intent";
 import {
   allGRNs, loadGRNs, saveGRNs, nextGRNRef,
@@ -28,10 +30,11 @@ function fmtQty(n: number, uom?: string) {
   return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 }).format(n) + (uom ? ` ${uom}` : "");
 }
 
-const TODAY = "2026-06-22";
+const TODAY = "2026-07-01";
 
 export function GRNClient() {
   const searchParams = useSearchParams();
+  const { post } = useJournal();
   const [added, setAdded] = React.useState<GoodsReceiptNote[]>([]);
   const [search, setSearch] = React.useState("");
   const [selected, setSelected] = React.useState<GoodsReceiptNote | null>(null);
@@ -78,15 +81,50 @@ export function GRNClient() {
   function postGRN(id: string) {
     const grn = allGrnsList.find((g) => g.id === id);
     if (!grn || grn.status === "posted") return;
+
+    // 1. Post stock movements
     const movements = buildGRNMovements(grn);
     appendMovements(movements);
+
+    // 2. If linked to a PO, auto-post the GL journal (Dr Inventory/Cr GRNI)
+    if (grn.poRef) {
+      const po = allPOs(loadAddedPOs()).find((p) => p.id === grn.poRef);
+      if (po) {
+        const vendor = vendorById(po.vendorId);
+        let taxable = 0;
+        for (const line of grn.lines) {
+          const qcLine = grn.qcResult?.lines.find((q) => q.itemId === line.itemId);
+          const qty = qcLine ? qcLine.acceptedQty : line.qty;
+          const price = line.unitPrice ?? itemById(line.itemId)?.rate ?? 0;
+          taxable += qty * price;
+        }
+        if (taxable > 0) {
+          const draft = buildGrnDraft(po, vendor, grn.date, taxable);
+          const res = post(draft);
+          if (res.ok) {
+            const p2pStore = loadP2P();
+            p2pStore[po.id] = {
+              ...p2pStore[po.id],
+              grn: {
+                date: grn.date,
+                voucherNo: res.entry.voucherNo,
+                account: grnDebitAccount(vendor),
+                taxable,
+              },
+            };
+            saveP2P(p2pStore);
+          }
+        }
+      }
+    }
+
     updateGRN(id, { status: "posted" });
     appendAudit({
       actorId: grn.receivedBy,
       module: "GRN",
       action: "post",
       record: grn.ref,
-      after: `${movements.length} movement(s) posted to stock · ${grn.vendorName}`,
+      after: `${movements.length} movement(s) posted to stock · ${grn.vendorName}${grn.poRef ? " · GL journal posted" : ""}`,
     });
   }
 

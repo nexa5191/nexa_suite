@@ -6,12 +6,20 @@ import {
   type ManualEntry,
   type EntryDraft,
   buildReversal,
+  createDraftEntry,
   createEntry,
   expandManualEntries,
   loadEntries,
+  nextVoucherNo,
   saveEntries,
   validateDraft,
 } from "@/lib/accounting/manual-entries";
+import {
+  type VoucherComment,
+  loadComments,
+  saveComments,
+  parseMentions,
+} from "@/lib/accounting/comments";
 
 interface JournalContext {
   entries: ManualEntry[];
@@ -23,30 +31,44 @@ interface JournalContext {
   postMany: (drafts: EntryDraft[]) => { posted: number; failed: { index: number; errors: string[] }[] };
   /** Reverse a posted entry (GAAP: correction by offsetting entry, not delete). */
   reverse: (id: string) => void;
+  /** Last successfully posted entry — used to drive the undo toast. */
+  lastPosted: ManualEntry | null;
+  clearLastPosted: () => void;
+  /** Save an incomplete entry as a draft (no validation, no voucherNo). */
+  saveDraft: (draft: EntryDraft) => ManualEntry;
+  /** Validate a draft and promote it to posted. */
+  postDraft: (id: string) => { ok: true; entry: ManualEntry } | { ok: false; errors: string[] };
+  /** Permanently discard a draft. */
+  deleteDraft: (id: string) => void;
+  /** Patch narration / costCenter on any entries (bulk edit). */
+  updateEntries: (ids: string[], patch: Partial<Pick<ManualEntry, "narration" | "costCenter">>) => void;
+  /** Inline comments keyed to voucher IDs. */
+  comments: VoucherComment[];
+  addComment: (voucherId: string, text: string, authorId: string) => VoucherComment;
 }
 
 const Ctx = createContext<JournalContext | null>(null);
 
 function todayIso(): string {
-  // Client-only (effect/handler context) — fine to read the wall clock here.
   return new Date().toISOString().slice(0, 10);
 }
 
 export function JournalProvider({ children }: { children: React.ReactNode }) {
   const [entries, setEntries] = useState<ManualEntry[]>([]);
+  const [comments, setComments] = useState<VoucherComment[]>([]);
   const [version, setVersion] = useState(0);
   const [hydrated, setHydrated] = useState(false);
+  const [lastPosted, setLastPosted] = useState<ManualEntry | null>(null);
 
-  // Hydrate from localStorage after mount (SSR renders with no manual entries).
   useEffect(() => {
     const loaded = loadEntries();
     setEntries(loaded);
     setManualPostings(expandManualEntries(loaded));
+    setComments(loadComments());
     setVersion((v) => v + 1);
     setHydrated(true);
   }, []);
 
-  // Keep the ledger + storage in sync with any change after hydration.
   useEffect(() => {
     if (!hydrated) return;
     setManualPostings(expandManualEntries(entries));
@@ -54,12 +76,18 @@ export function JournalProvider({ children }: { children: React.ReactNode }) {
     setVersion((v) => v + 1);
   }, [entries, hydrated]);
 
+  useEffect(() => {
+    if (!hydrated) return;
+    saveComments(comments);
+  }, [comments, hydrated]);
+
   const post = useCallback<JournalContext["post"]>(
     (draft) => {
       const errors = validateDraft(draft, todayIso());
       if (errors.length) return { ok: false, errors };
       const created = createEntry(draft, entries, new Date().toISOString());
       setEntries((prev) => [...prev, created]);
+      setLastPosted(created);
       return { ok: true, entry: created };
     },
     [entries],
@@ -78,7 +106,6 @@ export function JournalProvider({ children }: { children: React.ReactNode }) {
             failed.push({ index, errors });
             return;
           }
-          // Number each new voucher against the growing list so refs stay gapless.
           acc.push(createEntry(draft, acc, now));
         });
         return acc;
@@ -102,9 +129,96 @@ export function JournalProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const clearLastPosted = useCallback(() => setLastPosted(null), []);
+
+  const saveDraft = useCallback<JournalContext["saveDraft"]>((draft) => {
+    const entry = createDraftEntry(draft, new Date().toISOString());
+    setEntries((prev) => [...prev, entry]);
+    return entry;
+  }, []);
+
+  const postDraft = useCallback<JournalContext["postDraft"]>(
+    (id) => {
+      const draft = entries.find((e) => e.id === id && e.status === "draft");
+      if (!draft) return { ok: false, errors: ["Draft not found."] };
+
+      const entryDraft: EntryDraft = {
+        type: draft.type,
+        date: draft.date,
+        narration: draft.narration,
+        entityId: draft.entityId,
+        locationId: draft.locationId,
+        currency: draft.currency,
+        basis: draft.basis,
+        partyId: draft.partyId,
+        costCenter: draft.costCenter,
+        lines: draft.lines,
+        autoReverse: draft.autoReverse,
+        reverseDate: draft.reverseDate,
+      };
+
+      const errors = validateDraft(entryDraft, todayIso());
+      if (errors.length) return { ok: false, errors };
+
+      const othersForNumbering = entries.filter((e) => e.id !== id);
+      const voucherNo = nextVoucherNo(othersForNumbering, draft.type);
+      const posted: ManualEntry = { ...draft, voucherNo, status: "posted" };
+      setEntries((prev) => prev.map((e) => (e.id === id ? posted : e)));
+      setLastPosted(posted);
+      return { ok: true, entry: posted };
+    },
+    [entries],
+  );
+
+  const deleteDraft = useCallback((id: string) => {
+    setEntries((prev) => prev.filter((e) => !(e.id === id && e.status === "draft")));
+  }, []);
+
+  const updateEntries = useCallback(
+    (ids: string[], patch: Partial<Pick<ManualEntry, "narration" | "costCenter">>) => {
+      const idSet = new Set(ids);
+      setEntries((prev) => prev.map((e) => (idSet.has(e.id) ? { ...e, ...patch } : e)));
+    },
+    [],
+  );
+
+  const addComment = useCallback<JournalContext["addComment"]>(
+    (voucherId, text, authorId) => {
+      const comment: VoucherComment = {
+        id: `cmt-${new Date().toISOString()}-${Math.random().toString(36).slice(2, 6)}`,
+        voucherId,
+        text,
+        authorId,
+        createdAt: new Date().toISOString(),
+        mentions: parseMentions(text),
+      };
+      setComments((prev) => [...prev, comment]);
+      return comment;
+    },
+    [],
+  );
+
   const value = useMemo<JournalContext>(
-    () => ({ entries, version, post, postMany, reverse }),
-    [entries, version, post, postMany, reverse],
+    () => ({
+      entries,
+      version,
+      post,
+      postMany,
+      reverse,
+      lastPosted,
+      clearLastPosted,
+      saveDraft,
+      postDraft,
+      deleteDraft,
+      updateEntries,
+      comments,
+      addComment,
+    }),
+    [
+      entries, version, post, postMany, reverse,
+      lastPosted, clearLastPosted, saveDraft, postDraft, deleteDraft, updateEntries,
+      comments, addComment,
+    ],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

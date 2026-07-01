@@ -118,7 +118,8 @@ export interface POAmendment {
 
 // Base (seed) status. The effective status is derived together with the live
 // approval decision — see effectiveStatus().
-export type POBaseStatus = "issued" | "invoiced" | "paid";
+// "draft" = raised but not yet issued to vendor (pending maker-checker approval).
+export type POBaseStatus = "draft" | "issued" | "invoiced" | "paid";
 
 export interface PurchaseOrder {
   id: string;
@@ -230,7 +231,8 @@ export function poById(id: string) {
 export const invoiceApprovalId = (poId: string) => `apr-invoice-${poId}`;
 
 export type POEffectiveStatus =
-  | "issued" // PO raised, vendor yet to bill
+  | "draft" // PO created, pending maker-checker issuance
+  | "issued" // PO issued to vendor, awaiting invoice
   | "pending-approval" // invoice received, awaiting SPOC sign-off
   | "approved-paid" // SPOC approved → auto-paid
   | "rejected" // SPOC rejected the invoice
@@ -238,6 +240,7 @@ export type POEffectiveStatus =
 
 /** Resolve the live status by combining the seed status with the SPOC decision. */
 export function effectiveStatus(po: PurchaseOrder, decisions: Record<string, Decision>): POEffectiveStatus {
+  if (po.status === "draft") return "draft";
   if (po.status === "issued") return "issued";
   if (po.status === "paid") return "paid";
   // base status === "invoiced" → look at the shared approval decision
