@@ -22,7 +22,7 @@ import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { ACTIVE_EMPLOYEES, employeeName } from "@/lib/hr/employees";
 import { loadDecisions, saveDecisions, type Decision } from "@/lib/hr/approvals";
 import { appendAudit } from "@/lib/audit/audit-log";
-import { ITEMS, itemById } from "@/lib/inventory/items";
+import { ITEMS, itemById, loadUomOverrides, altUomOf, type AltUom } from "@/lib/inventory/items";
 import { buildBudget, loadOverrides, loadAssumptions } from "@/lib/planning/budget";
 import {
   allGRNs, loadGRNs,
@@ -882,9 +882,16 @@ function AmendPOView({
     po.lines.map((l) => ({ ...l }))
   );
   const [reason, setReason] = React.useState("");
+  const [uomBasis, setUomBasis] = React.useState<Array<"base" | "alt">>(po.lines.map(() => "base"));
+  const [overrides, setOverrides] = React.useState<Record<string, AltUom | null>>({});
+
+  React.useEffect(() => { setOverrides(loadUomOverrides()); }, []);
 
   function updateLine(i: number, patch: Partial<POLine>) {
     setLines((p) => p.map((l, j) => (j === i ? { ...l, ...patch } : l)));
+  }
+  function toggleBasis(i: number) {
+    setUomBasis((p) => p.map((b, j) => j === i ? (b === "base" ? "alt" : "base") : b));
   }
 
   const newTotal = lines.reduce((s, l) => s + l.qty * l.unitPrice, 0);
@@ -902,35 +909,82 @@ function AmendPOView({
       <div>
         <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">Edit lines</p>
         <div className="space-y-2">
-          {lines.map((l, i) => (
-            <div key={i} className="rounded-lg border p-2.5 space-y-1.5">
-              <p className="text-xs font-medium">{l.item}</p>
-              <div className="flex gap-2">
-                <label className="block flex-1">
-                  <span className="text-[10px] text-muted-foreground">Qty</span>
-                  <Input
-                    type="number" min={1}
-                    value={l.qty || ""}
-                    onChange={(e) => updateLine(i, { qty: Number(e.target.value) })}
-                    className="mt-0.5 h-7 text-right text-xs"
-                  />
-                </label>
-                <label className="block flex-1">
-                  <span className="text-[10px] text-muted-foreground">Unit price (₹)</span>
-                  <Input
-                    type="number" min={0}
-                    value={l.unitPrice || ""}
-                    onChange={(e) => updateLine(i, { unitPrice: Number(e.target.value) })}
-                    className="mt-0.5 h-7 text-right text-xs"
-                  />
-                </label>
-                <div className="block flex-1 text-right">
-                  <span className="text-[10px] text-muted-foreground">Line total</span>
-                  <p className="mt-0.5 text-xs font-semibold tabular-nums"><Money value={l.qty * l.unitPrice} /></p>
+          {lines.map((l, i) => {
+            const item = l.itemId ? itemById(l.itemId) : null;
+            const alt = item ? altUomOf(item, overrides) : null;
+            const basis = uomBasis[i] ?? "base";
+            const pack = alt?.pack ?? 1;
+            const baseUom = item?.uom ?? "";
+            const displayQty = basis === "alt" && alt ? (l.qty > 0 ? +(l.qty / pack).toFixed(4) : "") : (l.qty || "");
+            const displayRate = basis === "alt" && alt ? +(l.unitPrice * pack).toFixed(2) : l.unitPrice || "";
+            return (
+              <div key={i} className="rounded-lg border p-2.5 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-medium flex-1">{l.item}</p>
+                  {alt && (
+                    <button
+                      type="button"
+                      onClick={() => toggleBasis(i)}
+                      className={cn(
+                        "rounded border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+                        basis === "alt"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-muted/40 text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {basis === "base" ? baseUom : alt.unit}
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <label className="block flex-1">
+                    <span className="text-[10px] text-muted-foreground">
+                      Qty {alt ? `(${basis === "base" ? baseUom : alt.unit})` : ""}
+                    </span>
+                    <Input
+                      type="number" min={1}
+                      value={displayQty}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        updateLine(i, { qty: basis === "alt" && alt ? v * pack : v });
+                      }}
+                      className="mt-0.5 h-7 text-right text-xs"
+                    />
+                    {alt && basis === "alt" && l.qty > 0 && (
+                      <p className="text-[10px] text-muted-foreground">= {l.qty.toFixed(1)} {baseUom}</p>
+                    )}
+                    {alt && basis === "base" && l.qty > 0 && (
+                      <p className="text-[10px] text-muted-foreground">= {(l.qty / pack).toFixed(2)} {alt.unit}</p>
+                    )}
+                  </label>
+                  <label className="block flex-1">
+                    <span className="text-[10px] text-muted-foreground">
+                      Rate (₹/{basis === "alt" && alt ? alt.unit : baseUom || "unit"})
+                    </span>
+                    <Input
+                      type="number" min={0}
+                      value={displayRate}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        updateLine(i, { unitPrice: basis === "alt" && alt ? v / pack : v });
+                      }}
+                      className="mt-0.5 h-7 text-right text-xs"
+                    />
+                    {alt && basis === "alt" && l.unitPrice > 0 && (
+                      <p className="text-[10px] text-muted-foreground">= ₹{l.unitPrice.toFixed(2)}/{baseUom}</p>
+                    )}
+                    {alt && basis === "base" && l.unitPrice > 0 && (
+                      <p className="text-[10px] text-muted-foreground">= ₹{(l.unitPrice * pack).toFixed(2)}/{alt.unit}</p>
+                    )}
+                  </label>
+                  <div className="block flex-1 text-right">
+                    <span className="text-[10px] text-muted-foreground">Line total</span>
+                    <p className="mt-0.5 text-xs font-semibold tabular-nums"><Money value={l.qty * l.unitPrice} /></p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

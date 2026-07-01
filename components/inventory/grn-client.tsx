@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { Drawer } from "@/components/ui/modal";
 import { cn } from "@/lib/utils";
-import { ITEMS, itemById, itemName } from "@/lib/inventory/items";
+import { ITEMS, itemById, itemName, loadUomOverrides, altUomOf, type AltUom } from "@/lib/inventory/items";
 import { ACTIVE_EMPLOYEES, employeeName } from "@/lib/hr/employees";
 import { LOCATIONS } from "@/lib/accounting/org";
 import { appendMovements } from "@/lib/inventory/movements";
@@ -580,15 +580,28 @@ function CreateGRNDrawer({ onClose, onCreate, nextRef }: {
   const [receivedBy, setReceivedBy] = React.useState("emp-021");
   const [note, setNote] = React.useState("");
   const [lines, setLines] = React.useState<GRNLine[]>([{ itemId: ITEMS[0]?.id ?? "", qty: 0 }]);
+  const [uomBasis, setUomBasis] = React.useState<Array<"base" | "alt">>(["base"]);
+  const [overrides, setOverrides] = React.useState<Record<string, AltUom | null>>({});
   const [freightTotal, setFreightTotal] = React.useState<number | "">("");
   const [freightBasis, setFreightBasis] = React.useState<"value" | "qty">("value");
   const [prefetchedTitle, setPrefetchedTitle] = React.useState<string | null>(null);
   const [prefetchError, setPrefetchError] = React.useState<string | null>(null);
 
-  function addLine() { setLines((p) => [...p, { itemId: ITEMS[0]?.id ?? "", qty: 0 }]); }
-  function removeLine(i: number) { setLines((p) => p.filter((_, j) => j !== i)); }
+  React.useEffect(() => { setOverrides(loadUomOverrides()); }, []);
+
+  function addLine() {
+    setLines((p) => [...p, { itemId: ITEMS[0]?.id ?? "", qty: 0 }]);
+    setUomBasis((p) => [...p, "base"]);
+  }
+  function removeLine(i: number) {
+    setLines((p) => p.filter((_, j) => j !== i));
+    setUomBasis((p) => p.filter((_, j) => j !== i));
+  }
   function updateLine(i: number, patch: Partial<GRNLine>) {
     setLines((p) => p.map((l, j) => j === i ? { ...l, ...patch } : l));
+  }
+  function toggleBasis(i: number) {
+    setUomBasis((p) => p.map((b, j) => j === i ? (b === "base" ? "alt" : "base") : b));
   }
 
   function fetchFromPO() {
@@ -611,7 +624,10 @@ function CreateGRNDrawer({ onClose, onCreate, nextRef }: {
     setLocationId(po.locationId);
     setPrefetchedTitle(`${po.id} — ${po.title}`);
     setPrefetchError(null);
-    if (invLines.length > 0) setLines(invLines);
+    if (invLines.length > 0) {
+      setLines(invLines);
+      setUomBasis(invLines.map(() => "base"));
+    }
   }
 
   const valid = vendorName.trim().length > 0 && lines.every((l) => l.qty > 0);
@@ -677,29 +693,57 @@ function CreateGRNDrawer({ onClose, onCreate, nextRef }: {
           <div className="space-y-3">
             {lines.map((l, i) => {
               const item = itemById(l.itemId);
+              const alt = item ? altUomOf(item, overrides) : null;
+              const basis = uomBasis[i] ?? "base";
+              const pack = alt?.pack ?? 1;
+              // Display values: always store base in `l`, convert for display
+              const displayQty = basis === "alt" && alt ? (l.qty > 0 ? +(l.qty / pack).toFixed(4) : "") : (l.qty || "");
+              const displayRate = basis === "alt" && alt && l.unitPrice != null ? +(l.unitPrice * pack).toFixed(2) : (l.unitPrice ?? "");
               return (
                 <div key={i} className="rounded-lg border p-3 space-y-2">
                   <div className="flex items-center gap-2">
                     <Select
                       value={l.itemId}
-                      onChange={(e) => updateLine(i, { itemId: e.target.value })}
+                      onChange={(e) => { updateLine(i, { itemId: e.target.value }); setUomBasis((p) => p.map((b, j) => j === i ? "base" : b)); }}
                       className="h-8 flex-1 text-xs"
                     >
                       {ITEMS.map((it) => <option key={it.id} value={it.id}>{it.name}</option>)}
                     </Select>
+                    {/* UOM toggle */}
+                    {alt && (
+                      <button
+                        type="button"
+                        onClick={() => toggleBasis(i)}
+                        className={cn(
+                          "h-8 shrink-0 rounded border px-2 text-[10px] font-medium transition-colors",
+                          basis === "alt"
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-muted/40 text-muted-foreground hover:text-foreground"
+                        )}
+                        title={basis === "base" ? `Switch to ${alt.unit} (${alt.pack} ${item?.uom} each)` : `Switch to ${item?.uom}`}
+                      >
+                        {basis === "base" ? item?.uom : alt.unit}
+                      </button>
+                    )}
+                    {!alt && <span className="w-6 shrink-0 text-xs text-muted-foreground">{item?.uom}</span>}
                     <Input
-                      type="number" min={1}
-                      value={l.qty || ""}
-                      onChange={(e) => updateLine(i, { qty: Number(e.target.value) })}
+                      type="number" min={0} step={basis === "alt" && alt ? 1 : 0.001}
+                      value={displayQty}
+                      onChange={(e) => {
+                        const v = e.target.value === "" ? 0 : Number(e.target.value);
+                        updateLine(i, { qty: basis === "alt" && alt ? v * pack : v });
+                      }}
                       placeholder="Qty"
                       className={cn("h-8 w-20 text-right tabular", prefetchedTitle && "border-primary/40 bg-primary/5")}
                     />
-                    <span className="w-6 shrink-0 text-xs text-muted-foreground">{item?.uom}</span>
                     <Input
                       type="number" min={0} step={0.01}
-                      value={l.unitPrice ?? ""}
-                      onChange={(e) => updateLine(i, { unitPrice: e.target.value === "" ? undefined : Number(e.target.value) })}
-                      placeholder="₹/unit"
+                      value={displayRate}
+                      onChange={(e) => {
+                        const v = e.target.value === "" ? undefined : Number(e.target.value);
+                        updateLine(i, { unitPrice: basis === "alt" && alt && v != null ? v / pack : v });
+                      }}
+                      placeholder={basis === "alt" && alt ? `₹/${alt.unit}` : "₹/unit"}
                       title="Unit purchase price (for WACOG costing)"
                       className={cn("h-8 w-24 text-right tabular", prefetchedTitle && l.unitPrice ? "border-primary/40 bg-primary/5" : "")}
                     />
@@ -707,6 +751,20 @@ function CreateGRNDrawer({ onClose, onCreate, nextRef }: {
                       <Trash2 className="size-4" />
                     </button>
                   </div>
+                  {/* Alt-UOM conversion hint */}
+                  {alt && basis === "alt" && (l.qty > 0 || l.unitPrice != null) && (
+                    <p className="text-[10px] text-muted-foreground pl-1">
+                      {l.qty > 0 && <span>= <strong>{l.qty.toFixed(1)} {item?.uom}</strong></span>}
+                      {l.qty > 0 && l.unitPrice != null && " · "}
+                      {l.unitPrice != null && <span>= <strong>₹{l.unitPrice.toFixed(2)}/{item?.uom}</strong></span>}
+                    </p>
+                  )}
+                  {alt && basis === "base" && alt && l.qty > 0 && (
+                    <p className="text-[10px] text-muted-foreground pl-1">
+                      = <strong>{(l.qty / pack).toFixed(2)} {alt.unit}</strong>
+                      {l.unitPrice != null && <span> · ₹{(l.unitPrice * pack).toFixed(2)}/{alt.unit}</span>}
+                    </p>
+                  )}
                   <div className="flex gap-2">
                     <Input
                       value={l.batchNo ?? ""}

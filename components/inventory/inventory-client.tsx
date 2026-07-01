@@ -243,24 +243,16 @@ export function InventoryClient() {
       </p>
       <KpiStrip items={stageKpis} />
 
-      {/* Low-stock alerts */}
+      {/* Low-stock alert — compact bar */}
       {low.length > 0 && (
-        <Card className="mb-4 border-warning/40 p-4">
-          <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-warning">
-            <AlertTriangle className="size-4" /> Reorder alerts
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {low.map(({ item, onHand }) => (
-              <span key={item.id} className="flex items-center gap-1.5 rounded-lg border border-warning/30 bg-warning/5 px-2.5 py-1 text-xs">
-                <PackageX className="size-3.5 text-warning" />
-                <span className="font-medium">{item.name}</span>
-                <span className="text-muted-foreground">
-                  {fmtQty(onHand)} / {fmtQty(item.reorderLevel)} {item.uom}
-                </span>
-              </span>
-            ))}
-          </div>
-        </Card>
+        <div className="mb-4 flex items-center gap-2 rounded-md border border-warning/40 bg-warning/5 px-3 py-1.5 text-xs">
+          <PackageX className="size-3.5 shrink-0 text-warning" />
+          <span className="font-semibold text-warning">{low.length} item{low.length !== 1 ? "s" : ""} below reorder level</span>
+          <span className="text-muted-foreground truncate hidden sm:block">
+            {low.slice(0, 3).map(({ item }) => item.name).join(", ")}{low.length > 3 ? ` +${low.length - 3} more` : ""}
+          </span>
+          <Link href="/inventory/reorder" className="ml-auto shrink-0 font-medium text-warning hover:underline">more →</Link>
+        </div>
       )}
 
       {/* Filters */}

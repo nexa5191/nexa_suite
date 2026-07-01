@@ -133,39 +133,24 @@ export function RequisitionsClient() {
         <StatCard label="Approved / ordered" value={String(prs.filter((p) => ["approved","ordered"].includes(p.status)).length)} />
       </div>
 
-      {/* ROL alert panel */}
+      {/* ROL alert — compact bar */}
       {belowRol.length > 0 && (() => {
         const activeRolPR = prs.find((p) => p.source === "auto-rol" && ["submitted","approved"].includes(p.status));
+        const preview = belowRol.slice(0, 3).map(({ item }) => item.name).join(", ");
+        const extra = belowRol.length > 3 ? ` +${belowRol.length - 3} more` : "";
         return (
-          <div className="mb-4 rounded-lg border border-warning/40 bg-warning/5 p-3">
-            <div className="flex flex-wrap items-start gap-3">
-              <div className="flex items-center gap-1.5 shrink-0">
-                <PackageX className="size-4 text-warning" />
-                <span className="text-sm font-semibold text-warning">{belowRol.length} item{belowRol.length !== 1 ? "s" : ""} below reorder level</span>
-              </div>
-              <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
-                {belowRol.map(({ item, onHand }) => (
-                  <span key={item.id} className="inline-flex items-center gap-1 rounded border border-warning/30 bg-warning/10 px-2 py-0.5 text-[11px]">
-                    <span className="font-medium">{item.name}</span>
-                    <span className="text-muted-foreground">{onHand.toFixed(0)}/{item.reorderLevel} {item.uom}</span>
-                  </span>
-                ))}
-              </div>
-              <div className="shrink-0">
-                {activeRolPR ? (
-                  <button
-                    onClick={() => setSelected(activeRolPR)}
-                    className="text-xs text-primary hover:underline font-medium"
-                  >
-                    PR {activeRolPR.ref} in review → open
-                  </button>
-                ) : (
-                  <Button size="sm" onClick={generateAutoRolPRs}>
-                    <Zap className="size-3.5" /> Generate Auto-PR
-                  </Button>
-                )}
-              </div>
-            </div>
+          <div className="mb-4 flex items-center gap-2 rounded-md border border-warning/40 bg-warning/5 px-3 py-1.5 text-xs">
+            <PackageX className="size-3.5 shrink-0 text-warning" />
+            <span className="font-semibold text-warning">{belowRol.length} item{belowRol.length !== 1 ? "s" : ""} below ROL</span>
+            <span className="text-muted-foreground truncate hidden sm:block">{preview}{extra}</span>
+            <span className="ml-auto flex items-center gap-3 shrink-0">
+              {activeRolPR && (
+                <button onClick={() => setSelected(activeRolPR)} className="text-primary hover:underline font-medium">
+                  PR {activeRolPR.ref} in review
+                </button>
+              )}
+              <Link href="/inventory/reorder" className="font-medium text-warning hover:underline">more →</Link>
+            </span>
           </div>
         );
       })()}
