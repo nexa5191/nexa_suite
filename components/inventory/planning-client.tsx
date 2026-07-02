@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   TrendingUp,
   RefreshCw,
@@ -152,14 +153,19 @@ function computeAttribution(
 
 interface ReorderFlagCardsProps {
   idx: StockIndex | null;
+  hasPlan: boolean;
   onSelect: (itemId: string) => void;
   selectedId: string | null;
 }
 
-function ReorderFlagCards({ idx, onSelect, selectedId }: ReorderFlagCardsProps) {
+function ReorderFlagCards({ idx, hasPlan, onSelect, selectedId }: ReorderFlagCardsProps) {
+  const router = useRouter();
   if (!idx) return null;
 
+  // Same scope as the Reorder Alerts (ROL) page: purchasable items only —
+  // own-manufactured finished goods and semi-finished are produced, not reordered.
   const flags = ITEMS
+    .filter((it) => it.category !== "semi-finished" && !(it.category === "finished" && it.ownership !== "third-party"))
     .map((it) => ({ item: it, onHand: stockTotal(idx, it.id) }))
     .filter(({ item, onHand }) => onHand < item.reorderLevel)
     .sort((a, b) => (a.onHand / a.item.reorderLevel) - (b.onHand / b.item.reorderLevel));
@@ -172,7 +178,11 @@ function ReorderFlagCards({ idx, onSelect, selectedId }: ReorderFlagCardsProps) 
         <PackageX className="size-4 text-danger" />
         <p className="text-sm font-semibold">Reorder Flags</p>
         <Badge variant="danger" className="text-[10px]">{flags.length} below ROL</Badge>
-        <p className="text-xs text-muted-foreground">Click a card to jump to the item in the procurement plan.</p>
+        <p className="text-xs text-muted-foreground">
+          {hasPlan
+            ? "Click a card to jump to the item in the procurement plan."
+            : "Click a card to view it in Reorder Alerts."}
+        </p>
       </div>
       <div className="flex flex-wrap gap-2">
         {flags.map(({ item, onHand }) => {
@@ -187,6 +197,10 @@ function ReorderFlagCards({ idx, onSelect, selectedId }: ReorderFlagCardsProps) 
             <button
               key={item.id}
               onClick={() => {
+                if (!hasPlan) {
+                  router.push(`/inventory/reorder?item=${item.id}`);
+                  return;
+                }
                 onSelect(item.id);
                 setTimeout(() => {
                   document.getElementById(`plan-row-${item.id}`)?.scrollIntoView({
@@ -898,6 +912,7 @@ export function PlanningClient() {
       {/* Reorder flags — always visible once stock is loaded */}
       <ReorderFlagCards
         idx={stockIdx}
+        hasPlan={plan !== null}
         onSelect={(id) => {
           const next = highlightedItem === id && planFilter === id ? null : id;
           setHighlightedItem(next);

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { PackageX, Zap, CheckCircle2, ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { Card } from "@/components/ui/card";
@@ -22,6 +23,7 @@ const locationName = (id: string) => locationById(id)?.name ?? id;
 const TODAY = "2026-07-01";
 
 export function ReorderClient() {
+  const searchParams = useSearchParams();
   const [rows, setRows] = React.useState<Array<{
     item: (typeof ITEMS)[0];
     onHand: number;
@@ -30,6 +32,7 @@ export function ReorderClient() {
   }>>([]);
   const [activePrRef, setActivePrRef] = React.useState<string | null>(null);
   const [banner, setBanner] = React.useState<{ msg: string; ok: boolean } | null>(null);
+  const [highlightId, setHighlightId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     const addedMovements = loadAddedMovements();
@@ -51,7 +54,15 @@ export function ReorderClient() {
     const prs = allPRs(loadPRs());
     const active = prs.find((p) => p.source === "auto-rol" && ["submitted", "approved"].includes(p.status));
     setActivePrRef(active?.ref ?? null);
-  }, []);
+
+    const wanted = searchParams.get("item");
+    if (wanted && below.some((r) => r.item.id === wanted)) {
+      setHighlightId(wanted);
+      setTimeout(() => {
+        document.getElementById(`reorder-row-${wanted}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 50);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function generateAutoRolPRs() {
     const addedMovements = loadAddedMovements();
@@ -135,8 +146,16 @@ export function ReorderClient() {
               {rows.map((row) => {
                 const pct = pctLow(row);
                 const criticalPct = pct < 33;
+                const isHighlighted = highlightId === row.item.id;
                 return (
-                  <tr key={row.item.id} className="border-b last:border-0 hover:bg-muted/20">
+                  <tr
+                    key={row.item.id}
+                    id={`reorder-row-${row.item.id}`}
+                    className={cn(
+                      "border-b last:border-0 hover:bg-muted/20 transition-colors",
+                      isHighlighted && "bg-primary/8 ring-1 ring-inset ring-primary/30",
+                    )}
+                  >
                     <td className="px-3 py-2">
                       <div className="font-medium">{row.item.name}</div>
                       <div className="text-[10px] text-muted-foreground">{row.item.code} · {row.item.category}</div>
