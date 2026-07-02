@@ -30,7 +30,19 @@ export function BomClient() {
   const [selectedId, setSelectedId] = React.useState(
     PRODUCIBLE.find((i) => i.category === "finished")?.id ?? PRODUCIBLE[0]?.id ?? "",
   );
-  const output = itemById(selectedId)!;
+  const output = itemById(selectedId);
+
+  // ITEMS is empty during SSR (localStorage isn't available on the server),
+  // so no producible item may exist yet — avoid crashing until it hydrates.
+  if (!output) {
+    return (
+      <>
+        <PageHeader title="Bill of Materials" subtitle="Standard recipes for every semi-finished and finished item, costed to raw + packing." />
+        <Card className="p-8 text-center text-sm text-muted-foreground">No producible items yet — load demo data from Settings.</Card>
+      </>
+    );
+  }
+
   const bom = bomFor(selectedId);
   const exploded = explodeBom(selectedId, 1).sort((a, b) => {
     const ca = CATEGORY_META[itemById(a.itemId)!.category].order;

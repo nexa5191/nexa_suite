@@ -14,13 +14,27 @@ import { leaseSummary, schedule, LEASES, AS_ON, type Lease } from "@/lib/finance
 export function LeasesClient() {
   const { positions, summary } = leaseSummary(AS_ON);
   const [selId, setSelId] = React.useState(LEASES[0]?.id ?? "");
-  const sel = LEASES.find((l) => l.id === selId)!;
-  const selPos = positions.find((p) => p.lease.id === selId)!;
-  const sched = schedule(sel);
+  const sel = LEASES.find((l) => l.id === selId);
+  const selPos = positions.find((p) => p.lease.id === selId);
+  const sched = sel ? schedule(sel) : [];
 
   function exportCsv() {
     downloadCsv("lease-liabilities", ["Asset", "Location", "Commenced", "Term (m)", "ROU NBV", "Liability", "Current", "Non-current", "Monthly interest", "Monthly dep"],
       positions.map((p) => [p.lease.asset, p.lease.location, p.lease.commencement, p.lease.termMonths, p.rouNbv, p.liability, p.currentLiability, p.nonCurrentLiability, p.thisMonthInterest, p.thisMonthDep]));
+  }
+
+  // LEASES is never seeded (no leases exist yet) — show an empty state
+  // instead of crashing below on sel/selPos being undefined.
+  if (!sel || !selPos) {
+    return (
+      <>
+        <PageHeader
+          title="Lease Accounting"
+          subtitle={`Ind AS 116 — right-of-use assets & lease liabilities · as on ${formatDate(AS_ON)}`}
+        />
+        <Card className="p-8 text-center text-sm text-muted-foreground">No leases configured yet.</Card>
+      </>
+    );
   }
 
   return (

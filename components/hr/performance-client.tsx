@@ -26,7 +26,7 @@ const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: st
 ];
 
 export function PerformanceClient() {
-  const [cycleId, setCycleId] = React.useState(ACTIVE_CYCLE.id);
+  const [cycleId, setCycleId] = React.useState(ACTIVE_CYCLE?.id ?? "");
   const [tab, setTab] = React.useState<Tab>("appraisals");
   const [dept, setDept] = React.useState<string>("all");
   const [review, setReview] = React.useState<string | null>(null); // empId under review
@@ -44,6 +44,17 @@ export function PerformanceClient() {
   const summary = React.useMemo(() => perfSummary(empIds), [empIds, version]);
 
   function bump() { setVersion((v) => v + 1); }
+
+  // REVIEW_CYCLES is never seeded (no active cycle exists yet) — show an
+  // empty state instead of crashing on cycle.label/phase/period below.
+  if (!cycle) {
+    return (
+      <>
+        <PageHeader title="Performance & OKRs" subtitle="No appraisal cycle configured yet." />
+        <Card className="p-8 text-center text-sm text-muted-foreground">No review cycles configured yet.</Card>
+      </>
+    );
+  }
 
   return (
     <>

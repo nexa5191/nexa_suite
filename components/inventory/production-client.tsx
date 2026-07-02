@@ -60,7 +60,7 @@ export function ProductionClient() {
     setIdx(buildStockIndex(allMovements(a)));
   }, []);
 
-  const output = itemById(outputId)!;
+  const output = itemById(outputId);
   const plannedQty = parseFloat(planned) || 0;
   const bom = bomFor(outputId);
 
@@ -88,7 +88,7 @@ export function ProductionClient() {
   const yieldVar = actualOut - plannedQty;
 
   function run() {
-    if (plannedQty <= 0 || actualOut <= 0 || anyShort) return;
+    if (!output || plannedQty <= 0 || actualOut <= 0 || anyShort) return;
     const ref = nextProductionRef(added);
     const moves = buildProductionMovements({
       outputId,
@@ -107,6 +107,17 @@ export function ProductionClient() {
   }
 
   const runs = React.useMemo(() => allRunVariances(allMovements(added)), [added]);
+
+  // ITEMS is empty during SSR (localStorage isn't available on the server),
+  // so no producible item may exist yet — avoid crashing until it hydrates.
+  if (!output) {
+    return (
+      <>
+        <PageHeader title="Production" subtitle="Run a production order against its BOM and capture standard-vs-actual variance." />
+        <Card className="p-8 text-center text-sm text-muted-foreground">No producible items yet — load demo data from Settings.</Card>
+      </>
+    );
+  }
 
   return (
     <>

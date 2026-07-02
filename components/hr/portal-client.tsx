@@ -36,7 +36,30 @@ const CAT_TONE: Record<DocCategory, "default" | "primary" | "success" | "warning
 
 export function PortalClient() {
   const [empId, setEmpId] = usePortalEmployee();
-  const emp = employeeById(empId)!;
+  const emp = employeeById(empId);
+
+  // EMPLOYEES is empty during SSR (localStorage isn't available on the
+  // server), so no employee may be resolved yet — avoid crashing until
+  // the client hydrates and the portal session picks a real employee.
+  if (!emp) {
+    return (
+      <>
+        <PageHeader
+          title="My Portal"
+          subtitle="Self-service — your profile, journey, documents and payslips."
+          actions={
+            <Select value={empId} onChange={(e) => setEmpId(e.target.value)} className="h-9 w-56">
+              {EMPLOYEES.map((e) => (
+                <option key={e.id} value={e.id}>{e.name}{e.status === "exited" ? " (exited)" : ""}</option>
+              ))}
+            </Select>
+          }
+        />
+        <Card className="p-8 text-center text-sm text-muted-foreground">No employee selected — load demo data from Settings or pick one above.</Card>
+      </>
+    );
+  }
+
   const exited = emp.status === "exited";
   const balances = balancesFor(empId, loadLeaveTypes());
   const salary = salaryStructure(empId);

@@ -68,8 +68,10 @@ export function CrmClient() {
     setSeq(ev.length + 1);
   }, []);
 
-  const account = accountById(selectedId)!;
-  const stage = effectiveStage(account, stageOverrides);
+  // ACCOUNTS is empty during SSR (localStorage isn't available on the server),
+  // so selectedId/account may be unresolved until the client hydrates.
+  const account = accountById(selectedId);
+  const stage = account ? effectiveStage(account, stageOverrides) : "lead" as PipelineStage;
 
   // ---- pipeline summary ----
   const accountsWithStage = ACCOUNTS.map((a) => ({ a, stage: effectiveStage(a, stageOverrides) }));
@@ -115,6 +117,7 @@ export function CrmClient() {
   }
 
   function changeStage(next: PipelineStage) {
+    if (!account) return;
     const updated = { ...stageOverrides, [account.id]: next };
     setStageOverrides(updated);
     saveStageOverrides(updated);
@@ -134,6 +137,7 @@ export function CrmClient() {
   }
 
   function addEvent(ev: Omit<JourneyEvent, "id" | "accountId">) {
+    if (!account) return;
     const full: JourneyEvent = { ...ev, id: `evt-user-${seq}`, accountId: account.id };
     setSeq((n) => n + 1);
     persistAdded([...added, full]);
@@ -245,17 +249,25 @@ export function CrmClient() {
 
         {/* RIGHT — account detail + journey */}
         <div className="space-y-4">
-          <AccountHeader
-            accountId={account.id}
-            stage={stage}
-            onStageChange={changeStage}
-          />
-          <AddEventForm onAdd={addEvent} />
-          <Timeline
-            events={journey}
-            tagOverrides={tagOverrides}
-            onToggleTag={toggleTag}
-          />
+          {account ? (
+            <>
+              <AccountHeader
+                accountId={account.id}
+                stage={stage}
+                onStageChange={changeStage}
+              />
+              <AddEventForm onAdd={addEvent} />
+              <Timeline
+                events={journey}
+                tagOverrides={tagOverrides}
+                onToggleTag={toggleTag}
+              />
+            </>
+          ) : (
+            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+              No CRM accounts yet — load demo data from Settings to explore this module.
+            </div>
+          )}
         </div>
       </div>
     </>

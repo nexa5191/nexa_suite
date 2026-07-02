@@ -22,7 +22,15 @@ import {
   saveBooked,
   type MatchStore,
   type BookedStore,
+  type BankAccount,
 } from "@/lib/banking/banking";
+
+// BANK_ACCOUNTS is empty during SSR (localStorage isn't available on the
+// server), so a real account may not exist yet — fall back to a harmless
+// placeholder rather than crash; the UI below shows an empty state instead.
+const EMPTY_ACCOUNT: BankAccount = {
+  id: "", entityId: "", accountCode: "", bankName: "", number: "", ifsc: "", currency: "INR", opening: 0,
+};
 import { autoMatch, reconcile, suggestionsFor, type MatchMap } from "@/lib/banking/reconcile";
 
 const MONTHS = ["2026-05", "2026-04", "2026-03", "2026-02", "2026-01", "2025-12"];
@@ -45,7 +53,7 @@ export function BankingClient() {
     setBookedStore(loadBooked());
   }, []);
 
-  const acc = BANK_ACCOUNTS.find((b) => b.id === accountId)!;
+  const acc = BANK_ACCOUNTS.find((b) => b.id === accountId) ?? BANK_ACCOUNTS[0] ?? EMPTY_ACCOUNT;
   const { from, to } = rangeOf(month);
   const key = `${accountId}|${month}`;
 

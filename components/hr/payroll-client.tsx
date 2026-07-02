@@ -23,7 +23,7 @@ const STATUS_TONE: Record<RunStatus, "success" | "warning" | "default"> = {
 const PROCESSED_KEY = "nexa-payroll-processed";
 
 export function PayrollClient() {
-  const [month, setMonth] = React.useState(PAYROLL_RUNS[PAYROLL_RUNS.length - 1].month); // latest (June draft)
+  const [month, setMonth] = React.useState(PAYROLL_RUNS.at(-1)?.month ?? ""); // latest (June draft)
   const [processed, setProcessed] = React.useState<string[]>([]);
   const [slip, setSlip] = React.useState<Payslip | null>(null);
 
@@ -34,7 +34,15 @@ export function PayrollClient() {
     } catch { /* ignore */ }
   }, []);
 
-  const run = PAYROLL_RUNS.find((r) => r.month === month)!;
+  const run = PAYROLL_RUNS.find((r) => r.month === month);
+  if (!run) {
+    return (
+      <>
+        <PageHeader title="Payroll" subtitle="Monthly payroll runs with full salary structure and payslips." />
+        <Card className="p-8 text-center text-sm text-muted-foreground">No payroll runs configured yet.</Card>
+      </>
+    );
+  }
   const status: RunStatus = run.status === "draft" && processed.includes(month) ? "paid" : run.status;
   const members = runMembers(month);
   const totals = runTotals(month);

@@ -94,14 +94,16 @@ const uid = (p: string) => `${p}-${(SEQ += 1).toString(36)}`;
 export const blankLine = (): EditableLine => ({ id: uid("ln"), accountCode: "", debit: "", credit: "", text: "" });
 
 export function blankDoc(entityId?: string, today?: string): EditableDoc {
+  // ENTITIES is empty during SSR (localStorage isn't available on the
+  // server), so no entity may exist yet — fall back to "" rather than crash.
   const ent = ENTITIES.find((e) => e.id === entityId) ?? ENTITIES[0];
   return {
     id: uid("doc"),
     ref: "",
     type: "journal",
     date: today ?? BOOKS_OPENING,
-    entityId: ent.id,
-    locationId: locationsForEntity(ent.id)[0]?.id ?? "",
+    entityId: ent?.id ?? "",
+    locationId: ent ? locationsForEntity(ent.id)[0]?.id ?? "" : "",
     basis: "accrual",
     narration: "",
     autoReverse: false,
@@ -122,7 +124,7 @@ function normDate(s: string, fallback: string): string {
 
 function resolveEntityId(s: string): string {
   const t = s.trim().toLowerCase();
-  return (ENTITIES.find((e) => e.id.toLowerCase() === t || e.name.toLowerCase() === t) ?? ENTITIES[0]).id;
+  return (ENTITIES.find((e) => e.id.toLowerCase() === t || e.name.toLowerCase() === t) ?? ENTITIES[0])?.id ?? "";
 }
 
 function resolveLocationId(s: string, entityId: string): string {
@@ -244,7 +246,7 @@ export function buildDraft(doc: EditableDoc): EntryDraft {
     narration: doc.narration,
     entityId: doc.entityId,
     locationId: doc.locationId,
-    currency: ent.currency,
+    currency: ent?.currency ?? "INR",
     basis: doc.basis,
     autoReverse: doc.autoReverse || undefined,
     reverseDate: doc.autoReverse ? doc.reverseDate : undefined,
